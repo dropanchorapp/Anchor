@@ -68,9 +68,6 @@ Carthage/Build/
 # Swift REPL history
 .swift-version
 
-# Generated documentation
-docs/
-
 # Test results
 *.xcresult
 

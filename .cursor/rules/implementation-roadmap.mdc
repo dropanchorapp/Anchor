@@ -1,0 +1,119 @@
+---
+description: rule, roadmap, plan
+globs: 
+alwaysApply: false
+---
+# Implementation Roadmap for Anchor CLI
+
+## Development Phases
+
+### Phase 1: Core Infrastructure ✅ (In Progress)
+- [x] Package structure with AnchorKit and AnchorCLI modules
+- [x] Basic [Package.swift](mdc:Package.swift) configuration
+- [x] CLI entry point in [main.swift](mdc:AnchorCLI/Sources/AnchorCLI/main.swift)
+- [ ] Swift ArgumentParser integration for CLI commands
+- [ ] Basic command structure in [CLICommands.swift](mdc:AnchorCLI/Sources/AnchorCLI/CLICommands.swift)
+
+### Phase 2: Data Models & Storage
+**Location**: `AnchorKit/Sources/AnchorKit/Models/`
+
+#### Required Models:
+- [ ] `Place.swift` - Location data from Overpass API
+- [ ] `AuthCredentials.swift` - Bluesky authentication storage
+- [ ] `AnchorSettings.swift` - User preferences and defaults
+
+#### Storage Implementation:
+- [ ] UserDefaults extensions for secure credential storage
+- [ ] Settings persistence and retrieval
+- [ ] Migration handling for settings updates
+
+### Phase 3: Service Layer
+**Location**: `AnchorKit/Sources/AnchorKit/Services/`
+
+#### Core Services:
+- [ ] `LocationService.swift` - CoreLocation wrapper with authorization
+- [ ] `OverpassService.swift` - OpenStreetMap POI queries
+- [ ] `BlueskyService.swift` - AT Protocol authentication and posting
+
+#### Service Features:
+- [ ] Async/await network operations
+- [ ] Proper error handling with custom error types
+- [ ] Response caching for location queries
+- [ ] Token refresh for Bluesky authentication
+
+### Phase 4: CLI Commands Implementation
+
+#### `anchor login`
+- [ ] Interactive Bluesky authentication
+- [ ] Credential storage and validation
+- [ ] Session management
+
+#### `anchor settings`
+- [ ] Default message configuration
+- [ ] Settings display and modification
+- [ ] Validation of user inputs
+
+#### `anchor nearby`
+- [ ] Current location detection
+- [ ] Overpass API integration for POI search
+- [ ] Optional text filtering (`--filter climbing`)
+- [ ] Formatted output with place IDs
+
+#### `anchor drop`
+- [ ] Interactive mode (no arguments)
+  - Location detection
+  - Nearby POI selection
+  - Optional message prompt
+- [ ] Parameterized mode
+  - `--place <type:id>` option
+  - `--message <text>` option
+- [ ] Bluesky post creation and submission
+
+### Phase 5: Testing & Validation
+**Location**: `AnchorKit/Tests/`
+
+#### Test Coverage:
+- [ ] Unit tests for all Models
+- [ ] Service layer tests with mocked network calls
+- [ ] CLI command integration tests
+- [ ] Error handling validation
+- [ ] Location service permission testing
+
+### Phase 6: Polish & Documentation
+- [ ] Comprehensive error messages
+- [ ] User-friendly CLI help and usage
+- [ ] Installation and setup documentation
+- [ ] API rate limiting and retry logic
+
+## MVP Acceptance Criteria
+
+### Required Functionality:
+1. **Authentication**: Successfully login to Bluesky and store credentials
+2. **Location**: Get current location and find nearby climbing gyms
+3. **Check-in**: Post formatted check-in messages to Bluesky feed
+4. **Settings**: Configure and persist default check-in message
+
+### Quality Requirements:
+- Swift 6 strict concurrency compliance
+- Graceful error handling for network and permission issues
+- Intuitive CLI interface following Unix conventions
+- Secure credential storage
+
+## Architecture Decisions
+
+### Package Structure Rationale:
+- **AnchorKit**: Reusable business logic for potential iOS app
+- **AnchorCLI**: Platform-specific CLI interface
+- **Local Package Dependency**: Allows independent development and testing
+
+### Technology Choices:
+- **Swift 6**: Modern async/await concurrency model
+- **CoreLocation**: Native macOS location services
+- **AT Protocol**: Direct Bluesky integration without third-party SDK
+- **Overpass API**: Rich OpenStreetMap data with flexible queries
+
+### Future Extensibility:
+- Custom `app.anchor.drop` record type for structured data
+- iOS companion app using same AnchorKit core
+- Offline queuing and sync capabilities
+- Additional POI categories beyond climbing gyms

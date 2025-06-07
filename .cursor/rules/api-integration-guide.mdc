@@ -1,0 +1,106 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# API Integration Guide for Anchor CLI
+
+## AT Protocol (Bluesky) Integration
+
+### Authentication Flow
+1. **Login**: Use `com.atproto.server.createSession` endpoint
+2. **Token Storage**: Store in UserDefaults as `AuthCredentials` struct
+3. **Session Management**: Handle token refresh and expiration
+
+### Posting Check-ins
+- **Record Type**: `app.bsky.feed.post`
+- **Format**: Text post with optional metadata
+- **Timestamp**: Use current UTC timestamp
+- **Message Structure**:
+  ```
+  Dropped anchor at [Place Name] 🧗‍♂️
+  "[Optional user message]"
+  ```
+
+### Future Enhancement
+- Custom record type: `app.anchor.drop` for structured check-in data
+- Include geolocation metadata and place references
+
+## Overpass API Integration
+
+### Base URL
+Use `overpass.private.coffee` as the Overpass API endpoint
+
+### Query Structure
+Example query for climbing gyms within bounding box:
+```overpassql
+[out:json][timeout:10];
+(
+  node[leisure=climbing](mdc:bbox);
+  way[leisure=climbing](mdc:bbox);
+  relation[leisure=climbing](mdc:bbox);
+);
+out center;
+```
+
+### Query Parameters
+- **bbox**: `south,west,north,east` coordinates around current location
+- **timeout**: 10 seconds for reasonable response time
+- **output**: JSON format with center coordinates
+
+### Response Handling
+Parse JSON response to extract:
+- `elements[].type` - "node", "way", or "relation"
+- `elements[].id` - Unique identifier
+- `elements[].tags.name` - Place name
+- `elements[].center.lat/lon` - Coordinates
+
+### Place ID Format
+Combine type and ID: `"node:123456"`, `"way:987654"`, `"relation:555"`
+
+## CoreLocation Integration
+
+### Location Services
+- Request `whenInUse` authorization
+- Use `CLLocationManager` for current location
+- Handle location permissions gracefully
+- Provide fallback for location access denied
+
+### Coordinate Handling
+- Use `CLLocationCoordinate2D` for lat/lon pairs
+- Convert to bounding box for Overpass queries
+- Calculate reasonable search radius (e.g., 1km)
+
+## Network Layer Best Practices
+
+### URLSession Configuration
+- Use shared URLSession with custom configuration
+- Set reasonable timeouts (10-30 seconds)
+- Handle network errors gracefully
+
+### Error Handling
+Create service-specific error enums:
+```swift
+enum BlueskyError: Error {
+    case authenticationFailed
+    case networkError(Error)
+    case invalidResponse
+}
+
+enum OverpassError: Error {
+    case queryTimeout
+    case noResults
+    case invalidBounds
+}
+```
+
+### Response Models
+Use `Codable` structs for all API responses:
+- Bluesky session responses
+- Overpass query results
+- Error response formats
+
+### Testing Considerations
+- Mock network responses for unit tests
+- Test error conditions and edge cases
+- Validate JSON parsing with real API responses

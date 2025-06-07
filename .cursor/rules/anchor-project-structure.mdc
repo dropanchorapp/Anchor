@@ -1,0 +1,74 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Anchor CLI Project Structure Guide
+
+## Overview
+
+Anchor is a minimal command-line check-in app using the AT Protocol to post check-ins (called "drops") to Bluesky. Built with Swift 6 for macOS, it uses OpenStreetMap via Overpass API for location search and CoreLocation for geolocation.
+
+## Project Architecture
+
+The project follows a modular architecture with two main components:
+
+### Core Components
+
+- **AnchorKit** - Core reusable logic module located in `AnchorKit/`
+- **AnchorCLI** - CLI entry point executable located in `AnchorCLI/`
+
+### Key Files
+
+- [Package.swift](mdc:Package.swift) - Main package definition with executable target
+- [AnchorKit/Package.swift](mdc:AnchorKit/Package.swift) - Core module package definition
+- [AnchorCLI/Sources/AnchorCLI/main.swift](mdc:AnchorCLI/Sources/AnchorCLI/main.swift) - CLI entry point
+- [AnchorCLI/Sources/AnchorCLI/CLICommands.swift](mdc:AnchorCLI/Sources/AnchorCLI/CLICommands.swift) - CLI command definitions
+- [AnchorKit/Sources/AnchorKit/AnchorKit.swift](mdc:AnchorKit/Sources/AnchorKit/AnchorKit.swift) - Core module entry point
+
+### Planned Directory Structure (Per Implementation Plan)
+
+```
+AnchorKit/Sources/AnchorKit/
+├── Models/         ← Data models (Place, AuthCredentials, AnchorSettings)
+├── Services/       ← API services (Bluesky, Overpass, CoreLocation)
+└── Utils/          ← Utility functions and helpers
+```
+
+## CLI Commands (MVP Scope)
+
+1. **`anchor login`** - Authenticate with Bluesky using AT Protocol
+2. **`anchor settings`** - Configure user preferences (default message)
+3. **`anchor drop`** - Main check-in functionality with optional `--place` and `--message` parameters
+4. **`anchor nearby`** - List nearby POIs with optional `--filter` parameter
+
+## Key Technologies
+
+- **Swift 6** - Modern Swift with strict concurrency
+- **AT Protocol** - Bluesky backend communication
+- **CoreLocation** - macOS geolocation services
+- **Overpass API** - OpenStreetMap POI queries via `overpass.private.coffee`
+- **UserDefaults** - Local storage for auth tokens and settings
+
+## Data Models
+
+### Place Model
+```swift
+struct Place {
+    let id: String       // e.g. "way:987654"
+    let name: String
+    let lat: Double
+    let lon: Double
+    let tags: [String: String]
+}
+```
+
+### Auth & Settings
+- `AuthCredentials` - Stores Bluesky handle and token
+- `AnchorSettings` - User preferences including default check-in message
+
+## API Integration
+
+- **Bluesky Posts** - Uses `app.bsky.feed.post` record type
+- **Overpass Queries** - Searches for climbing gyms and other POIs using bbox queries
+- **Authentication** - `com.atproto.server.createSession` for Bluesky login

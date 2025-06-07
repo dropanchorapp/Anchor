@@ -1,0 +1,59 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Swift Development Patterns for Anchor CLI
+
+## Swift 6 Conventions
+
+This project uses Swift 6 with strict concurrency enabled. Follow these patterns:
+
+### Concurrency
+- Use `async/await` for all network operations
+- Mark network services with `@MainActor` when updating UI
+- Use `Sendable` protocol for data models that cross concurrency boundaries
+
+### Package Structure
+- **Executable Target**: [AnchorCLI/Sources/AnchorCLI/main.swift](mdc:AnchorCLI/Sources/AnchorCLI/main.swift)
+- **Library Target**: AnchorKit module for reusable components
+- **Dependencies**: Defined in [Package.swift](mdc:Package.swift) with local AnchorKit package
+
+### Code Organization
+
+#### Models
+Place data models in `AnchorKit/Sources/AnchorKit/Models/`:
+- `Place.swift` - Location data from Overpass API
+- `AuthCredentials.swift` - Bluesky authentication
+- `AnchorSettings.swift` - User preferences
+
+#### Services  
+Place service classes in `AnchorKit/Sources/AnchorKit/Services/`:
+- `BlueskyService.swift` - AT Protocol communication
+- `OverpassService.swift` - OpenStreetMap queries
+- `LocationService.swift` - CoreLocation wrapper
+
+#### CLI Commands
+Keep CLI-specific code in [AnchorCLI/Sources/AnchorCLI/CLICommands.swift](mdc:AnchorCLI/Sources/AnchorCLI/CLICommands.swift):
+- Use Swift ArgumentParser for command definitions
+- Keep business logic in AnchorKit, CLI code thin
+
+### Error Handling
+- Use Swift's `Result` type for operations that can fail
+- Create custom error enums for each service
+- Provide user-friendly error messages in CLI commands
+
+### JSON Handling
+- Use `Codable` for all API data models
+- Follow snake_case to camelCase conversion patterns
+- Use `CodingKeys` enum for custom JSON field mapping
+
+### Testing Strategy
+- Unit tests in `AnchorKit/Tests/`
+- Focus testing on Models and Services
+- Mock network services for reliable testing
+
+### Platform Requirements
+- Minimum macOS 14.0 (defined in [Package.swift](mdc:Package.swift))
+- Use `#if os(macOS)` compiler directives when needed
+- Leverage CoreLocation for macOS-specific geolocation

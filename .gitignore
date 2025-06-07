@@ -1,0 +1,78 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+xcuserdata/
+DerivedData/
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/contents.xcworkspacedata
+.swiftpm/xcode/
+
+# Build products
+build/
+*.dSYM.zip
+*.dSYM
+
+# CocoaPods (if ever used)
+Pods/
+*.xcworkspace
+Podfile.lock
+
+# Carthage (if ever used)
+Carthage/Build/
+
+# Development
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Environment and secrets
+.env
+.env.local
+.netrc
+
+# Swift REPL history
+.swift-version
+
+# Generated documentation
+docs/
+
+# Test results
+*.xcresult
+
+# Profiling
+*.trace

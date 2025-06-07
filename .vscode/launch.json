@@ -1,0 +1,40 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Anchor}",
+            "name": "Debug Anchor",
+            "program": "${workspaceFolder:Anchor}/.build/debug/Anchor",
+            "preLaunchTask": "swift: Build Debug Anchor"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Anchor}",
+            "name": "Release Anchor",
+            "program": "${workspaceFolder:Anchor}/.build/release/Anchor",
+            "preLaunchTask": "swift: Build Release Anchor"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Anchor}",
+            "name": "Debug anchor",
+            "program": "${workspaceFolder:Anchor}/.build/debug/anchor",
+            "preLaunchTask": "swift: Build Debug anchor"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Anchor}",
+            "name": "Release anchor",
+            "program": "${workspaceFolder:Anchor}/.build/release/anchor",
+            "preLaunchTask": "swift: Build Release anchor"
+        }
+    ]
+}

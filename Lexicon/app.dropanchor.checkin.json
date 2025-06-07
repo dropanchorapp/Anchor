@@ -1,0 +1,37 @@
+{
+  "lexicon": 1,
+  "id": "app.dropanchor.checkin",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "self",
+      "record": {
+        "type": "object",
+        "required": [
+          "text",
+          "createdAt"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "union",
+              "refs": [
+                "community.lexicon.location.geo",
+                "community.lexicon.location.address"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

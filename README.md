@@ -1,200 +1,214 @@
-# 🧭 Anchor CLI
+# 🧭 Anchor
 
-A minimal command-line check-in app that lets you "drop anchor" at your favorite places and share them on Bluesky.
+<p align="center">
+  <img src="Static/AnchorAppIcon-transparent.png" alt="Anchor App Icon" width="200"/>
+</p>
 
-Built with Swift 6 for macOS, Anchor uses the AT Protocol to post location-based check-ins to your Bluesky feed, with rich location data powered by OpenStreetMap.
+<p align="center">
+  <strong>A native macOS menubar app for location-based check-ins to Bluesky</strong>
+</p>
+
+<p align="center">
+  Drop anchor at your favorite places and share them on the decentralized social web using the AT Protocol.
+</p>
 
 ## ✨ Features
 
-- **🔐 Bluesky Authentication** - Secure login using the AT Protocol
-- **📍 Location Detection** - Automatic geolocation using CoreLocation
-- **🗺️ Place Discovery** - Find nearby points of interest (climbing gyms, cafes, etc.)
+- **🖥️ Native macOS Menubar App** - Always accessible from your menubar with a single click
+- **🔐 Bluesky Integration** - Secure authentication and posting via AT Protocol
+- **📍 Automatic Location** - CoreLocation integration with proper macOS permissions
+- **🗺️ Place Discovery** - Find nearby climbing gyms, cafes, and points of interest via OpenStreetMap
 - **💬 Custom Messages** - Add personal notes to your check-ins
-- **⚙️ Configurable** - Set default messages and preferences
-- **🎯 CLI-First** - Fast, keyboard-driven workflow
+- **🏗️ Modular Architecture** - Shared AnchorKit framework ready for iOS and watchOS expansion
+- **🎯 Privacy-First** - Local storage only, no tracking or analytics
 
 ## 🚀 Quick Start
 
+### System Requirements
+
+- macOS 14.0 or later
+- Location Services enabled
+
 ### Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/Anchor.git
-cd Anchor
+1. **Download from Releases** (Coming Soon)
 
-# Build the CLI tool
-swift build -c release
+   Download the latest `.dmg` from our [Releases page](https://github.com/tijs/Anchor/releases)
 
-# Add to your PATH (optional)
-cp .build/release/anchor /usr/local/bin/
-```
-
-### First Time Setup
-
-1. **Authenticate with Bluesky:**
+2. **Build from Source**
 
    ```bash
-   anchor login
+   # Clone the repository
+   git clone https://github.com/tijs/Anchor.git
+   cd Anchor
+   
+   # Open in Xcode and build
+   open Anchor/Anchor.xcodeproj
+   
+   # Or build from command line
+   xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
    ```
 
-2. **Configure your preferences:**
+### First Launch
 
-   ```bash
-   anchor settings
-   ```
+1. **Launch Anchor** - Look for the anchor (⚓) icon in your menubar
+2. **Enable Location Services** - Click "Enable Location" when prompted
+3. **Sign in to Bluesky** - Click "Sign In" and enter your Bluesky credentials
+4. **Drop Your First Anchor** - Click "Quick Drop" to check in at your current location
 
-3. **Drop your first anchor:**
+## 🎯 How to Use
 
-   ```bash
-   anchor drop
-   ```
+### Quick Check-in
 
-## 📖 Usage
+The fastest way to check in:
 
-### Commands
+1. Click the anchor icon in your menubar
+2. Click "Quick Drop" to check in at your current location
+3. Add an optional message
+4. Hit "Drop Anchor" to post to Bluesky
 
-#### `anchor login`
+### Discover Nearby Places
 
-Authenticate with your Bluesky account using the AT Protocol.
+1. Click the anchor icon in your menubar
+2. Navigate to "Nearby" tab
+3. Browse categorized nearby places (🧗‍♂️ Climbing, 🍽️ Food, 🏪 Shopping)
+4. Select a place and drop anchor
 
-```bash
-anchor login
-# Follow the prompts to enter your Bluesky handle and password
-```
+### Your Check-ins on Bluesky
 
-#### `anchor settings`
-
-Configure your default check-in message and other preferences.
-
-```bash
-anchor settings
-# Set your default message for check-ins
-```
-
-#### `anchor drop`
-
-Create a location-based check-in post.
-
-**Interactive mode** (recommended):
-
-```bash
-anchor drop
-# 1. Detects your current location
-# 2. Shows nearby places to choose from
-# 3. Prompts for an optional message
-# 4. Posts to your Bluesky feed
-```
-
-**Quick mode** with parameters:
-
-```bash
-# Check in at a specific place
-anchor drop --place "way:123456" --message "Great climbing session!"
-
-# Use default message
-anchor drop --place "node:789012"
-```
-
-#### `anchor nearby`
-
-Discover nearby points of interest without checking in.
-
-```bash
-# Show all nearby places
-anchor nearby
-
-# Filter by type (e.g., climbing gyms)
-anchor nearby --filter climbing
-```
-
-### Example Check-in Post
-
-When you drop anchor, Anchor posts to Bluesky in this format:
+When you drop anchor, Anchor creates posts like this on your Bluesky feed:
 
 ```
-Dropped anchor at Klimmuur Centraal 🧗‍♂️
-"Lunch session with Marieke"
+Dropped anchor at Klimmuur Centraal 🧭
+"Great lunch session with the team!" 🧗‍♂️
 ```
 
 ## 🏗️ Architecture
 
-Anchor is built with a modular architecture:
+Anchor is built with a modular architecture designed for cross-platform expansion:
 
-- **AnchorKit** - Core business logic (reusable for future iOS app)
-- **AnchorCLI** - Command-line interface and user interaction
-- **Swift 6** - Modern async/await concurrency
-- **AT Protocol** - Direct Bluesky integration
-- **CoreLocation** - Native macOS location services
-- **Overpass API** - Rich OpenStreetMap place data
+### Core Components
 
-## 🔧 Development
+- **Anchor (macOS App)** - Native SwiftUI menubar application
+- **AnchorKit** - Shared business logic framework for future iOS/watchOS apps
 
-### Requirements
+### Technology Stack
 
-- macOS 14.0+
-- Swift 6.0+
-- Xcode 15.0+ (for development)
-
-### Building from Source
-
-```bash
-# Debug build
-swift build
-
-# Release build
-swift build -c release
-
-# Run tests
-swift test
-```
+- **Swift 6** - Modern async/await concurrency with strict concurrency checking
+- **SwiftUI** - Native macOS user interface with MenuBarExtra
+- **AT Protocol** - Direct integration with Bluesky's decentralized network
+- **CoreLocation** - Native location services with proper permission handling
+- **Overpass API** - Rich OpenStreetMap place data via `overpass.private.coffee`
 
 ### Project Structure
 
 ```
 Anchor/
-├── Package.swift              # Main package definition
-├── AnchorKit/                 # Core business logic
+├── Anchor/                    # macOS MenuBar App
+│   ├── Anchor.xcodeproj      # Xcode project
+│   ├── Assets.xcassets/      # App icons and assets
+│   └── Features/             # SwiftUI views organized by feature
+│       ├── CheckIn/Views/    # Drop anchor interface
+│       ├── Core/Views/       # Main content view
+│       ├── Feed/Views/       # Future: check-in history
+│       ├── Nearby/Views/     # Place discovery
+│       └── Settings/Views/   # App configuration
+├── AnchorKit/                # Shared Business Logic
 │   ├── Sources/AnchorKit/
-│   │   ├── Models/           # Data models
-│   │   ├── Services/         # API services
-│   │   └── Utils/            # Utilities
-│   └── Tests/                # Unit tests
-└── AnchorCLI/                # CLI interface
-    └── Sources/AnchorCLI/
-        ├── main.swift        # Entry point
-        └── CLICommands.swift # Command definitions
+│   │   ├── Models/          # Place, AuthCredentials, Settings
+│   │   ├── Services/        # Bluesky, Overpass, Location services
+│   │   └── Utils/           # Shared utilities
+│   └── Tests/               # Unit tests
+└── Static/                  # Assets and documentation
+```
+
+## 🔧 Development
+
+### Building AnchorKit
+
+The shared framework can be built and tested independently:
+
+```bash
+cd AnchorKit
+swift build
+swift test
+```
+
+### Building the macOS App
+
+```bash
+# Using Xcode (recommended)
+open Anchor/Anchor.xcodeproj
+
+# Using xcodebuild
+xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
+```
+
+### Running Tests
+
+```bash
+# Test AnchorKit
+cd AnchorKit && swift test
+
+# Test the full app
+xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 ```
 
 ## 🔒 Privacy & Security
 
-- **Local Storage** - Credentials stored securely in macOS UserDefaults
-- **Location Data** - Used only for place discovery, not stored or transmitted
-- **Minimal Permissions** - Requests only necessary location and network access
-- **No Tracking** - No analytics or user behavior tracking
+- **Local Storage Only** - All data stored locally in macOS UserDefaults
+- **No Analytics** - Zero tracking, telemetry, or user behavior monitoring  
+- **Minimal Permissions** - Only requests location access when needed
+- **Secure Authentication** - Bluesky credentials handled via AT Protocol best practices
+- **Open Source** - Complete transparency with public source code
 
 ## 🛣️ Roadmap
 
-- [ ] **v1.0** - MVP with core check-in functionality
-- [ ] **v1.1** - Custom `app.anchor.drop` record type for structured data
-- [ ] **v1.2** - Check-in history and timeline viewing
-- [ ] **v2.0** - iOS companion app using shared AnchorKit
-- [ ] **v2.1** - Offline check-in queuing
-- [ ] **v2.2** - Social features (following friends' check-ins)
+### ✅ Completed (v1.0)
+
+- [x] Native macOS menubar app
+- [x] Bluesky authentication and posting
+- [x] Location services integration
+- [x] Nearby place discovery
+- [x] Modular AnchorKit architecture
+
+### 🔄 In Progress (v1.1)
+
+- [ ] App Store distribution
+- [ ] Check-in history view
+- [ ] Default message preferences
+- [ ] Launch at login option
+
+### 🚀 Future (v2.0+)
+
+- [ ] **iOS Companion App** - Full iOS app using shared AnchorKit
+- [ ] **Apple Watch App** - Quick drops from your wrist
+- [ ] **Custom Record Type** - `app.anchor.drop` for richer structured data
+- [ ] **Shortcuts Integration** - Automate check-ins
+- [ ] **Social Features** - Follow friends' check-ins across the network
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests for any improvements.
+We welcome contributions! The modular architecture makes it easy to contribute to specific areas:
+
+- **AnchorKit** - Business logic, models, and services
+- **macOS App** - SwiftUI interface and platform-specific features
+- **Documentation** - Help improve guides and API docs
+
+Please check our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## 🔗 Links
+## 🔗 Connect
 
-- [Bluesky](https://bsky.app) - Decentralized social network
-- [AT Protocol](https://atproto.com) - Authenticated Transfer Protocol
-- [OpenStreetMap](https://openstreetmap.org) - Collaborative mapping project
+- **Bluesky**: [@anchor.app](https://bsky.app/profile/anchor.app) - Follow us for updates
+- **AT Protocol**: [atproto.com](https://atproto.com) - Learn about the decentralized web
+- **OpenStreetMap**: [openstreetmap.org](https://openstreetmap.org) - The collaborative mapping project powering our place data
 
 ---
 
 **Made with ❤️ for the climbing and outdoor community**
+
+*Join the decentralized social web and start dropping anchors at your favorite places today.*

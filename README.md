@@ -22,6 +22,17 @@
 - **🏗️ Modular Architecture** - Shared AnchorKit framework ready for iOS and watchOS expansion
 - **🎯 Privacy-First** - Local storage only, no tracking or analytics
 
+## 📱 Screenshots
+
+<p align="center">
+  <img src="Static/checkin-screen.png" alt="Anchor Check-in Screen" width="400"/>
+  <img src="Static/settings-screen.png" alt="Anchor Settings Screen" width="400"/>
+</p>
+
+<p align="center">
+  <em>Check-in interface and settings panel</em>
+</p>
+
 ## 🚀 Quick Start
 
 ### System Requirements

@@ -109,7 +109,7 @@ public final class BlueskyService: Sendable {
     
     // MARK: - Posting
     
-    /// Post a check-in to Bluesky
+    /// Post a check-in to Bluesky following the new AT Protocol strategy
     /// - Parameters:
     ///   - place: The place being checked into
     ///   - message: Optional custom message
@@ -123,11 +123,92 @@ public final class BlueskyService: Sendable {
             throw BlueskyError.notAuthenticated
         }
         
+        // Step 1: Create the check-in record with structured location data
+        let checkinRecord = try await createCheckinRecord(place: place, message: message, credentials: credentials)
+        
+        // Step 2: Create the main feed post with embed pointing to the check-in record
+        let success = try await createFeedPost(place: place, message: message, embedRecord: checkinRecord, credentials: credentials)
+        
+        return success
+    }
+    
+    /// Step 1: Create an app.dropanchor.checkin record with structured location data
+    /// - Parameters:
+    ///   - place: The place being checked into
+    ///   - message: Optional custom message
+    ///   - credentials: Authentication credentials
+    /// - Returns: The created record response with uri and cid
+    @MainActor
+    private func createCheckinRecord(place: Place, message: String?, credentials: AuthCredentials) async throws -> CreateRecordResponse {
+        let currentTime = ISO8601DateFormatter().string(from: Date())
+        
+        // Build structured location data using community lexicon types
+        var locations: [CheckinLocation] = []
+        
+        // Add geographic coordinates
+        let geoLocation = CheckinLocation.geo(CheckinGeoLocation(
+            latitude: String(place.latitude),
+            longitude: String(place.longitude),
+            name: place.name
+        ))
+        locations.append(geoLocation)
+        
+        // Add address information if available from place tags
+        if let address = buildAddressFromPlace(place) {
+            locations.append(.address(address))
+        }
+        
+        // Create the check-in record
+        let checkinRecord = CheckinRecord(
+            text: buildCheckinRecordText(place: place, message: message),
+            createdAt: currentTime,
+            locations: locations
+        )
+        
+        let createRequest = CreateCheckinRequest(
+            repo: credentials.did,
+            collection: "app.dropanchor.checkin",
+            record: checkinRecord
+        )
+        
+        let request = try buildAuthenticatedRequest(
+            endpoint: "/xrpc/com.atproto.repo.createRecord",
+            method: "POST",
+            body: createRequest,
+            accessToken: credentials.accessToken
+        )
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BlueskyError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw BlueskyError.httpError(httpResponse.statusCode)
+        }
+        
+        return try JSONDecoder().decode(CreateRecordResponse.self, from: data)
+    }
+    
+    /// Step 2: Create the main feed post with embed pointing to the check-in record
+    /// - Parameters:
+    ///   - place: The place being checked into
+    ///   - message: Optional custom message
+    ///   - embedRecord: The check-in record to embed
+    ///   - credentials: Authentication credentials
+    /// - Returns: Success status
+    @MainActor
+    private func createFeedPost(place: Place, message: String?, embedRecord: CreateRecordResponse, credentials: AuthCredentials) async throws -> Bool {
         let (postText, facets) = buildCheckInTextWithFacets(place: place, customMessage: message)
         
-        // Use the venue's location data (not user's current location)
-        let geo = place.atprotoGeoLocation
-        let address = place.atprotoAddress
+        // Create embed pointing to the check-in record
+        let embed = PostEmbed(
+            record: EmbedRecord(
+                uri: embedRecord.uri,
+                cid: embedRecord.cid
+            )
+        )
         
         let post = CreatePostRequest(
             repo: credentials.did,
@@ -136,8 +217,7 @@ public final class BlueskyService: Sendable {
                 text: postText,
                 createdAt: ISO8601DateFormatter().string(from: Date()),
                 facets: facets,
-                geo: geo,
-                address: address
+                embed: embed
             )
         )
         
@@ -155,6 +235,57 @@ public final class BlueskyService: Sendable {
         }
         
         return httpResponse.statusCode == 200
+    }
+    
+    /// Build text content for the check-in record (shorter, structured label)
+    /// - Parameters:
+    ///   - place: The place being checked into
+    ///   - message: Optional custom message
+    /// - Returns: Text for the check-in record
+    private func buildCheckinRecordText(place: Place, message: String?) -> String {
+        if let message = message, !message.isEmpty {
+            return "\(place.name) - \(message)"
+        } else {
+            return place.name
+        }
+    }
+    
+    /// Build address from place tags if available
+    /// - Parameter place: The place with potential address tags
+    /// - Returns: Address object or nil if insufficient data
+    private func buildAddressFromPlace(_ place: Place) -> CheckinAddress? {
+        let tags = place.tags
+        
+        // Check if we have enough address components to make it worthwhile
+        let hasStreet = tags["addr:street"] != nil || tags["addr:housenumber"] != nil
+        let hasLocality = tags["addr:city"] != nil || tags["addr:village"] != nil || tags["addr:town"] != nil
+        let hasCountry = tags["addr:country"] != nil
+        
+        guard hasStreet || hasLocality || hasCountry else {
+            return nil
+        }
+        
+        // Build street address
+        var streetComponents: [String] = []
+        if let housenumber = tags["addr:housenumber"] {
+            streetComponents.append(housenumber)
+        }
+        if let street = tags["addr:street"] {
+            streetComponents.append(street)
+        }
+        let streetAddress = streetComponents.isEmpty ? nil : streetComponents.joined(separator: " ")
+        
+        // Get locality (try different tag variants)
+        let locality = tags["addr:city"] ?? tags["addr:village"] ?? tags["addr:town"]
+        
+        return CheckinAddress(
+            country: tags["addr:country"],
+            locality: locality,
+            region: tags["addr:state"] ?? tags["addr:province"],
+            street: streetAddress,
+            postalCode: tags["addr:postcode"],
+            name: place.name
+        )
     }
     
     // MARK: - Private Methods
@@ -581,23 +712,155 @@ private struct PostRecord: Codable {
     // Rich text facets for links, mentions, and hashtags
     let facets: [RichTextFacet]?
     
-    // AT Protocol location data using community lexicons
-    let geo: ATProtoGeoLocation?
-    let address: ATProtoAddress?
+    // Embed for pointing to check-in record
+    let embed: PostEmbed?
     
     private enum CodingKeys: String, CodingKey {
-        case text, createdAt, facets
+        case text, createdAt, facets, embed
         case type = "$type"
-        case geo, address
     }
     
-    init(text: String, createdAt: String, facets: [RichTextFacet]? = nil, geo: ATProtoGeoLocation? = nil, address: ATProtoAddress? = nil) {
+    init(text: String, createdAt: String, facets: [RichTextFacet]? = nil, embed: PostEmbed? = nil) {
         self.text = text
         self.createdAt = createdAt
         self.facets = facets
-        self.geo = geo
-        self.address = address
+        self.embed = embed
     }
+}
+
+// MARK: - Check-in Record Models
+
+private struct CreateCheckinRequest: Codable {
+    let repo: String
+    let collection: String
+    let record: CheckinRecord
+}
+
+private struct CheckinRecord: Codable {
+    let text: String
+    let createdAt: String
+    let type: String = "app.dropanchor.checkin"
+    let locations: [CheckinLocation]
+    
+    private enum CodingKeys: String, CodingKey {
+        case text, createdAt, locations
+        case type = "$type"
+    }
+    
+    init(text: String, createdAt: String, locations: [CheckinLocation]) {
+        self.text = text
+        self.createdAt = createdAt
+        self.locations = locations
+    }
+}
+
+private enum CheckinLocation: Codable {
+    case geo(CheckinGeoLocation)
+    case address(CheckinAddress)
+    
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .geo(let geo):
+            try geo.encode(to: encoder)
+        case .address(let address):
+            try address.encode(to: encoder)
+        }
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        
+        switch type {
+        case "community.lexicon.location.geo":
+            let geo = try CheckinGeoLocation(from: decoder)
+            self = .geo(geo)
+        case "community.lexicon.location.address":
+            let address = try CheckinAddress(from: decoder)
+            self = .address(address)
+        default:
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unknown location type: \(type)")
+            )
+        }
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case type = "$type"
+    }
+}
+
+private struct CheckinGeoLocation: Codable {
+    let latitude: String
+    let longitude: String
+    let name: String?
+    let type: String = "community.lexicon.location.geo"
+    
+    private enum CodingKeys: String, CodingKey {
+        case latitude, longitude, name
+        case type = "$type"
+    }
+    
+    init(latitude: String, longitude: String, name: String?) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.name = name
+    }
+}
+
+private struct CheckinAddress: Codable {
+    let country: String?
+    let locality: String?
+    let region: String?
+    let street: String?
+    let postalCode: String?
+    let name: String?
+    let type: String = "community.lexicon.location.address"
+    
+    private enum CodingKeys: String, CodingKey {
+        case country, locality, region, street, postalCode, name
+        case type = "$type"
+    }
+    
+    init(country: String?, locality: String?, region: String?, street: String?, postalCode: String?, name: String?) {
+        self.country = country
+        self.locality = locality
+        self.region = region
+        self.street = street
+        self.postalCode = postalCode
+        self.name = name
+    }
+}
+
+// MARK: - Embed Models
+
+private struct PostEmbed: Codable {
+    let type: String = "app.bsky.embed.record"
+    let record: EmbedRecord
+    
+    private enum CodingKeys: String, CodingKey {
+        case record
+        case type = "$type"
+    }
+    
+    init(record: EmbedRecord) {
+        self.record = record
+    }
+}
+
+private struct EmbedRecord: Codable {
+    let uri: String
+    let cid: String
+    
+    init(uri: String, cid: String) {
+        self.uri = uri
+        self.cid = cid
+    }
+}
+
+private struct CreateRecordResponse: Codable {
+    let uri: String
+    let cid: String
 }
 
 // MARK: - Rich Text Facets

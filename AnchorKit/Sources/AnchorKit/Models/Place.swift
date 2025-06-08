@@ -74,43 +74,6 @@ extension Place {
     public var category: String? {
         tags["amenity"] ?? tags["leisure"] ?? tags["shop"]
     }
-    
-    // MARK: - AT Protocol Location Data
-    
-    /// Generate AT Protocol geo location record
-    public var atprotoGeoLocation: ATProtoGeoLocation {
-        ATProtoGeoLocation(
-            lat: latitude,
-            lon: longitude,
-            name: name
-        )
-    }
-    
-    /// Generate AT Protocol address record from OSM tags
-    public var atprotoAddress: ATProtoAddress? {
-        // Extract address components from OSM tags
-        let country = tags["addr:country"]
-        let locality = tags["addr:city"] ?? tags["addr:town"] ?? tags["addr:village"]
-        let region = tags["addr:state"] ?? tags["addr:province"]
-        let streetAddress = [
-            tags["addr:housenumber"],
-            tags["addr:street"]
-        ].compactMap { $0 }.joined(separator: " ")
-        let postalCode = tags["addr:postcode"]
-        
-        // Only create address if we have at least some address data
-        guard country != nil || locality != nil || !streetAddress.isEmpty else {
-            return nil
-        }
-        
-        return ATProtoAddress(
-            country: country,
-            locality: locality,
-            region: region,
-            streetAddress: streetAddress.isEmpty ? nil : streetAddress,
-            postalCode: postalCode
-        )
-    }
 }
 
 // MARK: - Identifiable

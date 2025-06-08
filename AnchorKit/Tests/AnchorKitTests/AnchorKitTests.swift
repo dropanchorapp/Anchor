@@ -1,9 +1,12 @@
-import XCTest
+import Testing
+import Foundation
 @testable import AnchorKit
 
-final class AnchorKitTests: XCTestCase {
+@Suite("Core Models", .tags(.unit, .models))
+struct CoreModelTests {
     
-    func testPlaceModelCreation() {
+    @Test("Place model creation and properties")
+    func placeModelCreation() {
         let place = Place(
             elementType: .way,
             elementId: 123456,
@@ -13,26 +16,40 @@ final class AnchorKitTests: XCTestCase {
             tags: ["leisure": "climbing", "name": "Test Climbing Gym"]
         )
         
-        XCTAssertEqual(place.id, "way:123456")
-        XCTAssertEqual(place.name, "Test Climbing Gym")
-        XCTAssertEqual(place.elementType, .way)
-        XCTAssertEqual(place.elementId, 123456)
-        XCTAssertEqual(place.latitude, 37.7749)
-        XCTAssertEqual(place.longitude, -122.4194)
+        #expect(place.id == "way:123456")
+        #expect(place.name == "Test Climbing Gym")
+        #expect(place.elementType == .way)
+        #expect(place.elementId == 123456)
+        #expect(place.latitude == 37.7749)
+        #expect(place.longitude == -122.4194)
     }
     
-    func testPlaceIdParsing() {
-        let parsed = Place.parseId("way:123456")
-        XCTAssertNotNil(parsed)
-        XCTAssertEqual(parsed?.0, .way)
-        XCTAssertEqual(parsed?.1, 123456)
+    @Test("Place ID parsing", arguments: [
+        ("way:123456", Place.ElementType.way, 123456, true),
+        ("node:789", Place.ElementType.node, 789, true),
+        ("relation:42", Place.ElementType.relation, 42, true),
+        ("invalid", Place.ElementType.way, 0, false),
+        ("way:abc", Place.ElementType.way, 0, false),
+        ("", Place.ElementType.way, 0, false)
+    ])
+    func placeIdParsing(input: String, expectedType: Place.ElementType, expectedId: Int, shouldSucceed: Bool) throws {
+        let parsed = Place.parseId(input)
         
-        // Test invalid format
-        XCTAssertNil(Place.parseId("invalid"))
-        XCTAssertNil(Place.parseId("way:abc"))
+        if shouldSucceed {
+            let result = try #require(parsed, "Should successfully parse '\(input)'")
+            #expect(result.0 == expectedType)
+            #expect(result.1 == expectedId)
+        } else {
+            #expect(parsed == nil, "Should fail to parse '\(input)'")
+        }
     }
+}
+
+@Suite("Authentication Models", .tags(.unit, .models, .auth))
+struct AuthenticationModelTests {
     
-    func testAuthCredentialsStorage() {
+    @Test("Valid credentials properties")
+    func authCredentialsStorage() {
         let credentials = AuthCredentials(
             handle: "test.bsky.social",
             accessToken: "test-access-token",
@@ -41,33 +58,39 @@ final class AnchorKitTests: XCTestCase {
             expiresAt: Date().addingTimeInterval(3600)
         )
         
-        XCTAssertEqual(credentials.handle, "test.bsky.social")
-        XCTAssertEqual(credentials.accessToken, "test-access-token")
-        XCTAssertEqual(credentials.refreshToken, "test-refresh-token")
-        XCTAssertEqual(credentials.did, "did:plc:test123")
-        XCTAssertFalse(credentials.isExpired)
-        XCTAssertTrue(credentials.isValid)
+        #expect(credentials.handle == "test.bsky.social")
+        #expect(credentials.accessToken == "test-access-token")
+        #expect(credentials.refreshToken == "test-refresh-token")
+        #expect(credentials.did == "did:plc:test123")
+        #expect(!credentials.isExpired)
+        #expect(credentials.isValid)
     }
     
-    func testAuthCredentialsExpiration() {
+    @Test("Expired credentials validation")
+    func authCredentialsExpiration() {
         let expiredCredentials = AuthCredentials(
             handle: "test.bsky.social",
             accessToken: "test-access-token", 
             refreshToken: "test-refresh-token",
             did: "did:plc:test123",
-            expiresAt: Date().addingTimeInterval(-3600) // Expired 1 hour ago
+            expiresAt: Date().addingTimeInterval(-3600)
         )
         
-        XCTAssertTrue(expiredCredentials.isExpired)
-        XCTAssertFalse(expiredCredentials.isValid)
+        #expect(expiredCredentials.isExpired)
+        #expect(!expiredCredentials.isValid)
     }
+}
+
+@Suite("Settings Models", .tags(.unit, .models))
+struct SettingsModelTests {
     
-    func testAnchorSettingsDefaults() {
+    @Test("Default settings values")
+    func anchorSettingsDefaults() {
         let settings = AnchorSettings()
         
-        XCTAssertEqual(settings.defaultMessage, "")
-        XCTAssertTrue(settings.includeEmoji)
-        XCTAssertEqual(settings.searchRadius, 1000.0)
-        XCTAssertEqual(settings.preferredCategories, ["climbing", "gym", "cafe"])
+        #expect(settings.defaultMessage == "")
+        #expect(settings.includeEmoji == true)
+        #expect(settings.searchRadius == 1000.0)
+        #expect(settings.preferredCategories == ["climbing", "gym", "cafe"])
     }
 } 

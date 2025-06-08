@@ -24,7 +24,7 @@ struct LocationPermissionView: View {
             Button("Enable") {
                 Task {
                     requestingPermission = true
-                    await locationService.requestLocationPermission()
+                    _ = await locationService.requestLocationPermission()
                     requestingPermission = false
                 }
             }

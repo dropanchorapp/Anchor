@@ -171,6 +171,19 @@ public final class BlueskyService: Sendable {
             record: checkinRecord
         )
         
+        // 🐛 DEBUG: Log the JSON being sent for checkin record creation
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let jsonData = try encoder.encode(createRequest)
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("🐛 DEBUG: Creating checkin record with JSON:")
+                print(jsonString)
+            }
+        } catch {
+            print("🐛 DEBUG: Failed to encode request JSON: \(error)")
+        }
+        
         let request = try buildAuthenticatedRequest(
             endpoint: "/xrpc/com.atproto.repo.createRecord",
             method: "POST",
@@ -185,10 +198,22 @@ public final class BlueskyService: Sendable {
         }
         
         guard httpResponse.statusCode == 200 else {
+            // 🐛 DEBUG: Log error response for failed checkin record creation
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🐛 DEBUG: Failed to create checkin record. Status: \(httpResponse.statusCode)")
+                print("🐛 DEBUG: Error response: \(responseString)")
+            }
             throw BlueskyError.httpError(httpResponse.statusCode)
         }
         
-        return try JSONDecoder().decode(CreateRecordResponse.self, from: data)
+        let createRecordResponse = try JSONDecoder().decode(CreateRecordResponse.self, from: data)
+        
+        // 🐛 DEBUG: Log the successful response with URI and CID
+        print("🐛 DEBUG: Checkin record created successfully!")
+        print("🐛 DEBUG: URI: \(createRecordResponse.uri)")
+        print("🐛 DEBUG: CID: \(createRecordResponse.cid)")
+        
+        return createRecordResponse
     }
     
     /// Step 2: Create the main feed post with embed pointing to the check-in record
@@ -221,6 +246,19 @@ public final class BlueskyService: Sendable {
             )
         )
         
+        // 🐛 DEBUG: Log the feed post JSON being sent
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let jsonData = try encoder.encode(post)
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("🐛 DEBUG: Creating feed post with JSON:")
+                print(jsonString)
+            }
+        } catch {
+            print("🐛 DEBUG: Failed to encode feed post JSON: \(error)")
+        }
+        
         let request = try buildAuthenticatedRequest(
             endpoint: "/xrpc/com.atproto.repo.createRecord",
             method: "POST",
@@ -228,10 +266,20 @@ public final class BlueskyService: Sendable {
             accessToken: credentials.accessToken
         )
         
-        let (_, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw BlueskyError.invalidResponse
+        }
+        
+        if httpResponse.statusCode == 200 {
+            print("🐛 DEBUG: Feed post created successfully!")
+        } else {
+            // 🐛 DEBUG: Log error response for failed feed post creation
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🐛 DEBUG: Failed to create feed post. Status: \(httpResponse.statusCode)")
+                print("🐛 DEBUG: Error response: \(responseString)")
+            }
         }
         
         return httpResponse.statusCode == 200

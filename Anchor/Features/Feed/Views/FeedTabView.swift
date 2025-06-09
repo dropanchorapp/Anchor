@@ -45,7 +45,7 @@ struct FeedTabView: View {
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 12) {
-                                ForEach(feedService.posts) { post in
+                                ForEach(feedService.posts, id: \.id) { post in
                                     FeedPostView(post: post)
                                 }
                             }

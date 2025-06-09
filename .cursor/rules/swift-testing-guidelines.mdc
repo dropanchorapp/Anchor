@@ -1,0 +1,158 @@
+---
+description: testing, tests, unit tests, swift testing
+globs: 
+alwaysApply: false
+---
+# Swift Testing Framework Guidelines for Anchor CLI
+
+Follow these modern Swift Testing patterns and practices when writing tests for the Anchor CLI project.
+
+## Test Organization & Structure
+
+- Use `@Test` attribute for all test functions instead of naming conventions
+- Organize tests into `@Suite` structures that mirror the production code architecture
+- Use descriptive test names in the `@Test("description")` format
+- Group related tests into logical suites (e.g., `BlueskyServiceTests`, `OverpassServiceTests`)
+
+## Assertion Strategy
+
+- Use `#expect()` for most validations - it continues execution on failure to surface multiple issues
+- Use `#require()` only for critical preconditions where continuing the test would be meaningless
+- Prefer natural Swift expressions: `#expect(user.name == "Alex")` instead of specialized functions
+- Use `try #require()` for safe optional unwrapping instead of `XCTUnwrap`
+
+## State Management & Lifecycle
+
+- Use `struct` for test suites when possible for automatic state isolation
+- Use `class` or `actor` suites only when `deinit` cleanup is needed
+- Put all setup logic in `init()` - runs before each test automatically
+- Put cleanup logic in `deinit` - runs after each test automatically
+- Define system under test (SUT) as `let` properties initialized in `init()`
+
+## Parameterized Testing
+
+- Use `@Test(arguments: collection)` to test multiple inputs with a single test function
+- Use `zip(inputs, expectedOutputs)` for paired input/output testing
+- Avoid cartesian products unless explicitly testing all combinations
+- Leverage parameterized tests for API response validation and edge cases
+
+## Async & Concurrency Testing
+
+- Mark test functions `async` when testing async code
+- Use `await confirmation()` for testing callbacks, delegates, and notifications
+- Use `expectedCount: 0` in confirmations to verify events never happen
+- Bridge legacy completion handlers with `withCheckedThrowingContinuation`
+
+## Error Handling & Validation
+
+- Use `#expect(throws: ErrorType.self)` for specific error type validation
+- Use `#expect(throws: (any Error).self)` for general error checking
+- Use `#expect(throws: Never.self)` to explicitly assert no error is thrown
+- Inspect thrown errors: `let error = #expect(throws: MyError.self) { ... }`
+
+## Tagging Strategy for Anchor CLI
+
+Define tags in a central location:
+```swift
+extension Tag {
+    @Tag static var fast: Self      // Quick unit tests
+    @Tag static var network: Self   // Tests requiring network
+    @Tag static var auth: Self      // Authentication-related tests
+    @Tag static var location: Self  // CoreLocation tests
+    @Tag static var cli: Self       // Command-line interface tests
+    @Tag static var regression: Self // Regression tests
+    @Tag static var flaky: Self     // Known flaky tests
+}
+```
+
+Apply tags to organize and filter tests:
+- `@Test("Login flow", .tags(.auth, .network))`
+- Use `.serialized` trait for tests that must run sequentially
+- Use `.disabled("reason")` for temporarily broken tests
+- Use `.enabled(if: condition)` for conditional test execution
+
+## Service Layer Testing Patterns
+
+For API services (Bluesky, Overpass):
+- Mock all external dependencies in `init()`
+- Test both success and failure scenarios
+- Use parameterized tests for different response formats
+- Validate `Codable` implementations with real API response samples
+
+For CoreLocation services:
+- Mock `CLLocationManager` for deterministic testing
+- Test permission states and error conditions
+- Validate coordinate transformations and bounding box calculations
+
+## CLI Command Testing Patterns
+
+- Test argument parsing separately from business logic
+- Mock service dependencies using dependency injection
+- Validate output formatting and error messages
+- Test help text and usage information
+
+## Migration from XCTest
+
+When migrating existing XCTest code:
+- Both frameworks can coexist in the same target
+- Convert assertions: `XCTAssertEqual(a, b)` → `#expect(a == b)`
+- Convert setup: `setUpWithError()` → `init() throws`
+- Convert teardown: `tearDownWithError()` → `deinit`
+- Convert unwrapping: `try XCTUnwrap(value)` → `try #require(value)`
+
+## Test Performance & Reliability
+
+- Enable parallel execution (default) for faster test runs
+- Use `.timeLimit(.seconds(30))` trait for tests that might hang
+- Mark non-thread-safe legacy tests with `.serialized` temporarily
+- Focus on the F.I.R.S.T. principles: Fast, Isolated, Repeatable, Self-validating, Timely
+
+## Example Test Suite Structure
+
+```swift
+@Suite("Bluesky Authentication Service")
+final class BlueskyServiceTests {
+    let mockURLSession: URLSession
+    let sut: BlueskyService
+    
+    init() throws {
+        // Setup runs before each test
+        self.mockURLSession = URLSession.mock()
+        self.sut = BlueskyService(urlSession: mockURLSession)
+    }
+    
+    deinit {
+        // Cleanup runs after each test
+        mockURLSession.invalidateAndCancel()
+    }
+    
+    @Test("Successful authentication", .tags(.auth, .fast))
+    func successfulLogin() async throws {
+        // Test implementation
+    }
+    
+    @Test("Authentication with invalid credentials", 
+          arguments: ["", "invalid@handle", "@toolong.handle"])
+    func loginFailsWithInvalidCredentials(handle: String) async {
+        await #expect(throws: BlueskyError.invalidCredentials) {
+            try await sut.authenticate(handle: handle, password: "password")
+        }
+    }
+}
+```
+
+## Anchor-Specific Testing Considerations
+
+The Anchor CLI project structure includes:
+- [AnchorKit/Sources/AnchorKit/](mdc:Anchor/AnchorKit/Sources/AnchorKit) - Core library with Models, Services, and Utils
+- [AnchorKit/Tests/AnchorKitTests/](mdc:Anchor/AnchorKit/Tests/AnchorKitTests) - Unit tests for the core library
+- [AnchorTests/](mdc:Anchor/AnchorTests) - iOS app-specific tests
+- [AnchorUITests/](mdc:Anchor/AnchorUITests) - UI automation tests
+
+Focus testing efforts on:
+- Service layer validation (Bluesky API, Overpass API, CoreLocation)
+- Model validation (`Codable` implementations, data transformations)
+- CLI command parsing and execution
+- Authentication flow and token management
+
+Always prioritize test clarity and maintainability over brevity. Use descriptive test names and organize tests logically to make the test suite a valuable living documentation of the system's behavior.

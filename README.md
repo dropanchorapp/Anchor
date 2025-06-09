@@ -65,7 +65,7 @@
 1. **Launch Anchor** - Look for the anchor (⚓) icon in your menubar
 2. **Enable Location Services** - Click "Enable Location" when prompted
 3. **Sign in to Bluesky** - Click "Sign In" and enter your Bluesky credentials
-4. **Drop Your First Anchor** - Click "Quick Drop" to check in at your current location
+4. **Drop Your First Anchor** - Click "Nearby" to check in at your current location
 
 ## 🎯 How to Use
 
@@ -74,25 +74,78 @@
 The fastest way to check in:
 
 1. Click the anchor icon in your menubar
-2. Click "Quick Drop" to check in at your current location
-3. Add an optional message
-4. Hit "Drop Anchor" to post to Bluesky
-
-### Discover Nearby Places
-
-1. Click the anchor icon in your menubar
 2. Navigate to "Nearby" tab
-3. Browse categorized nearby places (🧗‍♂️ Climbing, 🍽️ Food, 🏪 Shopping)
-4. Select a place and drop anchor
+3. Select a place and drop anchor
 
 ### Your Check-ins on Bluesky
 
-When you drop anchor, Anchor creates posts like this on your Bluesky feed:
+When you drop anchor, Anchor creates rich posts on your Bluesky feed with embedded location data:
+
+**What you see on Bluesky:**
 
 ```
 Dropped anchor at Klimmuur Centraal 🧭
 "Great lunch session with the team!" 🧗‍♂️
 ```
+
+**Under the hood - structured data:**
+
+**1. Standard Bluesky Post (`app.bsky.feed.post`)**
+
+```json
+{
+  "$type": "app.bsky.feed.post",
+  "text": "Dropped anchor at Klimmuur Centraal 🧭\n\"Great lunch session with the team!\" 🧗‍♂️",
+  "createdAt": "2024-12-29T14:30:00Z",
+  "embed": {
+    "$type": "app.bsky.embed.record",
+    "record": {
+      "uri": "at://did:plc:abc123.../app.dropanchor.checkin/xyz789",
+      "cid": "bafyreighakis..."
+    }
+  },
+  "facets": [
+    {
+      "index": { "byteStart": 17, "byteEnd": 35 },
+      "features": [{ "$type": "app.bsky.richtext.facet#link", "uri": "https://www.openstreetmap.org/way/123456" }]
+    }
+  ]
+}
+```
+
+**2. Embedded Check-in Record (`app.dropanchor.checkin`)**
+
+```json
+{
+  "$type": "app.dropanchor.checkin",
+  "text": "Klimmuur Centraal (climbing)",
+  "createdAt": "2024-12-29T14:30:00Z",
+  "location": {
+    "$type": "app.dropanchor.place",
+    "name": "Klimmuur Centraal", 
+    "geo": {
+      "$type": "app.dropanchor.geo",
+      "lat": 52.0705,
+      "lng": 4.3007
+    },
+    "address": {
+      "streetAddress": "Stationsplein 45",
+      "locality": "Utrecht",
+      "region": "UT", 
+      "country": "NL",
+      "postalCode": "3511ED"
+    },
+    "uri": "https://www.openstreetmap.org/way/123456"
+  }
+}
+```
+
+This dual-layer approach ensures your check-ins:
+
+- **Display beautifully** in all Bluesky clients with rich text formatting
+- **Remain fully compatible** with likes, replies, and reposts
+- **Include structured location data** for future mapping and discovery features
+- **Link to OpenStreetMap** for accurate place information
 
 ## 🏗️ Architecture
 

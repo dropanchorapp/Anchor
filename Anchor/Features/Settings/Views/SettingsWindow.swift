@@ -71,8 +71,10 @@ struct SettingsWindow: View {
                 
                 if blueskyService.isAuthenticated {
                     Button("Sign Out") {
-                        blueskyService.signOut(context: modelContext)
-                        clearForm()
+                        Task {
+                            await blueskyService.signOut(context: modelContext)
+                            clearForm()
+                        }
                     }
                     .buttonStyle(.bordered)
                     .foregroundStyle(.red)
@@ -239,7 +241,7 @@ struct SettingsWindow: View {
                     }
                 }
                 
-            } catch BlueskyError.invalidCredentials {
+            } catch ATProtoError.authenticationFailed {
                 await MainActor.run {
                     isAuthenticating = false
                     authError = "Invalid handle or app password"

@@ -1,12 +1,5 @@
 import Foundation
 
-/// Protocol for URLSession to enable dependency injection for testing
-public protocol URLSessionProtocol: Sendable {
-    func data(for request: URLRequest) async throws -> (Data, URLResponse)
-}
-
-extension URLSession: URLSessionProtocol {}
-
 /// Service for fetching and filtering Bluesky feeds for dropanchor posts
 @Observable
 public final class FeedService: Sendable {
@@ -46,9 +39,9 @@ public final class FeedService: Sendable {
         
         defer { isLoading = false }
         
-        // Fetch timeline using AT Protocol
+        // Fetch timeline using AT Protocol with larger limit
         let request = try buildAuthenticatedRequest(
-            endpoint: "/xrpc/app.bsky.feed.getTimeline",
+            endpoint: "/xrpc/app.bsky.feed.getTimeline?limit=100",
             method: "GET",
             accessToken: credentials.accessToken
         )
@@ -94,8 +87,8 @@ public final class FeedService: Sendable {
     private func hasDropanchorEmbed(_ post: TimelinePost) -> Bool {
         guard let embed = post.embed else { return false }
         
-        // Check if it's a record embed
-        guard embed.type == "app.bsky.embed.record#view" else { return false }
+        // Check if it's a record embed (can be either the schema type or the view type)
+        guard embed.type == "app.bsky.embed.record" || embed.type == "app.bsky.embed.record#view" else { return false }
         
         // Check if the embedded record is a dropanchor checkin
         guard let record = embed.record,

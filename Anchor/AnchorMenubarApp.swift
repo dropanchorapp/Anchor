@@ -57,7 +57,7 @@ struct AnchorMenubarApp: App {
                 .environment(nearbyPlacesService)
                 .task {
                     // Load credentials immediately when ContentView appears
-                    blueskyService.loadStoredCredentials(from: container.mainContext)
+                    _ = await blueskyService.loadStoredCredentials(from: container.mainContext)
                     
                     // Handle location services
                     let permissionGranted = await locationService.requestLocationPermission()

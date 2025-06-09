@@ -1,23 +1,21 @@
-import XCTest
+import Testing
+import Foundation
 @testable import AnchorKit
 
-final class BlueskyServiceTests: XCTestCase {
+@Suite("Bluesky Service", .tags(.unit, .services, .bluesky))
+@MainActor
+struct BlueskyServiceTests {
     
-    var blueskyService: BlueskyService!
+    let blueskyService: BlueskyService
     
-    override func setUp() {
-        super.setUp()
+    init() async {
         blueskyService = BlueskyService()
-    }
-    
-    override func tearDown() {
-        blueskyService = nil
-        super.tearDown()
     }
     
     // MARK: - Rich Text Facets Tests
     
-    func testBuildCheckInTextWithFacets_basicPlace() {
+    @Test("Build check-in text with facets for basic place")
+    func buildCheckInTextWithFacets_basicPlace() {
         // Given
         let place = Place(
             elementType: .way,
@@ -33,8 +31,8 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         let expectedText = "Dropped ⚓ at Boulder Central #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
-        XCTAssertEqual(facets.count, 3, "Should have link facet and two hashtag facets")
+        #expect(text == expectedText)
+        #expect(facets.count == 3, "Should have link facet and two hashtag facets")
         
         // Verify link facet for venue name
         let linkFacet = facets.first { facet in
@@ -43,21 +41,21 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(linkFacet, "Should have link facet for venue name")
+        #expect(linkFacet != nil, "Should have link facet for venue name")
         
         if let linkFacet = linkFacet {
             // Venue name starts at position 12 ("Dropped ⚓ at ".utf8.count)
             let expectedLinkStart = "Dropped ⚓ at ".utf8.count
             let expectedLinkEnd = "Dropped ⚓ at Boulder Central".utf8.count
             
-            XCTAssertEqual(linkFacet.index.byteStart, expectedLinkStart)
-            XCTAssertEqual(linkFacet.index.byteEnd, expectedLinkEnd)
+            #expect(linkFacet.index.byteStart == expectedLinkStart)
+            #expect(linkFacet.index.byteEnd == expectedLinkEnd)
             
             // Check the URL
             if case .link(let uri) = linkFacet.features.first {
-                XCTAssertEqual(uri, "https://www.openstreetmap.org/way/123456")
+                #expect(uri == "https://www.openstreetmap.org/way/123456")
             } else {
-                XCTFail("Link facet should contain URL")
+                Issue.record("Link facet should contain URL")
             }
         }
         
@@ -70,7 +68,7 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(checkinHashtagFacet, "Should have #checkin hashtag facet")
+        #expect(checkinHashtagFacet != nil, "Should have #checkin hashtag facet")
         
         if let checkinHashtagFacet = checkinHashtagFacet {
             // #checkin hashtag starts after "Dropped ⚓ at Boulder Central "
@@ -78,13 +76,13 @@ final class BlueskyServiceTests: XCTestCase {
             let expectedHashtagStart = textBeforeFirstHashtag.utf8.count
             let expectedHashtagEnd = (textBeforeFirstHashtag + "#checkin").utf8.count
             
-            XCTAssertEqual(checkinHashtagFacet.index.byteStart, expectedHashtagStart)
-            XCTAssertEqual(checkinHashtagFacet.index.byteEnd, expectedHashtagEnd)
+            #expect(checkinHashtagFacet.index.byteStart == expectedHashtagStart)
+            #expect(checkinHashtagFacet.index.byteEnd == expectedHashtagEnd)
             
             if case .tag(let tag) = checkinHashtagFacet.features.first {
-                XCTAssertEqual(tag, "checkin")
+                #expect(tag == "checkin")
             } else {
-                XCTFail("Hashtag facet should contain tag")
+                Issue.record("Hashtag facet should contain tag")
             }
         }
         
@@ -97,7 +95,7 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(dropanchorHashtagFacet, "Should have #dropanchor hashtag facet")
+        #expect(dropanchorHashtagFacet != nil, "Should have #dropanchor hashtag facet")
         
         if let dropanchorHashtagFacet = dropanchorHashtagFacet {
             // #dropanchor hashtag starts after "Dropped ⚓ at Boulder Central #checkin "
@@ -105,18 +103,19 @@ final class BlueskyServiceTests: XCTestCase {
             let expectedHashtagStart = textBeforeSecondHashtag.utf8.count
             let expectedHashtagEnd = (textBeforeSecondHashtag + "#dropanchor").utf8.count
             
-            XCTAssertEqual(dropanchorHashtagFacet.index.byteStart, expectedHashtagStart)
-            XCTAssertEqual(dropanchorHashtagFacet.index.byteEnd, expectedHashtagEnd)
+            #expect(dropanchorHashtagFacet.index.byteStart == expectedHashtagStart)
+            #expect(dropanchorHashtagFacet.index.byteEnd == expectedHashtagEnd)
             
             if case .tag(let tag) = dropanchorHashtagFacet.features.first {
-                XCTAssertEqual(tag, "dropanchor")
+                #expect(tag == "dropanchor")
             } else {
-                XCTFail("Hashtag facet should contain tag")
+                Issue.record("Hashtag facet should contain tag")
             }
         }
     }
     
-    func testBuildCheckInTextWithFacets_withCustomMessage() {
+    @Test("Build check-in text with facets and custom message")
+    func buildCheckInTextWithFacets_withCustomMessage() {
         // Given
         let place = Place(
             elementType: .node,
@@ -133,8 +132,8 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         let expectedText = "Great climbing session today!\n\nDropped ⚓ at Rock Gym #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
-        XCTAssertEqual(facets.count, 3)
+        #expect(text == expectedText)
+        #expect(facets.count == 3)
         
         // Verify link facet accounting for custom message prefix
         let linkFacet = facets.first { facet in
@@ -143,23 +142,24 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(linkFacet)
+        #expect(linkFacet != nil)
         
         if let linkFacet = linkFacet {
             let textBeforeVenue = "Great climbing session today!\n\nDropped ⚓ at "
             let expectedLinkStart = textBeforeVenue.utf8.count
             let expectedLinkEnd = (textBeforeVenue + "Rock Gym").utf8.count
             
-            XCTAssertEqual(linkFacet.index.byteStart, expectedLinkStart)
-            XCTAssertEqual(linkFacet.index.byteEnd, expectedLinkEnd)
+            #expect(linkFacet.index.byteStart == expectedLinkStart)
+            #expect(linkFacet.index.byteEnd == expectedLinkEnd)
             
             if case .link(let uri) = linkFacet.features.first {
-                XCTAssertEqual(uri, "https://www.openstreetmap.org/node/789012")
+                #expect(uri == "https://www.openstreetmap.org/node/789012")
             }
         }
     }
     
-    func testBuildCheckInTextWithFacets_unicodeCharacters() {
+    @Test("Build check-in text with facets and unicode characters")
+    func buildCheckInTextWithFacets_unicodeCharacters() {
         // Given - Test with venue name containing unicode characters
         let place = Place(
             elementType: .way,
@@ -175,7 +175,7 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         let expectedText = "Dropped ⚓ at Café Escalade 🧗‍♂️ #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
+        #expect(text == expectedText)
         
         // Verify facets handle unicode properly
         let linkFacet = facets.first { facet in
@@ -184,7 +184,7 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(linkFacet)
+        #expect(linkFacet != nil)
         
         if let linkFacet = linkFacet {
             // Unicode characters require proper UTF-8 byte counting
@@ -194,12 +194,13 @@ final class BlueskyServiceTests: XCTestCase {
             let expectedLinkStart = textBeforeVenue.utf8.count
             let expectedLinkEnd = (textBeforeVenue + venueName).utf8.count
             
-            XCTAssertEqual(linkFacet.index.byteStart, expectedLinkStart)
-            XCTAssertEqual(linkFacet.index.byteEnd, expectedLinkEnd)
+            #expect(linkFacet.index.byteStart == expectedLinkStart)
+            #expect(linkFacet.index.byteEnd == expectedLinkEnd)
         }
     }
     
-    func testBuildCheckInTextWithFacets_relationElementType() {
+    @Test("Build check-in text with facets for relation element type")
+    func buildCheckInTextWithFacets_relationElementType() {
         // Given
         let place = Place(
             elementType: .relation,
@@ -214,7 +215,7 @@ final class BlueskyServiceTests: XCTestCase {
         let (_, facets) = blueskyService.buildCheckInTextWithFacets(place: place, customMessage: nil)
         
         // Then
-        XCTAssertEqual(facets.count, 3)
+        #expect(facets.count == 3)
         
         let linkFacet = facets.first { facet in
             facet.features.contains { feature in
@@ -224,10 +225,11 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(linkFacet, "Should generate correct URL for relation element type")
+        #expect(linkFacet != nil, "Should generate correct URL for relation element type")
     }
     
-    func testBuildCheckInTextWithFacets_emptyCustomMessage() {
+    @Test("Build check-in text with facets for empty custom message")
+    func buildCheckInTextWithFacets_emptyCustomMessage() {
         // Given
         let place = Place(
             elementType: .way,
@@ -243,11 +245,12 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then - Should be same as no custom message
         let expectedText = "Dropped ⚓ at Test Gym #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
-        XCTAssertEqual(facets.count, 3)
+        #expect(text == expectedText)
+        #expect(facets.count == 3)
     }
     
-    func testBuildCheckInTextWithFacets_longVenueName() {
+    @Test("Build check-in text with facets for long venue name")
+    func buildCheckInTextWithFacets_longVenueName() {
         // Given - Test with a very long venue name
         let longName = "The Really Really Long Climbing Gymnasium and Fitness Center of Excellence"
         let place = Place(
@@ -263,8 +266,8 @@ final class BlueskyServiceTests: XCTestCase {
         let (text, facets) = blueskyService.buildCheckInTextWithFacets(place: place, customMessage: nil)
         
         // Then
-        XCTAssertTrue(text.contains(longName), "Should include full venue name")
-        XCTAssertEqual(facets.count, 3)
+        #expect(text.contains(longName), "Should include full venue name")
+        #expect(facets.count == 3)
         
         // Verify link facet covers the entire venue name
         let linkFacet = facets.first { facet in
@@ -273,21 +276,22 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(linkFacet)
+        #expect(linkFacet != nil)
         
         if let linkFacet = linkFacet {
             let textBeforeVenue = "Dropped ⚓ at "
             let expectedLinkStart = textBeforeVenue.utf8.count
             let expectedLinkEnd = (textBeforeVenue + longName).utf8.count
             
-            XCTAssertEqual(linkFacet.index.byteStart, expectedLinkStart)
-            XCTAssertEqual(linkFacet.index.byteEnd, expectedLinkEnd)
+            #expect(linkFacet.index.byteStart == expectedLinkStart)
+            #expect(linkFacet.index.byteEnd == expectedLinkEnd)
         }
     }
     
     // MARK: - User Message Facet Detection Tests
     
-    func testDetectFacetsInUserMessage_urls() {
+    @Test("Detect facets in user message - URLs")
+    func detectFacetsInUserMessage_urls() {
         // Given
         let place = Place(
             elementType: .way,
@@ -304,8 +308,8 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         let expectedText = "Check out https://example.com and visit www.test.co.uk for more info!\n\nDropped ⚓ at Test Gym #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
-        XCTAssertEqual(facets.count, 5, "Should have 2 URL facets + 1 venue link + 2 hashtag facets")
+        #expect(text == expectedText)
+        #expect(facets.count == 5, "Should have 2 URL facets + 1 venue link + 2 hashtag facets")
         
         // Verify first URL facet (https://example.com)
         let firstUrlFacet = facets.first { facet in
@@ -316,13 +320,13 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(firstUrlFacet, "Should have facet for https://example.com")
+        #expect(firstUrlFacet != nil, "Should have facet for https://example.com")
         
         if let firstUrlFacet = firstUrlFacet {
             let expectedStart = "Check out ".utf8.count
             let expectedEnd = "Check out https://example.com".utf8.count
-            XCTAssertEqual(firstUrlFacet.index.byteStart, expectedStart)
-            XCTAssertEqual(firstUrlFacet.index.byteEnd, expectedEnd)
+            #expect(firstUrlFacet.index.byteStart == expectedStart)
+            #expect(firstUrlFacet.index.byteEnd == expectedEnd)
         }
         
         // Verify second URL facet (www.test.co.uk -> https://www.test.co.uk)
@@ -334,18 +338,19 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(secondUrlFacet, "Should have facet for www.test.co.uk")
+        #expect(secondUrlFacet != nil, "Should have facet for www.test.co.uk")
         
         if let secondUrlFacet = secondUrlFacet {
             let textBeforeSecondUrl = "Check out https://example.com and visit "
             let expectedStart = textBeforeSecondUrl.utf8.count
             let expectedEnd = (textBeforeSecondUrl + "www.test.co.uk").utf8.count
-            XCTAssertEqual(secondUrlFacet.index.byteStart, expectedStart)
-            XCTAssertEqual(secondUrlFacet.index.byteEnd, expectedEnd)
+            #expect(secondUrlFacet.index.byteStart == expectedStart)
+            #expect(secondUrlFacet.index.byteEnd == expectedEnd)
         }
     }
     
-    func testDetectFacetsInUserMessage_hashtags() {
+    @Test("Detect facets in user message - hashtags")
+    func detectFacetsInUserMessage_hashtags() {
         // Given
         let place = Place(
             elementType: .way,
@@ -362,8 +367,8 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         let expectedText = "Having a great time #climbing and #bouldering today! #fitness\n\nDropped ⚓ at Test Gym #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
-        XCTAssertEqual(facets.count, 6, "Should have 3 user hashtag facets + 1 venue link + 2 post hashtag facets")
+        #expect(text == expectedText)
+        #expect(facets.count == 6, "Should have 3 user hashtag facets + 1 venue link + 2 post hashtag facets")
         
         // Verify #climbing facet
         let climbingFacet = facets.first { facet in
@@ -374,13 +379,13 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(climbingFacet, "Should have facet for #climbing")
+        #expect(climbingFacet != nil, "Should have facet for #climbing")
         
         if let climbingFacet = climbingFacet {
             let expectedStart = "Having a great time ".utf8.count
             let expectedEnd = "Having a great time #climbing".utf8.count
-            XCTAssertEqual(climbingFacet.index.byteStart, expectedStart)
-            XCTAssertEqual(climbingFacet.index.byteEnd, expectedEnd)
+            #expect(climbingFacet.index.byteStart == expectedStart)
+            #expect(climbingFacet.index.byteEnd == expectedEnd)
         }
         
         // Verify #bouldering facet
@@ -392,7 +397,7 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(boulderingFacet, "Should have facet for #bouldering")
+        #expect(boulderingFacet != nil, "Should have facet for #bouldering")
         
         // Verify #fitness facet
         let fitnessFacet = facets.first { facet in
@@ -403,10 +408,11 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(fitnessFacet, "Should have facet for #fitness")
+        #expect(fitnessFacet != nil, "Should have facet for #fitness")
     }
     
-    func testDetectFacetsInUserMessage_mentions() {
+    @Test("Detect facets in user message - mentions")
+    func detectFacetsInUserMessage_mentions() {
         // Given
         let place = Place(
             elementType: .way,
@@ -423,8 +429,8 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         let expectedText = "Climbing with @alice.bsky.social and @bob.test today!\n\nDropped ⚓ at Test Gym #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
-        XCTAssertEqual(facets.count, 5, "Should have 2 mention facets + 1 venue link + 2 hashtag facets")
+        #expect(text == expectedText)
+        #expect(facets.count == 5, "Should have 2 mention facets + 1 venue link + 2 hashtag facets")
         
         // Verify @alice.bsky.social facet
         let aliceFacet = facets.first { facet in
@@ -435,13 +441,13 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(aliceFacet, "Should have facet for @alice.bsky.social")
+        #expect(aliceFacet != nil, "Should have facet for @alice.bsky.social")
         
         if let aliceFacet = aliceFacet {
             let expectedStart = "Climbing with ".utf8.count
             let expectedEnd = "Climbing with @alice.bsky.social".utf8.count
-            XCTAssertEqual(aliceFacet.index.byteStart, expectedStart)
-            XCTAssertEqual(aliceFacet.index.byteEnd, expectedEnd)
+            #expect(aliceFacet.index.byteStart == expectedStart)
+            #expect(aliceFacet.index.byteEnd == expectedEnd)
         }
         
         // Verify @bob.test facet
@@ -453,10 +459,11 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(bobFacet, "Should have facet for @bob.test")
+        #expect(bobFacet != nil, "Should have facet for @bob.test")
     }
     
-    func testDetectFacetsInUserMessage_mixedContent() {
+    @Test("Detect facets in user message - mixed content")
+    func detectFacetsInUserMessage_mixedContent() {
         // Given
         let place = Place(
             elementType: .way,
@@ -472,17 +479,18 @@ final class BlueskyServiceTests: XCTestCase {
         let (_, facets) = blueskyService.buildCheckInTextWithFacets(place: place, customMessage: customMessage)
         
         // Then
-        XCTAssertEqual(facets.count, 7, "Should have 1 mention + 1 URL + 2 user hashtags + 1 venue link + 2 post hashtags")
+        #expect(facets.count == 7, "Should have 1 mention + 1 URL + 2 user hashtags + 1 venue link + 2 post hashtags")
         
         // Verify all facets are present and non-overlapping
         let sortedFacets = facets.sorted { $0.index.byteStart < $1.index.byteStart }
         for i in 0..<(sortedFacets.count - 1) {
-            XCTAssertLessThanOrEqual(sortedFacets[i].index.byteEnd, sortedFacets[i + 1].index.byteStart,
-                                   "Facets should not overlap")
+            #expect(sortedFacets[i].index.byteEnd <= sortedFacets[i + 1].index.byteStart,
+                   "Facets should not overlap")
         }
     }
     
-    func testDetectFacetsInUserMessage_urlWithPunctuation() {
+    @Test("Detect facets in user message - URL with punctuation")
+    func detectFacetsInUserMessage_urlWithPunctuation() {
         // Given
         let place = Place(
             elementType: .way,
@@ -507,7 +515,7 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(firstUrlFacet, "Should detect first URL without exclamation mark")
+        #expect(firstUrlFacet != nil, "Should detect first URL without exclamation mark")
         
         let secondUrlFacet = facets.first { facet in
             facet.features.contains { feature in
@@ -517,10 +525,11 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(secondUrlFacet, "Should detect second URL without closing parenthesis and period")
+        #expect(secondUrlFacet != nil, "Should detect second URL without closing parenthesis and period")
     }
     
-    func testDetectFacetsInUserMessage_invalidContent() {
+    @Test("Detect facets in user message - invalid content")
+    func detectFacetsInUserMessage_invalidContent() {
         // Given
         let place = Place(
             elementType: .way,
@@ -537,7 +546,7 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         // Should only have venue link and post hashtags, no user message facets
-        XCTAssertEqual(facets.count, 3, "Should only have venue link and 2 post hashtags")
+        #expect(facets.count == 3, "Should only have venue link and 2 post hashtags")
         
         // Verify no mention facets for invalid handles
         let mentionFacets = facets.filter { facet in
@@ -546,10 +555,11 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertEqual(mentionFacets.count, 0, "Should not detect invalid mentions")
+        #expect(mentionFacets.count == 0, "Should not detect invalid mentions")
     }
     
-    func testDetectFacetsInUserMessage_unicodeContent() {
+    @Test("Detect facets in user message - unicode content")
+    func detectFacetsInUserMessage_unicodeContent() {
         // Given
         let place = Place(
             elementType: .way,
@@ -574,7 +584,7 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(urlFacet, "Should detect URL with unicode characters")
+        #expect(urlFacet != nil, "Should detect URL with unicode characters")
         
         let hashtagFacet = facets.first { facet in
             facet.features.contains { feature in
@@ -584,10 +594,11 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(hashtagFacet, "Should detect hashtag with unicode in surrounding text")
+        #expect(hashtagFacet != nil, "Should detect hashtag with unicode in surrounding text")
     }
     
-    func testDetectFacetsInUserMessage_mentionWithComma() {
+    @Test("Detect facets in user message - mention with comma")
+    func detectFacetsInUserMessage_mentionWithComma() {
         // Given - Test mention followed by comma (edge case)
         let place = Place(
             elementType: .way,
@@ -604,8 +615,8 @@ final class BlueskyServiceTests: XCTestCase {
         
         // Then
         let expectedText = "Oh noes we're doing a recorded test where we use some #facets such as a mention @tijs.org, i hope this will work…\n\nDropped ⚓ at Test Gym #checkin #dropanchor"
-        XCTAssertEqual(text, expectedText)
-        XCTAssertEqual(facets.count, 5, "Should have 1 hashtag + 1 mention + 1 venue link + 2 post hashtags")
+        #expect(text == expectedText)
+        #expect(facets.count == 5, "Should have 1 hashtag + 1 mention + 1 venue link + 2 post hashtags")
         
         // Verify mention facet is detected correctly
         let mentionFacet = facets.first { facet in
@@ -616,7 +627,7 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(mentionFacet, "Should detect @tijs.org mention even with trailing comma")
+        #expect(mentionFacet != nil, "Should detect @tijs.org mention even with trailing comma")
         
         // Verify hashtag facet is detected correctly
         let hashtagFacet = facets.first { facet in
@@ -627,52 +638,54 @@ final class BlueskyServiceTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertNotNil(hashtagFacet, "Should detect #facets hashtag")
+        #expect(hashtagFacet != nil, "Should detect #facets hashtag")
     }
     
     // MARK: - Facets Structure Tests
     
-    func testRichTextFacetStructure() {
+    @Test("Rich text facet structure")
+    func richTextFacetStructure() {
         // Given
         let byteRange = ByteRange(byteStart: 0, byteEnd: 10)
         let linkFeature = RichTextFeature.link(uri: "https://example.com")
         let facet = RichTextFacet(index: byteRange, features: [linkFeature])
         
         // Then
-        XCTAssertEqual(facet.index.byteStart, 0)
-        XCTAssertEqual(facet.index.byteEnd, 10)
-        XCTAssertEqual(facet.features.count, 1)
+        #expect(facet.index.byteStart == 0)
+        #expect(facet.index.byteEnd == 10)
+        #expect(facet.features.count == 1)
         
         if case .link(let uri) = facet.features.first {
-            XCTAssertEqual(uri, "https://example.com")
+            #expect(uri == "https://example.com")
         } else {
-            XCTFail("Should be link feature")
+            Issue.record("Should be link feature")
         }
     }
     
-    func testRichTextFacetFeatureTypes() {
+    @Test("Rich text facet feature types")
+    func richTextFacetFeatureTypes() {
         // Test link feature
         let linkFeature = RichTextFeature.link(uri: "https://openstreetmap.org")
         if case .link(let uri) = linkFeature {
-            XCTAssertEqual(uri, "https://openstreetmap.org")
+            #expect(uri == "https://openstreetmap.org")
         } else {
-            XCTFail("Should be link feature")
+            Issue.record("Should be link feature")
         }
         
         // Test tag feature
         let tagFeature = RichTextFeature.tag(tag: "checkin")
         if case .tag(let tag) = tagFeature {
-            XCTAssertEqual(tag, "checkin")
+            #expect(tag == "checkin")
         } else {
-            XCTFail("Should be tag feature")
+            Issue.record("Should be tag feature")
         }
         
         // Test mention feature
         let mentionFeature = RichTextFeature.mention(did: "did:plc:test123")
         if case .mention(let did) = mentionFeature {
-            XCTAssertEqual(did, "did:plc:test123")
+            #expect(did == "did:plc:test123")
         } else {
-            XCTFail("Should be mention feature")
+            Issue.record("Should be mention feature")
         }
     }
-} 
+}

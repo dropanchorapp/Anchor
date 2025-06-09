@@ -76,9 +76,55 @@ The menubar app architecture solves critical location permission issues that CLI
 - Foundation for data models
 
 ### Testing Strategy
-- Unit tests in AnchorKit for business logic
-- UI tests in AnchorUITests for menubar app functionality
-- Tests can be run individually or as complete suite
+
+#### Framework & Architecture
+- **Swift Testing**: Modern declarative testing framework (migrated from XCTest)
+- **Unit tests**: Comprehensive business logic testing in AnchorKit package
+- **Integration tests**: Network-dependent tests for external APIs (Overpass, Bluesky)
+- **UI tests**: Menubar app functionality testing in AnchorUITests
+- **Dependency injection**: Protocol-based testing with URLSession mocking for network services
+
+#### Test Organization & Tags
+Tests are organized with semantic tags for filtering and categorization:
+- `.unit` - Fast unit tests for models and utilities
+- `.integration` - Tests requiring network access or external services
+- `.services` - Service layer testing (BlueskyService, FeedService, OverpassService)
+- `.models` - Data model testing (Place, ATProtoRecord, AuthCredentials)
+- `.auth` - Authentication and credential management tests
+- `.feed` - Feed parsing and AT Protocol record processing
+- `.network` - Network-dependent tests (can be filtered out for offline development)
+- `.location` - Location-based functionality tests
+- `.markdown` - Markdown formatting and rich text processing
+- `.facets` - AT Protocol facet and rich text feature tests
+
+#### Running Tests
+```bash
+# Run all tests (47 tests total)
+swift test
+
+# Run specific test categories
+swift test --filter .unit          # Fast unit tests only
+swift test --filter .integration   # Integration tests only
+swift test --filter .services      # Service layer tests
+swift test --filter .network       # Network-dependent tests
+
+# Run from Xcode project (includes UI tests)
+xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
+```
+
+#### Test Coverage
+- **ATProtoRecord**: Markdown formatting, facet processing, timeline data conversion
+- **FeedService**: Feed fetching, filtering, error handling with URLSession mocking
+- **BlueskyService**: Rich text facet generation, check-in text formatting, URL/mention/hashtag detection
+- **OverpassService**: POI discovery, query building, API integration
+- **Core Models**: Place creation, ID parsing, settings management, credential validation
+
+#### Testing Best Practices
+- **Parameterized testing**: Using Swift Testing's arguments for comprehensive edge case coverage
+- **Async/await support**: Proper handling of async service methods with MainActor isolation
+- **Mocking**: Protocol-based dependency injection for URLSession and external services
+- **Error handling**: Comprehensive error scenario testing for network failures and invalid data
+- **Unicode support**: Proper UTF-8 byte counting for AT Protocol facet range calculations
 
 ### Menubar App Specifics
 - Uses `.menuBarExtraStyle(.window)` for proper window presentation

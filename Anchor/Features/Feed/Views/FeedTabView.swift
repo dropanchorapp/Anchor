@@ -8,15 +8,6 @@ struct FeedTabView: View {
     var body: some View {
         VStack(spacing: 16) {
             if blueskyService.isAuthenticated {
-                // Header
-                HStack {
-                    Text("Following")
-                        .font(.headline)
-                        .fontWeight(.medium)
-                    Spacer()
-                }
-                .padding(.horizontal)
-                
                 // Feed content
                 Group {
                     if feedService.isLoading {
@@ -152,22 +143,6 @@ struct FeedPostView: View {
             // Post content
             Text(.init(post.record.formattedText))
                 .font(.caption)
-            
-            // Checkin info if available
-            if post.checkinRecord != nil {
-                HStack {
-                    Image(systemName: "anchor.fill")
-                        .foregroundStyle(.blue)
-                        .font(.caption2)
-                    
-                    Text("Dropped anchor")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    
-                    Spacer()
-                }
-                .padding(.top, 4)
-            }
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))

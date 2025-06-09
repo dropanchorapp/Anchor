@@ -1,21 +1,19 @@
-import XCTest
+import Testing
 import CoreLocation
+import Foundation
 @testable import AnchorKit
 
-final class OverpassServiceTests: XCTestCase {
-    var overpassService: OverpassService!
+@Suite("Overpass Service", .tags(.integration, .services, .network, .location))
+struct OverpassServiceTests {
     
-    override func setUp() {
-        super.setUp()
+    let overpassService: OverpassService
+    
+    init() {
         overpassService = OverpassService()
     }
     
-    override func tearDown() {
-        overpassService = nil
-        super.tearDown()
-    }
-    
-    func testSimpleOverpassQuery() async throws {
+    @Test("Simple Overpass query for nearby places")
+    func simpleOverpassQuery() async throws {
         // Use a well-known location (Golden Gate Bridge, San Francisco)
         let coordinate = CLLocationCoordinate2D(latitude: 37.8199, longitude: -122.4783)
         
@@ -32,7 +30,7 @@ final class OverpassServiceTests: XCTestCase {
                 print("   - \(place.name) (\(place.category ?? "unknown"))")
             }
             
-            XCTAssertFalse(places.isEmpty, "Should find at least some places near Golden Gate Bridge")
+            #expect(!places.isEmpty, "Should find at least some places near Golden Gate Bridge")
             
         } catch {
             print("❌ Error: \(error)")
@@ -44,7 +42,8 @@ final class OverpassServiceTests: XCTestCase {
         }
     }
     
-    func testUpdatedServiceQuery() async throws {
+    @Test("Updated service query with simplified queries")
+    func updatedServiceQuery() async throws {
         // Test our updated simplified service queries
         let coordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194) // San Francisco downtown
         
@@ -67,7 +66,8 @@ final class OverpassServiceTests: XCTestCase {
         }
     }
 
-    func testBroaderQuery() async throws {
+    @Test("Broader query for amenities in San Francisco")
+    func broaderQuery() async throws {
         // Test with a broader query to find any named place
         let coordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194) // San Francisco downtown
         
@@ -110,7 +110,8 @@ final class OverpassServiceTests: XCTestCase {
         }
     }
     
-    func testRawOverpassQuery() async throws {
+    @Test("Raw Overpass query for restaurants")
+    func rawOverpassQuery() async throws {
         // Test with a very simple Overpass query
         let simpleQuery = """
         [out:json][timeout:10];

@@ -142,9 +142,9 @@ struct CheckInView: View {
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             let messageToPost = trimmedMessage.isEmpty ? nil : trimmedMessage
             
-            let success = try await blueskyService.postCheckIn(
+            let success = try await blueskyService.createCheckinWithPost(
                 place: place, 
-                message: messageToPost,
+                customMessage: messageToPost,
                 context: modelContext
             )
             
@@ -158,21 +158,21 @@ struct CheckInView: View {
                 }
             }
             
-        } catch BlueskyError.notAuthenticated {
+        } catch ATProtoError.missingCredentials {
             await MainActor.run {
                 isPosting = false
                 errorMessage = "Please sign in to Bluesky first"
                 showingError = true
             }
             
-        } catch BlueskyError.invalidCredentials {
+        } catch ATProtoError.authenticationFailed {
             await MainActor.run {
                 isPosting = false
                 errorMessage = "Your Bluesky credentials are invalid. Please sign in again."
                 showingError = true
             }
             
-        } catch BlueskyError.sessionExpired {
+        } catch ATProtoError.httpError(401) {
             await MainActor.run {
                 isPosting = false
                 errorMessage = "Your session has expired. Please sign in again."

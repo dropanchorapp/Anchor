@@ -18,29 +18,7 @@ jobs:
     - name: Install SwiftLint
       run: |
         brew install swiftlint
-
-    - name: Run SwiftLint with auto-fix
-      run: |
-        swiftlint --fix --format
         
-    - name: Check for changes
-      id: verify-changed-files
-      run: |
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "changed=true" >> $GITHUB_OUTPUT
-        else
-          echo "changed=false" >> $GITHUB_OUTPUT
-        fi
-        
-    - name: Commit SwiftLint fixes
-      if: steps.verify-changed-files.outputs.changed == 'true'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Auto-fix SwiftLint violations"
-        git push
-        
-    - name: Run SwiftLint (final check)
+    - name: Run SwiftLint
       run: |
         swiftlint --strict

@@ -34,8 +34,15 @@ jobs:
             - AnchorKit
             - Anchor
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    - name: Manual Build
+      run: |
+        # Build AnchorKit package first
+        cd AnchorKit
+        swift build
+        cd ..
+        
+        # Build main Xcode project
+        xcodebuild -project Anchor.xcodeproj -scheme Anchor -destination "platform=macOS" build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

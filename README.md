@@ -9,6 +9,15 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/dropanchorapp/Anchor/actions/workflows/tests.yml">
+    <img src="https://github.com/dropanchorapp/Anchor/actions/workflows/tests.yml/badge.svg" alt="Tests">
+  </a>
+  <a href="https://github.com/dropanchorapp/Anchor/actions/workflows/swiftlint.yml">
+    <img src="https://github.com/dropanchorapp/Anchor/actions/workflows/swiftlint.yml/badge.svg" alt="SwiftLint">
+  </a>
+</p>
+
+<p align="center">
   Drop anchor at your favorite places and share them on the decentralized social web using the AT Protocol.
 </p>
 

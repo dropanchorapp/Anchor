@@ -4,12 +4,12 @@ import AnchorKit
 struct LocationPermissionView: View {
     @Environment(LocationService.self) private var locationService
     @State private var requestingPermission = false
-    
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "location.slash")
                 .foregroundStyle(.orange)
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("Location access needed")
                     .font(.caption)
@@ -18,9 +18,9 @@ struct LocationPermissionView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            
+
             Spacer()
-            
+
             Button("Enable") {
                 Task {
                     requestingPermission = true
@@ -39,4 +39,4 @@ struct LocationPermissionView: View {
 #Preview {
     LocationPermissionView()
         .environment(LocationService())
-} 
+}

@@ -7,16 +7,16 @@ import Foundation
 public struct ATProtoGeoLocation: Codable, Sendable {
     /// Latitude in WGS84 coordinate system
     public let lat: Double
-    
+
     /// Longitude in WGS84 coordinate system
     public let lon: Double
-    
+
     /// Optional name/description of the location
     public let name: String?
-    
+
     /// Optional altitude in meters
     public let alt: Double?
-    
+
     public init(lat: Double, lon: Double, name: String? = nil, alt: Double? = nil) {
         self.lat = lat
         self.lon = lon
@@ -29,19 +29,19 @@ public struct ATProtoGeoLocation: Codable, Sendable {
 public struct ATProtoAddress: Codable, Sendable {
     /// ISO 3166-1 alpha-2 country code
     public let country: String?
-    
+
     /// City, town, or other locality
     public let locality: String?
-    
+
     /// State, province, or region
     public let region: String?
-    
+
     /// Street address including house number and street name
     public let streetAddress: String?
-    
+
     /// Postal/ZIP code
     public let postalCode: String?
-    
+
     public init(
         country: String? = nil,
         locality: String? = nil,
@@ -61,13 +61,13 @@ public struct ATProtoAddress: Codable, Sendable {
 public struct ATProtoLocationRecord: Codable, Sendable {
     /// Geographic coordinates
     public let geo: ATProtoGeoLocation?
-    
+
     /// Address information
     public let address: ATProtoAddress?
-    
+
     /// Optional reference to Foursquare OS Places (future extension)
     public let fsq: String?
-    
+
     public init(
         geo: ATProtoGeoLocation? = nil,
         address: ATProtoAddress? = nil,
@@ -77,4 +77,4 @@ public struct ATProtoLocationRecord: Codable, Sendable {
         self.address = address
         self.fsq = fsq
     }
-} 
+}

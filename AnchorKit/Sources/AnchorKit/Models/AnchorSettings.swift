@@ -4,16 +4,16 @@ import Foundation
 public struct AnchorSettings: Codable, Sendable {
     /// Default message to use when checking in (if none provided)
     public let defaultMessage: String
-    
+
     /// Whether to include emoji in check-in posts
     public let includeEmoji: Bool
-    
+
     /// Maximum radius (in meters) for nearby place searches
     public let searchRadius: Double
-    
+
     /// Preferred place categories to prioritize in searches
     public let preferredCategories: [String]
-    
+
     public init(
         defaultMessage: String = "",
         includeEmoji: Bool = true,
@@ -36,13 +36,13 @@ extension AnchorSettings {
 // MARK: - UserDefaults Storage
 extension AnchorSettings {
     private static let storageKey = "anchor.settings"
-    
+
     /// Save settings to UserDefaults
     public func save() throws {
         let data = try JSONEncoder().encode(self)
         UserDefaults.standard.set(data, forKey: Self.storageKey)
     }
-    
+
     /// Load settings from UserDefaults, falling back to defaults
     public static func load() -> AnchorSettings {
         guard let data = UserDefaults.standard.data(forKey: storageKey),
@@ -51,7 +51,7 @@ extension AnchorSettings {
         }
         return settings
     }
-    
+
     /// Get current settings (always returns valid settings)
     public static var current: AnchorSettings {
         load()
@@ -69,7 +69,7 @@ extension AnchorSettings {
             preferredCategories: preferredCategories
         )
     }
-    
+
     /// Update emoji preference
     public func withEmojiEnabled(_ enabled: Bool) -> AnchorSettings {
         AnchorSettings(
@@ -79,7 +79,7 @@ extension AnchorSettings {
             preferredCategories: preferredCategories
         )
     }
-    
+
     /// Update search radius
     public func withSearchRadius(_ radius: Double) -> AnchorSettings {
         AnchorSettings(
@@ -97,4 +97,4 @@ extension AnchorSettings {
     public var isValid: Bool {
         searchRadius > 0 && searchRadius <= 10000 // Max 10km radius
     }
-} 
+}

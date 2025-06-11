@@ -22,6 +22,18 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorTests test
 ```
 
+### Code Quality Checks
+```bash
+# Run SwiftLint (should show 0 violations)
+swiftlint
+
+# Run SwiftLint in strict mode (CI/CD compatible)
+swiftlint --strict
+
+# Auto-fix violations where possible
+swiftlint --fix --format
+```
+
 ### Building the AnchorKit Package
 ```bash
 # From the AnchorKit directory
@@ -29,6 +41,34 @@ cd Anchor/AnchorKit
 swift build
 swift test
 ```
+
+### Code Quality & Linting
+
+#### SwiftLint Setup
+The project includes SwiftLint for code quality enforcement:
+
+```bash
+# Run SwiftLint manually
+swiftlint
+
+# Run with strict mode (warnings treated as errors)
+swiftlint --strict
+
+# Auto-fix violations where possible
+swiftlint --fix
+```
+
+**Configuration:**
+- `.swiftlint.yml` - Project-specific rules and configuration
+- Custom rules for AT Protocol and Bluesky naming conventions
+- Integrated as Xcode build phase for automatic checking
+- CI/CD integration with `--strict` mode for pull request validation
+
+**Key Rules:**
+- Force unwrapping and force try violations are treated as errors
+- Custom naming conventions for AT Protocol (`ATProto`) and Bluesky
+- Disabled `trailing_whitespace` (auto-fixed by Xcode)
+- Optimized for SwiftUI development patterns
 
 ## Project Architecture
 

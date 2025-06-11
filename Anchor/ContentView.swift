@@ -12,7 +12,7 @@ struct ContentView: View {
     @State private var selectedPlace: Place?
     @State private var showingCheckIn = false
     @Environment(\.openWindow) private var openWindow
-    
+
     var body: some View {
         print("🔍 ContentView.body evaluated - this indicates a re-render")
         return VStack(spacing: 0) {
@@ -21,16 +21,16 @@ struct ContentView: View {
                 Text("🧭 Anchor")
                     .font(.title2)
                     .fontWeight(.semibold)
-                
+
                 Spacer()
-                
+
                 Button("Settings", systemImage: "gear") {
                     openSettingsWindow()
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                
+
                 Button("Quit", systemImage: "xmark.circle.fill") {
                     NSApp.terminate(nil)
                 }
@@ -39,9 +39,9 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
             .padding()
-            
+
             Divider()
-            
+
             if showingCheckIn, let place = selectedPlace {
                 CheckInView(
                     place: place,
@@ -70,9 +70,9 @@ struct ContentView: View {
                     }
                 }
                 .frame(maxHeight: .infinity)
-                
+
                 Divider()
-                
+
                 // Tab Bar
                 HStack(spacing: 0) {
                     ForEach(AppTab.allCases, id: \.self) { tab in
@@ -97,23 +97,23 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func openSettingsWindow() {
         openWindow(id: "settings")
     }
 }
 
 enum AppTab: String, CaseIterable {
-    case feed = "feed"
-    case nearby = "nearby"
-    
+    case feed
+    case nearby
+
     var title: String {
         switch self {
         case .feed: return "Feed"
         case .nearby: return "Nearby"
         }
     }
-    
+
     var iconName: String {
         switch self {
         case .feed: return "list.bullet"
@@ -124,4 +124,4 @@ enum AppTab: String, CaseIterable {
 
 #Preview {
     ContentView()
-} 
+}

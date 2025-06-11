@@ -19,24 +19,24 @@ public protocol BlueskyServiceProtocol {
 /// Main Bluesky service that coordinates AT Protocol authentication, posting, and check-ins
 @Observable
 public final class BlueskyService: BlueskyServiceProtocol {
-    
+
     // MARK: - Properties
-    
+
     private let authService: ATProtoAuthServiceProtocol
     private let postService: BlueskyPostServiceProtocol
     private let checkinService: BlueskyCheckinServiceProtocol
     private let richTextProcessor: RichTextProcessorProtocol
-    
+
     /// Whether the user is currently authenticated (observable for UI)
     public var isAuthenticated: Bool = false
-    
+
     /// Current authentication credentials (synchronous for UI)
     public var credentials: AuthCredentials? {
         authService.credentials
     }
-    
+
     // MARK: - Initialization
-    
+
     public convenience init(session: URLSessionProtocol = URLSession.shared) {
         let client = ATProtoClient(session: session)
         let richTextProcessor = RichTextProcessor()
@@ -47,7 +47,7 @@ public final class BlueskyService: BlueskyServiceProtocol {
             richTextProcessor: richTextProcessor,
             postService: postService
         )
-        
+
         self.init(
             authService: authService,
             postService: postService,
@@ -55,7 +55,7 @@ public final class BlueskyService: BlueskyServiceProtocol {
             richTextProcessor: richTextProcessor
         )
     }
-    
+
     public init(
         authService: ATProtoAuthServiceProtocol,
         postService: BlueskyPostServiceProtocol,
@@ -67,74 +67,74 @@ public final class BlueskyService: BlueskyServiceProtocol {
         self.checkinService = checkinService
         self.richTextProcessor = richTextProcessor
     }
-    
+
     // MARK: - Authentication
-    
+
     public func loadStoredCredentials(from context: ModelContext) async -> AuthCredentials? {
         let result = await authService.loadStoredCredentials(from: context)
         await updateAuthenticationState()
         return result
     }
-    
+
     public func authenticate(handle: String, appPassword: String, context: ModelContext) async throws -> Bool {
         _ = try await authService.authenticate(handle: handle, appPassword: appPassword, context: context)
         await updateAuthenticationState()
         return true
     }
-    
+
     public func signOut(context: ModelContext) async {
         await authService.clearCredentials(from: context)
         await updateAuthenticationState()
     }
-    
+
     public func getAppPasswordURL() -> URL {
         return URL(string: "https://bsky.app/settings/app-passwords")!
     }
-    
+
     // MARK: - Check-ins & Posts
-    
+
     public func createCheckinWithPost(place: Place, customMessage: String?, context: ModelContext) async throws -> Bool {
         guard let credentials = authService.credentials else {
             throw ATProtoError.missingCredentials
         }
-        
+
         // Refresh credentials if needed
         var activeCredentials = credentials
         if activeCredentials.isExpired {
             activeCredentials = try await authService.refreshCredentials(activeCredentials, context: context)
         }
-        
+
         _ = try await checkinService.createCheckinWithPost(
             place: place,
             customMessage: customMessage,
             credentials: activeCredentials
         )
-        
+
         return true
     }
-    
+
     // MARK: - Rich Text Processing
-    
+
     public func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet]) {
         return richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
     }
-    
+
     // MARK: - Private Methods
-    
+
     private func refreshCredentialsIfNeeded(context: ModelContext) async throws -> AuthCredentials {
         guard let credentials = authService.credentials else {
             throw ATProtoError.missingCredentials
         }
-        
+
         if credentials.isExpired {
             return try await authService.refreshCredentials(credentials, context: context)
         }
-        
+
         return credentials
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Updates the observable authentication state for UI binding
     @MainActor
     private func updateAuthenticationState() async {

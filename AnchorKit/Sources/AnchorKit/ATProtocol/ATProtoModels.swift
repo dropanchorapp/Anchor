@@ -37,7 +37,7 @@ public struct ATProtoPostRecord: Codable {
     let createdAt: String
     let facets: [RichTextFacet]?
     let embed: ATProtoPostEmbed?
-    
+
     private enum CodingKeys: String, CodingKey {
         case text, createdAt, facets, embed
         case type = "$type"
@@ -57,7 +57,7 @@ public struct ATProtoCheckinRecord: Codable {
     let text: String
     let createdAt: String
     let location: CheckinLocation
-    
+
     private enum CodingKeys: String, CodingKey {
         case text, createdAt, location
         case type = "$type"
@@ -67,7 +67,7 @@ public struct ATProtoCheckinRecord: Codable {
 public enum CheckinLocation: Codable {
     case place(CheckinPlaceLocation)
     case geo(CheckinGeoLocation)
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -77,7 +77,7 @@ public enum CheckinLocation: Codable {
             try container.encode(geo)
         }
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let place = try? container.decode(CheckinPlaceLocation.self) {
@@ -87,7 +87,7 @@ public enum CheckinLocation: Codable {
             self = .geo(geo)
         }
     }
-    
+
     private enum CodingKeys: String, CodingKey {
         case type = "$type"
     }
@@ -99,7 +99,7 @@ public struct CheckinPlaceLocation: Codable {
     let geo: CheckinGeoLocation
     let address: CheckinAddress?
     let uri: String?
-    
+
     private enum CodingKeys: String, CodingKey {
         case name, geo, address, uri
         case type = "$type"
@@ -110,7 +110,7 @@ public struct CheckinGeoLocation: Codable {
     let type: String = "app.dropanchor.geo"
     let lat: Double
     let lng: Double
-    
+
     private enum CodingKeys: String, CodingKey {
         case lat, lng
         case type = "$type"
@@ -123,7 +123,7 @@ public struct CheckinAddress: Codable {
     let region: String?
     let country: String?
     let postalCode: String?
-    
+
     private enum CodingKeys: String, CodingKey {
         case streetAddress, locality, region, country, postalCode
     }
@@ -134,7 +134,7 @@ public struct CheckinAddress: Codable {
 public struct ATProtoPostEmbed: Codable {
     let type: String = "app.bsky.embed.record"
     let record: ATProtoEmbedRecord
-    
+
     private enum CodingKeys: String, CodingKey {
         case record
         case type = "$type"
@@ -156,7 +156,7 @@ public struct ATProtoCreateRecordResponse: Codable, Sendable {
 public struct RichTextFacet: Codable {
     public let index: ByteRange
     public let features: [RichTextFeature]
-    
+
     public init(index: ByteRange, features: [RichTextFeature]) {
         self.index = index
         self.features = features
@@ -166,7 +166,7 @@ public struct RichTextFacet: Codable {
 public struct ByteRange: Codable {
     public let byteStart: Int
     public let byteEnd: Int
-    
+
     public init(byteStart: Int, byteEnd: Int) {
         self.byteStart = byteStart
         self.byteEnd = byteEnd
@@ -177,15 +177,15 @@ public enum RichTextFeature: Codable {
     case link(uri: String)
     case mention(did: String)
     case tag(tag: String)
-    
+
     private enum CodingKeys: String, CodingKey {
         case type = "$type"
         case uri, did, tag
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        
+
         switch self {
         case .link(let uri):
             try container.encode("app.bsky.richtext.facet#link", forKey: .type)
@@ -198,11 +198,11 @@ public enum RichTextFeature: Codable {
             try container.encode(tag, forKey: .tag)
         }
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
-        
+
         switch type {
         case "app.bsky.richtext.facet#link":
             let uri = try container.decode(String.self, forKey: .uri)
@@ -230,7 +230,7 @@ public enum ATProtoError: LocalizedError, Sendable {
     case decodingError(Error)
     case authenticationFailed(String)
     case missingCredentials
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidURL:

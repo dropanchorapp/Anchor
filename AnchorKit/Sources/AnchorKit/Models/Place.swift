@@ -4,25 +4,25 @@ import Foundation
 public struct Place: Codable, Sendable {
     /// Unique identifier in format "type:id" (e.g., "way:123456", "node:789012")
     public let id: String
-    
+
     /// Display name of the place
     public let name: String
-    
+
     /// Latitude coordinate
     public let latitude: Double
-    
-    /// Longitude coordinate  
+
+    /// Longitude coordinate
     public let longitude: Double
-    
+
     /// OpenStreetMap tags (amenity, leisure, etc.)
     public let tags: [String: String]
-    
+
     /// Element type from Overpass API ("node", "way", "relation")
     public let elementType: ElementType
-    
+
     /// OpenStreetMap element ID
     public let elementId: Int64
-    
+
     public init(
         elementType: ElementType,
         elementId: Int64,
@@ -44,9 +44,9 @@ public struct Place: Codable, Sendable {
 // MARK: - ElementType
 extension Place {
     public enum ElementType: String, Codable, CaseIterable, Sendable {
-        case node = "node"
-        case way = "way"
-        case relation = "relation"
+        case node
+        case way
+        case relation
     }
 }
 
@@ -64,12 +64,12 @@ extension Place {
         }
         return (elementType, elementId)
     }
-    
+
     /// Returns a human-readable description with coordinates
     public var description: String {
         "\(name) (\(String(format: "%.6f", latitude)), \(String(format: "%.6f", longitude)))"
     }
-    
+
     /// Returns the amenity or leisure type from tags
     public var category: String? {
         tags["amenity"] ?? tags["leisure"] ?? tags["shop"]
@@ -86,8 +86,8 @@ extension Place: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-    
+
     public static func == (lhs: Place, rhs: Place) -> Bool {
         lhs.id == rhs.id
     }
-} 
+}

@@ -5,13 +5,13 @@ struct NearbyTabView: View {
     @Environment(LocationService.self) private var locationService
     @Environment(NearbyPlacesService.self) private var nearbyPlacesService
     let onPlaceSelected: (Place) -> Void
-    
+
     @State private var searchText = ""
-    
+
     var filteredPlaces: [Place] {
         nearbyPlacesService.filteredPlaces(searchText: searchText)
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Search bar
@@ -21,14 +21,14 @@ struct NearbyTabView: View {
                         .foregroundStyle(.secondary)
                     TextField("Search places...", text: $searchText)
                         .textFieldStyle(.plain)
-                    
+
                     Button(action: {
                         Task {
                             await nearbyPlacesService.refreshLocationAndSearch()
                         }
                     }) {
                         Image(systemName: "location.fill")
-                            .foregroundStyle(locationService.locationAge != nil && locationService.locationAge! < 600 ? .green : .blue)
+                            .foregroundStyle((locationService.locationAge ?? 1000) < 600 ? .green : .blue)
                     }
                     .buttonStyle(.plain)
                     .disabled(nearbyPlacesService.isLoading || !locationService.hasLocationPermission)
@@ -37,15 +37,15 @@ struct NearbyTabView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-                
+
                 if !locationService.hasLocationPermission {
                     LocationPermissionView()
                 }
             }
             .padding()
-            
+
             Divider()
-            
+
             // Places list
             if nearbyPlacesService.isLoading {
                 VStack(spacing: 12) {
@@ -65,8 +65,8 @@ struct NearbyTabView: View {
                         .font(.caption)
                         .multilineTextAlignment(.center)
                     Button("Try Again") {
-                        Task { 
-                            await nearbyPlacesService.searchNearbyPlaces() 
+                        Task {
+                            await nearbyPlacesService.searchNearbyPlaces()
                         }
                     }
                     .buttonStyle(.bordered)
@@ -103,8 +103,8 @@ struct NearbyTabView: View {
         }
         .onChange(of: locationService.hasLocationPermission) { _, hasPermission in
             if hasPermission && nearbyPlacesService.places.isEmpty {
-                Task { 
-                    await nearbyPlacesService.searchNearbyPlaces() 
+                Task {
+                    await nearbyPlacesService.searchNearbyPlaces()
                 }
             }
         }
@@ -116,4 +116,4 @@ struct NearbyTabView: View {
     return NearbyTabView { _ in }
         .environment(locationService)
         .environment(NearbyPlacesService(locationService: locationService))
-} 
+}

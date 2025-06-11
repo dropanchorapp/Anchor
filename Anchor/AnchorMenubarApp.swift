@@ -12,23 +12,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct AnchorMenubarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+
     // Shared service instances - created once at app level
     @State private var locationService: LocationService
     @State private var blueskyService = BlueskyService()
     @State private var nearbyPlacesService: NearbyPlacesService
-    
+
     // Shared model container
     let container: ModelContainer
-    
+
     init() {
         // Initialize services that depend on other services
         let locationService = LocationService()
         let nearbyPlacesService = NearbyPlacesService(locationService: locationService)
-        
+
         self._locationService = State(initialValue: locationService)
         self._nearbyPlacesService = State(initialValue: nearbyPlacesService)
-        
+
         // Create shared model container
         do {
             let schema = Schema([
@@ -47,7 +47,7 @@ struct AnchorMenubarApp: App {
             fatalError("Failed to initialize model container: \(error)")
         }
     }
-    
+
     var body: some Scene {
         MenuBarExtra {
             ContentView()
@@ -58,7 +58,7 @@ struct AnchorMenubarApp: App {
                 .task {
                     // Load credentials immediately when ContentView appears
                     _ = await blueskyService.loadStoredCredentials(from: container.mainContext)
-                    
+
                     // Handle location services
                     let permissionGranted = await locationService.requestLocationPermission()
                     if permissionGranted {
@@ -73,7 +73,7 @@ struct AnchorMenubarApp: App {
                     // Main anchor icon
                     Image(systemName: "sailboat.fill")
                         .foregroundStyle(.primary)
-                    
+
                     // Status indicator overlay
                     Image(systemName: statusIndicatorIcon)
                         .foregroundStyle(statusIndicatorColor)
@@ -84,7 +84,7 @@ struct AnchorMenubarApp: App {
         }
         .menuBarExtraStyle(.window)
         .modelContainer(container)
-        
+
         Window("Settings", id: "settings") {
             SettingsWindow()
                 .environment(blueskyService)
@@ -96,9 +96,9 @@ struct AnchorMenubarApp: App {
         .defaultPosition(.center)
         .modelContainer(container)
     }
-    
+
     // MARK: - Menu Bar Icon
-    
+
     /// Status indicator icon for authentication state
     private var statusIndicatorIcon: String {
         if blueskyService.isAuthenticated {
@@ -107,7 +107,7 @@ struct AnchorMenubarApp: App {
             return "xmark.circle.fill"
         }
     }
-    
+
     /// Status indicator color for authentication state
     private var statusIndicatorColor: Color {
         if blueskyService.isAuthenticated {
@@ -116,4 +116,4 @@ struct AnchorMenubarApp: App {
             return .red
         }
     }
-} 
+}

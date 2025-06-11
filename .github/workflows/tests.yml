@@ -28,19 +28,16 @@ jobs:
         cd AnchorKit
         swift test --parallel
 
-    - name: Run Xcode Tests
+    - name: Run Xcode Unit Tests (excluding UI tests that require signing)
       run: |
         xcodebuild test \
           -project Anchor.xcodeproj \
           -scheme Anchor \
           -destination "platform=macOS" \
           -enableCodeCoverage YES \
-          -derivedDataPath DerivedData
-
-    - name: Upload Coverage Reports
-      uses: codecov/codecov-action@v3
-      if: success()
-      with:
-        files: ./DerivedData/Build/ProfileData/*/Coverage.profdata
-        fail_ci_if_error: false
-        verbose: true
+          -derivedDataPath DerivedData \
+          -only-testing AnchorTests \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          DEVELOPMENT_TEAM=""

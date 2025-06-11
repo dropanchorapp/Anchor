@@ -196,7 +196,9 @@ struct SettingsWindow: View {
                     .fontWeight(.medium)
 
                 HStack {
-                    Image(systemName: locationService.hasLocationPermission ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    Image(systemName: locationService.hasLocationPermission
+                        ? "checkmark.circle.fill"
+                        : "xmark.circle.fill")
                         .foregroundStyle(locationService.hasLocationPermission ? .green : .red)
 
                     Text(locationService.hasLocationPermission ? "Authorized" : "Not Authorized")

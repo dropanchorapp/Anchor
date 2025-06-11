@@ -89,26 +89,26 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
 
     private func detectURLs(in text: String) -> [RichTextFacet] {
         var facets: [RichTextFacet] = []
-        
+
         do {
             // Use Foundation's NSDataDetector for robust URL detection and validation
             // This leverages Apple's battle-tested algorithms for finding valid URLs
             let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
             let matches = detector.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
-            
+
             for match in matches {
                 guard match.url != nil else { continue } // Ensure it's a valid URL
-                
+
                 let range = match.range
                 let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
                 let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
                 let matchedText = String(text[startIndex..<endIndex])
-                
+
                 // Convert to byte indices for AT Protocol
                 let beforeMatch = String(text.prefix(upTo: startIndex))
                 let byteStart = beforeMatch.utf8.count
                 let byteEnd = byteStart + matchedText.utf8.count
-                
+
                 // Use NSDataDetector for validation, but preserve user-friendly display URLs
                 var displayURL = matchedText
                 if matchedText.lowercased().hasPrefix("www.") {
@@ -116,7 +116,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
                     displayURL = "https://" + matchedText
                 }
                 // Keep unicode characters for better readability in social media context
-                
+
                 let facet = RichTextFacet(
                     index: ByteRange(byteStart: byteStart, byteEnd: byteEnd),
                     features: [.link(uri: displayURL)]
@@ -127,7 +127,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
             // Fallback: if data detector fails, return empty (graceful degradation)
             print("Warning: URL detection failed: \(error)")
         }
-        
+
         return facets
     }
 
@@ -140,31 +140,31 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
             let regex = try NSRegularExpression(pattern: pattern, options: [])
             let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
-        for match in matches {
-            let range = match.range
-            let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
-            let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
-            let matchedText = String(text[startIndex..<endIndex])
+            for match in matches {
+                let range = match.range
+                let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
+                let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
+                let matchedText = String(text[startIndex..<endIndex])
 
-            // Skip domains with invalid TLDs
-            let handleForValidation = String(matchedText.dropFirst()) // Remove @
-            if !isValidDomain(handleForValidation) {
-                continue
-            }
+                // Skip domains with invalid TLDs
+                let handleForValidation = String(matchedText.dropFirst()) // Remove @
+                if !isValidDomain(handleForValidation) {
+                    continue
+                }
 
-            // Convert to byte indices
-            let beforeMatch = String(text.prefix(upTo: startIndex))
-            let byteStart = beforeMatch.utf8.count
-            let byteEnd = byteStart + matchedText.utf8.count
+                // Convert to byte indices
+                let beforeMatch = String(text.prefix(upTo: startIndex))
+                let byteStart = beforeMatch.utf8.count
+                let byteEnd = byteStart + matchedText.utf8.count
 
-            // Extract handle (remove @)
-            let handle = String(matchedText.dropFirst())
+                // Extract handle (remove @)
+                let handle = String(matchedText.dropFirst())
 
-            let facet = RichTextFacet(
-                index: ByteRange(byteStart: byteStart, byteEnd: byteEnd),
-                features: [.mention(did: handle)] // In real implementation, resolve to DID
-            )
-            facets.append(facet)
+                let facet = RichTextFacet(
+                    index: ByteRange(byteStart: byteStart, byteEnd: byteEnd),
+                    features: [.mention(did: handle)] // In real implementation, resolve to DID
+                )
+                facets.append(facet)
             }
         } catch {
             print("Warning: Mention detection failed: \(error)")
@@ -182,25 +182,25 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
             let regex = try NSRegularExpression(pattern: pattern, options: [])
             let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
-        for match in matches {
-            let range = match.range
-            let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
-            let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
-            let matchedText = String(text[startIndex..<endIndex])
+            for match in matches {
+                let range = match.range
+                let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
+                let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
+                let matchedText = String(text[startIndex..<endIndex])
 
-            // Convert to byte indices
-            let beforeMatch = String(text.prefix(upTo: startIndex))
-            let byteStart = beforeMatch.utf8.count
-            let byteEnd = byteStart + matchedText.utf8.count
+                // Convert to byte indices
+                let beforeMatch = String(text.prefix(upTo: startIndex))
+                let byteStart = beforeMatch.utf8.count
+                let byteEnd = byteStart + matchedText.utf8.count
 
-            // Extract tag (remove #)
-            let tag = String(matchedText.dropFirst())
+                // Extract tag (remove #)
+                let tag = String(matchedText.dropFirst())
 
-            let facet = RichTextFacet(
-                index: ByteRange(byteStart: byteStart, byteEnd: byteEnd),
-                features: [.tag(tag: tag)]
-            )
-            facets.append(facet)
+                let facet = RichTextFacet(
+                    index: ByteRange(byteStart: byteStart, byteEnd: byteEnd),
+                    features: [.tag(tag: tag)]
+                )
+                facets.append(facet)
             }
         } catch {
             print("Warning: Hashtag detection failed: \(error)")

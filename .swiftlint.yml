@@ -1,7 +1,7 @@
 # SwiftLint Configuration for Anchor
 # https://github.com/realm/SwiftLint
 
-# Paths to include during linting. 
+# Paths to include during linting
 included:
   - Anchor
   - AnchorKit/Sources
@@ -16,6 +16,17 @@ excluded:
   - Carthage
   - Package.swift
   - "*/Package.swift"
+  - "**/DerivedData"
+  - "**/Build"
+  - "**/.build"
+  - "**/*.derived"
+  - "**/runner.swift"
+  - "**/GeneratedAssetSymbols.swift"
+  - "**/*-OutputFileMap.json"
+  - "**/**/runner.swift"
+  - "**/DerivedSources"
+  - "**/*Tests*"
+  - "**/*Test*"
 
 # Rules to disable
 disabled_rules:

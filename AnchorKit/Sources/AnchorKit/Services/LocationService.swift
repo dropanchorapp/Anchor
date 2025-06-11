@@ -288,7 +288,7 @@ extension LocationService: CLLocationManagerDelegate {
 
         let coords = location.coordinate
         print("📍 Location updated: \(String(format: "%.6f", coords.latitude)), " +
-              "\(String(format: "%.6f", coords.longitude)) (cached for 10 minutes)")
+                "\(String(format: "%.6f", coords.longitude)) (cached for 10 minutes)")
 
         // If we were waiting for permission, complete the request
         if let completion = permissionCompletion {

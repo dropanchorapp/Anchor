@@ -13,7 +13,7 @@ let package = Package(
         .library(
             name: "AnchorKit",
             targets: ["AnchorKit"]
-        ),
+        )
     ],
     dependencies: [
         // No external dependencies - using built-in frameworks
@@ -28,6 +28,6 @@ let package = Package(
             name: "AnchorKitTests",
             dependencies: ["AnchorKit"],
             path: "Tests/AnchorKitTests"
-        ),
+        )
     ]
-) 
+)

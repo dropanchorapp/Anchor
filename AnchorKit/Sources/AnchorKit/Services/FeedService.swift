@@ -33,7 +33,7 @@ public final class FeedService: Sendable {
     /// - Parameter credentials: Authentication credentials
     /// - Returns: Success status
     @MainActor
-    public func fetchFollowingFeed(credentials: AuthCredentials) async throws -> Bool {
+    public func fetchFollowingFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
         isLoading = true
         error = nil
 
@@ -72,7 +72,7 @@ public final class FeedService: Sendable {
     /// - Parameter credentials: Authentication credentials
     /// - Returns: Success status
     @MainActor
-    public func fetchGlobalFeed(credentials: AuthCredentials) async throws -> Bool {
+    public func fetchGlobalFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
         // This would use a custom feed generator in the future
         // For now, return empty array
         posts = []

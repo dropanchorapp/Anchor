@@ -2,6 +2,38 @@ import Testing
 import Foundation
 @testable import AnchorKit
 
+// MARK: - Mock AuthCredentials for Testing
+
+// Since we can't use SwiftData in tests, we create a simple struct with same interface
+struct MockAuthCredentials: AuthCredentialsProtocol {
+    let handle: String
+    let accessToken: String
+    let refreshToken: String
+    let did: String
+    let expiresAt: Date
+    let createdAt: Date
+    
+    init(handle: String, accessToken: String, refreshToken: String, did: String, expiresAt: Date) {
+        self.handle = handle
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+        self.did = did
+        self.expiresAt = expiresAt
+        self.createdAt = Date()
+    }
+    
+    var isExpired: Bool {
+        expiresAt.timeIntervalSinceNow < 300
+    }
+    
+    var isValid: Bool {
+        !handle.isEmpty &&
+            !accessToken.isEmpty &&
+            !did.isEmpty &&
+            !isExpired
+    }
+}
+
 @Suite("Feed Service", .tags(.unit, .services, .feed))
 struct FeedServiceTests {
     
@@ -155,8 +187,8 @@ struct FeedServiceTests {
     
     // MARK: - Helper Methods
     
-    private func createMockCredentials() -> AuthCredentials {
-        return AuthCredentials(
+    private func createMockCredentials() -> MockAuthCredentials {
+        return MockAuthCredentials(
             handle: "test.bsky.social",
             accessToken: "test-access-token",
             refreshToken: "test-refresh-token",

@@ -50,7 +50,7 @@ struct AuthenticationModelTests {
     
     @Test("Valid credentials properties")
     func authCredentialsStorage() {
-        let credentials = AuthCredentials(
+        let credentials = MockAuthCredentials(
             handle: "test.bsky.social",
             accessToken: "test-access-token",
             refreshToken: "test-refresh-token",
@@ -68,7 +68,7 @@ struct AuthenticationModelTests {
     
     @Test("Expired credentials validation")
     func authCredentialsExpiration() {
-        let expiredCredentials = AuthCredentials(
+        let expiredCredentials = MockAuthCredentials(
             handle: "test.bsky.social",
             accessToken: "test-access-token", 
             refreshToken: "test-refresh-token",

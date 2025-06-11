@@ -1,9 +1,20 @@
 import Foundation
 import SwiftData
 
+/// Protocol for authentication credentials to enable testing
+public protocol AuthCredentialsProtocol {
+    var handle: String { get }
+    var accessToken: String { get }
+    var refreshToken: String { get }
+    var did: String { get }
+    var expiresAt: Date { get }
+    var isExpired: Bool { get }
+    var isValid: Bool { get }
+}
+
 /// Stores Bluesky authentication credentials using SwiftData
 @Model
-public final class AuthCredentials {
+public final class AuthCredentials: AuthCredentialsProtocol {
     /// Bluesky handle (e.g., "user.bsky.social")
     public var handle: String
 

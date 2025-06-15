@@ -9,7 +9,9 @@ struct BlueskyServiceTests {
     let blueskyService: BlueskyService
 
     init() async {
-        blueskyService = BlueskyService()
+        // Create BlueskyService with mock session to avoid SwiftData dependency in tests
+        let mockSession = MockURLSession()
+        blueskyService = BlueskyService(session: mockSession)
     }
 
     // MARK: - Rich Text Facets Tests

@@ -20,7 +20,7 @@ struct FeedTabView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if feedService.posts.isEmpty {
                         VStack(spacing: 12) {
-                            Image(systemName: "anchor")
+                            Image(systemName: "checkmark.bubble")
                                 .foregroundStyle(.secondary)
                                 .font(.title)
 

@@ -12,7 +12,7 @@ public protocol AuthCredentialsProtocol {
     var isValid: Bool { get }
 }
 
-/// Stores Bluesky authentication credentials using SwiftData
+/// Stores Bluesky authentication credentials
 @Model
 public final class AuthCredentials: AuthCredentialsProtocol {
     /// Bluesky handle (e.g., "user.bsky.social")
@@ -64,66 +64,5 @@ public extension AuthCredentials {
             !accessToken.isEmpty &&
             !did.isEmpty &&
             !isExpired
-    }
-}
-
-// MARK: - SwiftData Storage
-
-public extension AuthCredentials {
-    /// Save credentials to SwiftData
-    static func save(
-        _ credentials: AuthCredentials,
-        to context: ModelContext
-    ) throws {
-        // Clear any existing credentials first
-        try clearAll(from: context)
-
-        // Insert the new credentials
-        context.insert(credentials)
-        try context.save()
-    }
-
-    /// Load current valid credentials from SwiftData
-    static func current(from context: ModelContext) -> AuthCredentials? {
-        let descriptor = FetchDescriptor<AuthCredentials>(
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
-
-        do {
-            let allCredentials = try context.fetch(descriptor)
-            print("🔍 Found \(allCredentials.count) stored credentials")
-
-            guard let credentials = allCredentials.first else {
-                print("🔍 No credentials found in database")
-                return nil
-            }
-
-            print("🔍 Checking credentials for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
-
-            // Check if credentials are still valid
-            if credentials.isValid {
-                return credentials
-            } else {
-                print("🔍 Credentials expired, cleaning up")
-                // Clean up invalid credentials
-                try? clearAll(from: context)
-                return nil
-            }
-        } catch {
-            print("🔍 Error fetching credentials: \(error)")
-            return nil
-        }
-    }
-
-    /// Remove all credentials from SwiftData
-    static func clearAll(from context: ModelContext) throws {
-        let descriptor = FetchDescriptor<AuthCredentials>()
-        let credentials = try context.fetch(descriptor)
-
-        for credential in credentials {
-            context.delete(credential)
-        }
-
-        try context.save()
     }
 }

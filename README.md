@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A native macOS menubar app for location-based check-ins to Bluesky</strong>
+  <strong>A native macOS menubar app for location-based check-ins using the AT Protocol</strong>
 </p>
 
 <p align="center">
@@ -18,18 +18,19 @@
 </p>
 
 <p align="center">
-  Drop anchor at your favorite places and share them on the decentralized social web using the AT Protocol.
+  Drop anchor at your favorite places with structured data storage on AnchorPDS and optional social sharing via Bluesky.
 </p>
 
 ## ✨ Features
 
 - **🖥️ Native macOS Menubar App** - Always accessible from your menubar with a single click
-- **🔐 Bluesky Integration** - Secure authentication and posting via AT Protocol
+- **🔐 Dual PDS Architecture** - Store check-ins on AnchorPDS with optional Bluesky posting
 - **📍 Automatic Location** - CoreLocation integration with proper macOS permissions
 - **🗺️ Place Discovery** - Find nearby climbing gyms, cafes, and points of interest via OpenStreetMap
 - **💬 Custom Messages** - Add personal notes to your check-ins
 - **🏗️ Modular Architecture** - Shared AnchorKit framework ready for iOS and watchOS expansion
 - **🎯 Privacy-First** - Local storage only, no tracking or analytics
+- **🌐 AT Protocol Native** - Uses community lexicon standards for structured location data
 
 ## 📱 Screenshots
 
@@ -85,10 +86,45 @@ The fastest way to check in:
 1. Click the anchor icon in your menubar
 2. Navigate to "Nearby" tab
 3. Select a place and drop anchor
+4. **Optional**: Toggle "Also post to Bluesky" to control social sharing
 
-### Your Check-ins on Bluesky
+**Note**: All check-ins are stored on AnchorPDS regardless of your Bluesky posting preference.
 
-When you drop anchor, Anchor creates rich posts on your Bluesky feed with embedded location data:
+### How Anchor Works: Dual PDS Architecture
+
+Anchor uses a **dual Personal Data Server (PDS) architecture** that stores your check-ins on AnchorPDS while optionally posting to Bluesky:
+
+#### 1. **AnchorPDS** - Your Check-in Data Store
+
+All check-ins are stored on **AnchorPDS** (our dedicated Personal Data Server) using the official AT Protocol lexicon:
+
+```json
+{
+  "$type": "app.dropanchor.checkin",
+  "text": "Klimmuur Centraal (climbing)",
+  "createdAt": "2024-12-29T14:30:00Z",
+  "locations": [
+    {
+      "$type": "community.lexicon.location.geo",
+      "latitude": "52.0705",
+      "longitude": "4.3007"
+    },
+    {
+      "$type": "community.lexicon.location.address",
+      "name": "Klimmuur Centraal",
+      "street": "Stationsplein 45",
+      "locality": "Utrecht",
+      "region": "UT",
+      "country": "NL",
+      "postalCode": "3511ED"
+    }
+  ]
+}
+```
+
+#### 2. **Optional Bluesky Posts** - Share with Your Network
+
+When you enable "Also post to Bluesky" (enabled by default), Anchor creates rich posts on your Bluesky feed:
 
 **What you see on Bluesky:**
 
@@ -97,64 +133,34 @@ Dropped anchor at Klimmuur Centraal 🧭
 "Great lunch session with the team!" 🧗‍♂️
 ```
 
-**Under the hood - structured data:**
-
-**1. Standard Bluesky Post (`app.bsky.feed.post`)**
+**Under the hood (`app.bsky.feed.post`):**
 
 ```json
 {
   "$type": "app.bsky.feed.post",
   "text": "Dropped anchor at Klimmuur Centraal 🧭\n\"Great lunch session with the team!\" 🧗‍♂️",
   "createdAt": "2024-12-29T14:30:00Z",
-  "embed": {
-    "$type": "app.bsky.embed.record",
-    "record": {
-      "uri": "at://did:plc:abc123.../app.dropanchor.checkin/xyz789",
-      "cid": "bafyreighakis..."
-    }
-  },
   "facets": [
     {
       "index": { "byteStart": 17, "byteEnd": 35 },
-      "features": [{ "$type": "app.bsky.richtext.facet#link", "uri": "https://www.openstreetmap.org/way/123456" }]
+      "features": [{ 
+        "$type": "app.bsky.richtext.facet#link", 
+        "uri": "https://www.openstreetmap.org/way/123456" 
+      }]
     }
   ]
 }
 ```
 
-**2. Embedded Check-in Record (`app.dropanchor.checkin`)**
+#### Why This Architecture?
 
-```json
-{
-  "$type": "app.dropanchor.checkin",
-  "text": "Klimmuur Centraal (climbing)",
-  "createdAt": "2024-12-29T14:30:00Z",
-  "location": {
-    "$type": "app.dropanchor.place",
-    "name": "Klimmuur Centraal", 
-    "geo": {
-      "$type": "app.dropanchor.geo",
-      "lat": 52.0705,
-      "lng": 4.3007
-    },
-    "address": {
-      "streetAddress": "Stationsplein 45",
-      "locality": "Utrecht",
-      "region": "UT", 
-      "country": "NL",
-      "postalCode": "3511ED"
-    },
-    "uri": "https://www.openstreetmap.org/way/123456"
-  }
-}
-```
+This dual-PDS approach provides the best of both worlds:
 
-This dual-layer approach ensures your check-ins:
-
-- **Display beautifully** in all Bluesky clients with rich text formatting
-- **Remain fully compatible** with likes, replies, and reposts
-- **Include structured location data** for future mapping and discovery features
-- **Link to OpenStreetMap** for accurate place information
+- **🏠 Dedicated Storage** - Your check-ins live on AnchorPDS with rich location data
+- **🌐 Social Sharing** - Optional Bluesky posts for your social network
+- **📊 Future Features** - Rich querying and analytics from structured AnchorPDS data
+- **🔐 Privacy Control** - Choose what to share publicly vs. keep private
+- **🌍 AT Protocol Native** - Uses community lexicon standards for interoperability
 
 ## 🏗️ Architecture
 
@@ -164,12 +170,14 @@ Anchor is built with a modular architecture designed for cross-platform expansio
 
 - **Anchor (macOS App)** - Native SwiftUI menubar application
 - **AnchorKit** - Shared business logic framework for future iOS/watchOS apps
+- **AnchorPDS** - Dedicated Personal Data Server for structured check-in storage
 
 ### Technology Stack
 
 - **Swift 6** - Modern async/await concurrency with strict concurrency checking
 - **SwiftUI** - Native macOS user interface with MenuBarExtra
-- **AT Protocol** - Direct integration with Bluesky's decentralized network
+- **AT Protocol** - Dual PDS integration (AnchorPDS + optional Bluesky)
+- **Community Lexicon** - Uses `community.lexicon.location.*` standards
 - **CoreLocation** - Native location services with proper permission handling
 - **Overpass API** - Rich OpenStreetMap place data via `overpass.private.coffee`
 
@@ -189,9 +197,14 @@ Anchor/
 ├── AnchorKit/                # Shared Business Logic
 │   ├── Sources/AnchorKit/
 │   │   ├── Models/          # Place, AuthCredentials, Settings
-│   │   ├── Services/        # Bluesky, Overpass, Location services
+│   │   ├── Services/        # AnchorPDS, Bluesky, Overpass, Location
+│   │   ├── ATProtocol/      # AT Protocol client implementations
 │   │   └── Utils/           # Shared utilities
-│   └── Tests/               # Unit tests
+│   └── Tests/               # Unit tests (55 tests)
+├── anchorPDS/               # Personal Data Server Backend
+│   ├── backend/             # Deno/TypeScript server
+│   ├── shared/              # Shared types and schemas
+│   └── test/                # Backend tests
 └── Static/                  # Assets and documentation
 ```
 
@@ -204,7 +217,7 @@ The shared framework can be built and tested independently:
 ```bash
 cd AnchorKit
 swift build
-swift test
+swift test  # Runs 55 tests including AnchorPDS integration
 ```
 
 ### Building the macOS App
@@ -220,11 +233,33 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
 ### Running Tests
 
 ```bash
-# Test AnchorKit
+# Test AnchorKit (includes AnchorPDS client tests)
 cd AnchorKit && swift test
+
+# Test AnchorPDS backend
+cd anchorPDS && deno test --allow-all test/
 
 # Test the full app
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
+```
+
+### AnchorPDS Development
+
+The AnchorPDS backend is built with Deno and TypeScript:
+
+```bash
+# Install dependencies
+cd anchorPDS
+deno cache backend/main.ts
+
+# Run locally
+deno run --allow-all backend/main.ts
+
+# Format code
+deno fmt
+
+# Run tests
+deno test --allow-all test/
 ```
 
 ## 🔒 Privacy & Security
@@ -240,7 +275,8 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 ### ✅ Completed (v1.0)
 
 - [x] Native macOS menubar app
-- [x] Bluesky authentication and posting
+- [x] **Dual PDS Architecture** - AnchorPDS + optional Bluesky posting
+- [x] **Community Lexicon Integration** - Uses AT Protocol standards
 - [x] Location services integration
 - [x] Nearby place discovery
 - [x] Modular AnchorKit architecture
@@ -248,17 +284,19 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 ### 🔄 In Progress (v1.1)
 
 - [ ] App Store distribution
-- [ ] Check-in history view
+- [ ] Check-in history view (from AnchorPDS)
 - [ ] Default message preferences
 - [ ] Launch at login option
+- [ ] Global feed discovery
 
 ### 🚀 Future (v2.0+)
 
 - [ ] **iOS Companion App** - Full iOS app using shared AnchorKit
 - [ ] **Apple Watch App** - Quick drops from your wrist
-- [ ] **Custom Record Type** - `app.anchor.drop` for richer structured data
+- [ ] **Rich Analytics** - Personal insights from AnchorPDS data
 - [ ] **Shortcuts Integration** - Automate check-ins
-- [ ] **Social Features** - Follow friends' check-ins across the network
+- [ ] **Federation** - Connect with other Anchor instances
+- [ ] **Social Features** - Follow friends' check-ins across the AT Protocol network
 
 ## 🤝 Contributing
 

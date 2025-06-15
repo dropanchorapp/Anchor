@@ -302,12 +302,23 @@ struct FeedServiceTests {
 
         let credentials = createMockCredentials()
 
-        do {
-            _ = try await feedService.fetchFollowingFeed(credentials: credentials)
-            Issue.record("Expected error to be thrown")
-        } catch {
-            // Expected to throw an error (could be FeedError or AnchorPDSError)
-            #expect(error is FeedError || error is AnchorPDSError)
+        // The method should complete successfully but set an error
+        let result = try await feedService.fetchFollowingFeed(credentials: credentials)
+        
+        // Should return false indicating failure
+        #expect(result == false)
+        
+        // Should have an error set
+        await #expect(feedService.error != nil)
+        
+        // Should be an authentication error
+        if let error = await feedService.error {
+            #expect(error is FeedError)
+            if case .authenticationError = error {
+                // This is the expected error type
+            } else {
+                Issue.record("Expected authenticationError but got \(error)")
+            }
         }
     }
 

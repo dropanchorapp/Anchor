@@ -106,23 +106,37 @@ public final class FeedService: Sendable {
     /// - Parameter did: The DID to look up
     /// - Returns: Profile information or nil if not found
     private func getProfileInfo(for did: String) async -> BlueskyProfileInfo? {
-        // For now, return a basic profile with just the DID
-        // In a full implementation, we'd call Bluesky's profile API
-        return BlueskyProfileInfo(
-            did: did,
-            handle: extractHandleFromDID(did) ?? did,
-            displayName: nil,
-            avatar: nil
-        )
-    }
-    
-    /// Extract handle from DID (simplified)
-    /// - Parameter did: The DID string
-    /// - Returns: Handle if extractable, nil otherwise
-    private func extractHandleFromDID(_ did: String) -> String? {
-        // This is a simplified implementation
-        // In reality, you'd need to resolve the DID to get the handle
-        return nil
+        do {
+            // Build request to Bluesky's public API
+            guard let url = URL(string: "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=\(did)") else {
+                return nil
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("Anchor/1.0 (macOS)", forHTTPHeaderField: "User-Agent")
+            
+            let (data, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                return nil
+            }
+            
+            let profileResponse = try JSONDecoder().decode(BlueskyProfileResponse.self, from: data)
+            
+            return BlueskyProfileInfo(
+                did: profileResponse.did,
+                handle: profileResponse.handle,
+                displayName: profileResponse.displayName,
+                avatar: profileResponse.avatar
+            )
+            
+        } catch {
+            print("Failed to fetch profile for DID \(did): \(error)")
+            return nil
+        }
     }
 
     private func buildAuthenticatedRequest(
@@ -230,6 +244,23 @@ public struct CheckinEmbedRecord: Sendable {
 }
 
 // MARK: - API Response Models
+
+internal struct BlueskyProfileResponse: Codable {
+    let did: String
+    let handle: String
+    let displayName: String?
+    let avatar: String?
+    let description: String?
+    let followersCount: Int?
+    let followsCount: Int?
+    let postsCount: Int?
+    
+    // We only need the basic fields for our use case
+    private enum CodingKeys: String, CodingKey {
+        case did, handle, displayName, avatar, description
+        case followersCount, followsCount, postsCount
+    }
+}
 
 internal struct TimelineResponse: Codable {
     let feed: [TimelineFeedItem]

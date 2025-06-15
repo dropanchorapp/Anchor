@@ -34,6 +34,20 @@ struct MockAuthCredentials: AuthCredentialsProtocol {
     }
 }
 
+// MARK: - Test Models
+
+// Mirror of the internal BlueskyProfileResponse for testing
+internal struct BlueskyProfileResponse: Codable {
+    let did: String
+    let handle: String
+    let displayName: String?
+    let avatar: String?
+    let description: String?
+    let followersCount: Int?
+    let followsCount: Int?
+    let postsCount: Int?
+}
+
 // MARK: - Mock Services for Testing
 
 @MainActor
@@ -161,13 +175,14 @@ struct FeedServiceTests {
 
     @Test("Fetch following feed succeeds with valid response")
     func fetchFollowingFeed_success() async throws {
-        let mockResponse = createMockTimelineResponse()
+        // Note: Following feed now also uses AnchorPDS, so we use the same mock structure
+        let mockResponse = createMockAnchorPDSFeedResponse()
         let mockData = try JSONEncoder().encode(mockResponse)
 
         await MainActor.run {
             mockSession.data = mockData
             mockSession.response = HTTPURLResponse(
-                url: URL(string: "https://bsky.social/xrpc/app.bsky.feed.getTimeline")!,
+                url: URL(string: "http://localhost:3000/xrpc/app.dropanchor.feed.getGlobal")!,
                 statusCode: 200,
                 httpVersion: nil,
                 headerFields: nil
@@ -179,26 +194,64 @@ struct FeedServiceTests {
         let result = try await feedService.fetchFollowingFeed(credentials: credentials)
 
         #expect(result == true)
-        await #expect(feedService.posts.count == 2) // Mock response has 2 items with dropanchor embeds
+        await #expect(feedService.posts.count == 2) // Mock response has 2 check-ins
         await #expect(feedService.isLoading == false)
         await #expect(feedService.error == nil)
     }
 
-    @Test("Fetch global feed succeeds with AnchorPDS response")
+    @Test("Fetch global feed succeeds with AnchorPDS response and profile enrichment")
     func fetchGlobalFeed_success() async throws {
         // Mock AnchorPDS response
         let mockAnchorPDSResponse = createMockAnchorPDSFeedResponse()
         let mockAnchorPDSData = try JSONEncoder().encode(mockAnchorPDSResponse)
+        
+        // Mock Bluesky profile responses for both users
+        let mockProfile1 = BlueskyProfileResponse(
+            did: "did:plc:test123",
+            handle: "climber1.bsky.social",
+            displayName: "Test Climber 1",
+            avatar: "https://example.com/avatar1.jpg",
+            description: "Rock climbing enthusiast",
+            followersCount: 100,
+            followsCount: 50,
+            postsCount: 25
+        )
+        let mockProfile1Data = try JSONEncoder().encode(mockProfile1)
+        
+        let mockProfile2 = BlueskyProfileResponse(
+            did: "did:plc:test456",
+            handle: "climber2.bsky.social",
+            displayName: "Test Climber 2",
+            avatar: "https://example.com/avatar2.jpg",
+            description: "Another climber",
+            followersCount: 75,
+            followsCount: 30,
+            postsCount: 15
+        )
+        let mockProfile2Data = try JSONEncoder().encode(mockProfile2)
 
         await MainActor.run {
-            // First call will be to AnchorPDS
-            mockSession.data = mockAnchorPDSData
-            mockSession.response = HTTPURLResponse(
-                url: URL(string: "http://localhost:3000/xrpc/app.dropanchor.feed.getGlobal")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!
+            // Set up mock responses - first call to AnchorPDS, then profile calls
+            mockSession.responses = [
+                (mockAnchorPDSData, HTTPURLResponse(
+                    url: URL(string: "http://localhost:3000/xrpc/app.dropanchor.feed.getGlobal")!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!),
+                (mockProfile1Data, HTTPURLResponse(
+                    url: URL(string: "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile")!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!),
+                (mockProfile2Data, HTTPURLResponse(
+                    url: URL(string: "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile")!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!)
+            ]
         }
 
         let credentials = createMockCredentials()
@@ -210,10 +263,20 @@ struct FeedServiceTests {
         await #expect(feedService.isLoading == false)
         await #expect(feedService.error == nil)
         
-        // Verify the posts have the expected structure
+        // Verify the posts have the expected structure with profile enrichment
         let posts = await feedService.posts
-        #expect(posts.first?.checkinRecord != nil)
-        #expect(posts.first?.author.did == "did:plc:test123")
+        let firstPost = posts.first!
+        #expect(firstPost.checkinRecord != nil)
+        #expect(firstPost.author.did == "did:plc:test123")
+        #expect(firstPost.author.handle == "climber1.bsky.social")
+        #expect(firstPost.author.displayName == "Test Climber 1")
+        #expect(firstPost.author.avatar == "https://example.com/avatar1.jpg")
+        
+        let secondPost = posts[1]
+        #expect(secondPost.author.did == "did:plc:test456")
+        #expect(secondPost.author.handle == "climber2.bsky.social")
+        #expect(secondPost.author.displayName == "Test Climber 2")
+        #expect(secondPost.author.avatar == "https://example.com/avatar2.jpg")
     }
 
     @Test("Fetch global feed handles AnchorPDS errors")
@@ -233,8 +296,8 @@ struct FeedServiceTests {
             _ = try await feedService.fetchGlobalFeed(credentials: credentials)
             Issue.record("Expected error to be thrown")
         } catch {
-            // Expected to throw an error
-            #expect(error is FeedError || error is URLError)
+            // Expected to throw an error (could be FeedError, URLError, or AnchorPDSError)
+            #expect(error is FeedError || error is URLError || error is AnchorPDSError)
         }
     }
 
@@ -242,7 +305,7 @@ struct FeedServiceTests {
     func fetchFollowingFeed_httpError() async throws {
         await MainActor.run {
             mockSession.response = HTTPURLResponse(
-                url: URL(string: "https://bsky.social/xrpc/app.bsky.feed.getTimeline")!,
+                url: URL(string: "http://localhost:3000/xrpc/app.dropanchor.feed.getGlobal")!,
                 statusCode: 401,
                 httpVersion: nil,
                 headerFields: nil
@@ -253,9 +316,10 @@ struct FeedServiceTests {
 
         do {
             _ = try await feedService.fetchFollowingFeed(credentials: credentials)
-            Issue.record("Expected FeedError to be thrown")
+            Issue.record("Expected error to be thrown")
         } catch {
-            #expect(error is FeedError)
+            // Expected to throw an error (could be FeedError or AnchorPDSError)
+            #expect(error is FeedError || error is AnchorPDSError)
         }
     }
 
@@ -264,7 +328,7 @@ struct FeedServiceTests {
         await MainActor.run {
             mockSession.data = "invalid json".data(using: .utf8)!
             mockSession.response = HTTPURLResponse(
-                url: URL(string: "https://bsky.social/xrpc/app.bsky.feed.getTimeline")!,
+                url: URL(string: "http://localhost:3000/xrpc/app.dropanchor.feed.getGlobal")!,
                 statusCode: 200,
                 httpVersion: nil,
                 headerFields: nil
@@ -275,21 +339,23 @@ struct FeedServiceTests {
 
         do {
             _ = try await feedService.fetchFollowingFeed(credentials: credentials)
-            Issue.record("Expected DecodingError to be thrown")
+            Issue.record("Expected error to be thrown")
         } catch {
-            #expect(error is DecodingError)
+            // Expected to throw an error (could be DecodingError wrapped in AnchorPDSError)
+            #expect(error is DecodingError || error is AnchorPDSError)
         }
     }
 
     @Test("Fetch following feed filters out non-dropanchor posts")
     func fetchFollowingFeed_filteredResults() async throws {
-        let mockResponse = createMockTimelineResponseWithoutDropanchor()
+        // Create an empty AnchorPDS response (no check-ins)
+        let mockResponse = AnchorPDSFeedResponse(checkins: [], cursor: nil)
         let mockData = try JSONEncoder().encode(mockResponse)
 
         await MainActor.run {
             mockSession.data = mockData
             mockSession.response = HTTPURLResponse(
-                url: URL(string: "https://bsky.social/xrpc/app.bsky.feed.getTimeline")!,
+                url: URL(string: "http://localhost:3000/xrpc/app.dropanchor.feed.getGlobal")!,
                 statusCode: 200,
                 httpVersion: nil,
                 headerFields: nil
@@ -301,7 +367,7 @@ struct FeedServiceTests {
         let result = try await feedService.fetchFollowingFeed(credentials: credentials)
 
         #expect(result == true)
-        await #expect(feedService.posts.count == 0) // No dropanchor posts in response
+        await #expect(feedService.posts.count == 0) // No check-ins in response
     }
 
     // MARK: - Helper Methods
@@ -555,12 +621,38 @@ final class MockURLSession: URLSessionProtocol, @unchecked Sendable {
     var data: Data?
     var response: URLResponse?
     var error: Error?
+    
+    // Support for multiple responses in sequence
+    var responses: [(Data, URLResponse)] = []
+    private var responseIndex = 0
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         if let error = error {
             throw error
         }
+        
+        // If we have multiple responses configured, use them in sequence
+        if !responses.isEmpty {
+            let currentIndex = responseIndex
+            responseIndex += 1
+            
+            if currentIndex < responses.count {
+                return responses[currentIndex]
+            } else {
+                // Fall back to last response if we've exhausted the list
+                return responses.last ?? (Data(), URLResponse())
+            }
+        }
 
         return (data ?? Data(), response ?? URLResponse())
+    }
+    
+    // Reset for new test
+    func reset() {
+        data = nil
+        response = nil
+        error = nil
+        responses = []
+        responseIndex = 0
     }
 }

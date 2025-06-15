@@ -201,12 +201,10 @@ Anchor/
 │   │   ├── ATProtocol/      # AT Protocol client implementations
 │   │   └── Utils/           # Shared utilities
 │   └── Tests/               # Unit tests (55 tests)
-├── anchorPDS/               # Personal Data Server Backend
-│   ├── backend/             # Deno/TypeScript server
-│   ├── shared/              # Shared types and schemas
-│   └── test/                # Backend tests
 └── Static/                  # Assets and documentation
 ```
+
+**Note**: AnchorPDS backend is a separate project available at <https://www.val.town/x/tijs/anchorPDS>
 
 ## 🔧 Development
 
@@ -236,31 +234,13 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
 # Test AnchorKit (includes AnchorPDS client tests)
 cd AnchorKit && swift test
 
-# Test AnchorPDS backend
-cd anchorPDS && deno test --allow-all test/
-
 # Test the full app
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 ```
 
-### AnchorPDS Development
+### AnchorPDS
 
-The AnchorPDS backend is built with Deno and TypeScript:
-
-```bash
-# Install dependencies
-cd anchorPDS
-deno cache backend/main.ts
-
-# Run locally
-deno run --allow-all backend/main.ts
-
-# Format code
-deno fmt
-
-# Run tests
-deno test --allow-all test/
-```
+AnchorPDS is a separate project hosted on Val Town. You can experiment with it at: <https://www.val.town/x/tijs/anchorPDS>
 
 ## 🔒 Privacy & Security
 

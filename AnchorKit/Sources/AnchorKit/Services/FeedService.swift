@@ -92,7 +92,10 @@ public final class FeedService {
 
         } catch AnchorPDSError.authenticationRequired {
             // Handle AnchorPDS authentication specifically
-            self.error = FeedError.authenticationError("AnchorPDS authentication is currently unavailable. This is an experimental feature - check-ins are still being saved to AnchorPDS, but the global feed cannot be displayed right now.")
+            self.error = FeedError.authenticationError(
+                "AnchorPDS authentication is currently unavailable. This is an experimental feature - " +
+                "check-ins are still being saved to AnchorPDS, but the global feed cannot be displayed right now."
+            )
             posts = [] // Clear any existing posts
             return false
             

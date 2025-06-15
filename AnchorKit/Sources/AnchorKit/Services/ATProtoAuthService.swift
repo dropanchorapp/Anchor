@@ -70,7 +70,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
             _credentials = newCredentials
             try await storage.save(newCredentials)
 
-            print("✅ Successfully authenticated as @\(newCredentials.handle) (expires in \(expirationInterval/60) minutes)")
+            print("✅ Successfully authenticated as @\(newCredentials.handle) (expires in \(expirationInterval / 60) minutes)")
             return newCredentials
 
         } catch {
@@ -105,7 +105,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
             _credentials = newCredentials
             try await storage.save(newCredentials)
 
-            print("✅ Successfully refreshed credentials for @\(newCredentials.handle) (expires in \(expirationInterval/60) minutes)")
+            print("✅ Successfully refreshed credentials for @\(newCredentials.handle) (expires in \(expirationInterval / 60) minutes)")
             return newCredentials
 
         } catch {

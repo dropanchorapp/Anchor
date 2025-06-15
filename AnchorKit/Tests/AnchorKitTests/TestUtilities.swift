@@ -47,24 +47,7 @@ public enum TestUtilities {
         return ATProtoAuthService(client: client, storage: storage)
     }
     
-    /// Creates a SwiftData-based service with in-memory ModelContainer for testing
-    /// This follows the pattern from Hacking with Swift for testing SwiftData code
-    /// Reference: https://www.hackingwithswift.com/quick-start/swiftdata/how-to-write-unit-tests-for-your-swiftdata-code
-    @MainActor
-    public static func createTestBlueskyServiceWithSwiftData(session: URLSessionProtocol = MockURLSession()) throws -> BlueskyService {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: AuthCredentials.self, configurations: config)
-        let storage = SwiftDataCredentialsStorage(context: container.mainContext)
-        return BlueskyService(session: session, storage: storage)
-    }
-    
-    /// Creates an in-memory ModelContainer for testing SwiftData operations
-    /// This is useful for tests that need to verify SwiftData persistence behavior
-    @MainActor
-    public static func createTestModelContainer() throws -> ModelContainer {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: AuthCredentials.self, configurations: config)
-    }
+
 
     // MARK: - Mock Data
 

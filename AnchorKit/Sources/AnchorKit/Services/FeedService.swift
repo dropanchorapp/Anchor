@@ -1,11 +1,14 @@
 import Foundation
 
-/// Service for fetching and filtering Bluesky feeds for dropanchor posts
+/// Service for fetching check-in feeds from AnchorPDS with Bluesky profile enrichment
+@MainActor
 @Observable
 public final class FeedService: Sendable {
 
     // MARK: - Properties
 
+    private let anchorPDSService: AnchorPDSService
+    private let blueskyService: BlueskyService
     private let session: URLSessionProtocol
     private let baseURL = "https://bsky.social"
 
@@ -25,77 +28,101 @@ public final class FeedService: Sendable {
 
     public init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
+        self.anchorPDSService = AnchorPDSService(session: session)
+        self.blueskyService = BlueskyService()
+    }
+    
+    // MARK: - Convenience Initializers
+    
+    @MainActor
+    public static func create(session: URLSessionProtocol = URLSession.shared) -> FeedService {
+        return FeedService(session: session)
     }
 
     // MARK: - Feed Fetching
 
-    /// Fetch following timeline filtered for dropanchor posts
+    /// Fetch global check-in feed from AnchorPDS
     /// - Parameter credentials: Authentication credentials
     /// - Returns: Success status
-    @MainActor
     public func fetchFollowingFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
+        return try await fetchGlobalFeed(credentials: credentials)
+    }
+
+    /// Fetch global check-in feed from AnchorPDS
+    /// - Parameter credentials: Authentication credentials
+    /// - Returns: Success status
+    public func fetchGlobalFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
         isLoading = true
         error = nil
 
         defer { isLoading = false }
 
-        // Fetch timeline using AT Protocol with larger limit
-        let request = try buildAuthenticatedRequest(
-            endpoint: "/xrpc/app.bsky.feed.getTimeline?limit=100",
-            method: "GET",
-            accessToken: credentials.accessToken
-        )
-
-        let (data, response) = try await session.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw FeedError.invalidResponse
+        do {
+            // Convert credentials to AuthCredentials if needed
+            let authCredentials: AuthCredentials
+            if let creds = credentials as? AuthCredentials {
+                authCredentials = creds
+            } else {
+                // Create AuthCredentials from protocol
+                authCredentials = AuthCredentials(
+                    handle: credentials.handle,
+                    accessToken: credentials.accessToken,
+                    refreshToken: credentials.refreshToken,
+                    did: credentials.did,
+                    expiresAt: credentials.expiresAt
+                )
+            }
+            
+            // Fetch global feed from AnchorPDS
+            let feedResponse = try await anchorPDSService.getGlobalFeed(
+                limit: 50,
+                cursor: nil,
+                credentials: authCredentials
+            )
+            
+            // Convert AnchorPDS responses to FeedPost format with profile enrichment
+            var enrichedPosts: [FeedPost] = []
+            
+            for checkinResponse in feedResponse.checkins {
+                // Get profile info from Bluesky for this DID
+                let profileInfo = await getProfileInfo(for: checkinResponse.author.did)
+                
+                let feedPost = FeedPost(from: checkinResponse, profileInfo: profileInfo)
+                enrichedPosts.append(feedPost)
+            }
+            
+            posts = enrichedPosts
+            return true
+            
+        } catch {
+            self.error = FeedError.decodingError(error)
+            throw error
         }
-
-        guard httpResponse.statusCode == 200 else {
-            throw FeedError.httpError(httpResponse.statusCode)
-        }
-
-        let timelineResponse = try JSONDecoder().decode(TimelineResponse.self, from: data)
-
-        // Filter for posts with dropanchor embeds
-        let filteredPosts = timelineResponse.feed.compactMap { feedItem -> FeedPost? in
-            guard hasDropanchorEmbed(feedItem.post) else { return nil }
-            return FeedPost(from: feedItem)
-        }
-
-        posts = filteredPosts
-        return true
-    }
-
-    /// Fetch global dropanchor feed (requires custom feed generator)
-    /// - Parameter credentials: Authentication credentials
-    /// - Returns: Success status
-    @MainActor
-    public func fetchGlobalFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
-        // This would use a custom feed generator in the future
-        // For now, return empty array
-        posts = []
-        return true
     }
 
     // MARK: - Private Methods
 
-    /// Check if a post has a dropanchor embed
-    /// - Parameter post: The post to check
-    /// - Returns: True if post contains dropanchor embed
-    private func hasDropanchorEmbed(_ post: TimelinePost) -> Bool {
-        guard let embed = post.embed else { return false }
-
-        // Check if it's a record embed (can be either the schema type or the view type)
-        guard embed.type == "app.bsky.embed.record" || embed.type == "app.bsky.embed.record#view" else { return false }
-
-        // Check if the embedded record is a dropanchor checkin
-        guard let record = embed.record,
-              let uri = record.uri else { return false }
-
-        // Check if the record collection is app.dropanchor.checkin
-        return uri.contains("/app.dropanchor.checkin/")
+    /// Get profile information from Bluesky for a given DID
+    /// - Parameter did: The DID to look up
+    /// - Returns: Profile information or nil if not found
+    private func getProfileInfo(for did: String) async -> BlueskyProfileInfo? {
+        // For now, return a basic profile with just the DID
+        // In a full implementation, we'd call Bluesky's profile API
+        return BlueskyProfileInfo(
+            did: did,
+            handle: extractHandleFromDID(did) ?? did,
+            displayName: nil,
+            avatar: nil
+        )
+    }
+    
+    /// Extract handle from DID (simplified)
+    /// - Parameter did: The DID string
+    /// - Returns: Handle if extractable, nil otherwise
+    private func extractHandleFromDID(_ did: String) -> String? {
+        // This is a simplified implementation
+        // In reality, you'd need to resolve the DID to get the handle
+        return nil
     }
 
     private func buildAuthenticatedRequest(
@@ -123,7 +150,7 @@ public struct FeedPost: Identifiable, Sendable {
     public let id: String
     public let author: FeedAuthor
     public let record: ATProtoRecord
-    public let checkinRecord: CheckinEmbedRecord?
+    public let checkinRecord: AnchorPDSCheckinRecord?
 
     internal init(from feedItem: TimelineFeedItem) {
         self.id = feedItem.post.uri
@@ -132,11 +159,27 @@ public struct FeedPost: Identifiable, Sendable {
 
         // Extract checkin record if available
         if let embed = feedItem.post.embed,
-           let record = embed.record {
-            self.checkinRecord = CheckinEmbedRecord(from: record)
+           let _ = embed.record {
+            self.checkinRecord = nil // Legacy support
         } else {
             self.checkinRecord = nil
         }
+    }
+    
+    // New initializer for AnchorPDS responses
+    internal init(from checkinResponse: AnchorPDSCheckinResponse, profileInfo: BlueskyProfileInfo?) {
+        self.id = checkinResponse.uri
+        self.author = FeedAuthor(
+            did: checkinResponse.author.did,
+            handle: profileInfo?.handle ?? checkinResponse.author.did,
+            displayName: profileInfo?.displayName,
+            avatar: profileInfo?.avatar
+        )
+        self.record = ATProtoRecord(
+            text: checkinResponse.value.text,
+            createdAt: ISO8601DateFormatter().date(from: checkinResponse.value.createdAt) ?? Date()
+        )
+        self.checkinRecord = checkinResponse.value
     }
 }
 
@@ -152,6 +195,21 @@ public struct FeedAuthor: Sendable {
         self.displayName = author.displayName
         self.avatar = author.avatar
     }
+    
+    // New initializer for AnchorPDS responses with profile info
+    internal init(did: String, handle: String, displayName: String?, avatar: String?) {
+        self.did = did
+        self.handle = handle
+        self.displayName = displayName
+        self.avatar = avatar
+    }
+}
+
+public struct BlueskyProfileInfo: Sendable {
+    public let did: String
+    public let handle: String
+    public let displayName: String?
+    public let avatar: String?
 }
 
 public struct CheckinEmbedRecord: Sendable {

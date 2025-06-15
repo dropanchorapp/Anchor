@@ -27,7 +27,7 @@ struct FeedTabView: View {
                             Text("No check-ins found")
                                 .font(.headline)
 
-                            Text("People you follow haven't dropped anchor recently.")
+                            Text("No check-ins found in the global feed.")
                                 .foregroundStyle(.secondary)
                                 .font(.caption)
                                 .multilineTextAlignment(.center)
@@ -87,7 +87,7 @@ struct FeedTabView: View {
         guard let credentials = blueskyService.credentials else { return }
 
         do {
-            _ = try await feedService.fetchFollowingFeed(credentials: credentials)
+            _ = try await feedService.fetchGlobalFeed(credentials: credentials)
         } catch {
             print("Failed to load feed: \(error)")
         }
@@ -140,9 +140,26 @@ struct FeedPostView: View {
             }
             .buttonStyle(.plain)
 
-            // Post content
-            Text(.init(post.record.formattedText))
-                .font(.caption)
+            // Check-in content
+            VStack(alignment: .leading, spacing: 4) {
+                Text(.init(post.record.formattedText))
+                    .font(.caption)
+                
+                // Show location info if available from checkin record
+                if let checkinRecord = post.checkinRecord,
+                   let locations = checkinRecord.locations,
+                   !locations.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "location")
+                            .foregroundStyle(.secondary)
+                            .font(.caption2)
+                        
+                        Text(formatLocationInfo(locations))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
@@ -152,6 +169,27 @@ struct FeedPostView: View {
         if let url = URL(string: "https://bsky.app/profile/\(handle)") {
             NSWorkspace.shared.open(url)
         }
+    }
+    
+    private func formatLocationInfo(_ locations: [LocationItem]) -> String {
+        for location in locations {
+            switch location {
+            case .address(let address):
+                var components: [String] = []
+                if let name = address.name {
+                    components.append(name)
+                }
+                if let locality = address.locality {
+                    components.append(locality)
+                }
+                if !components.isEmpty {
+                    return components.joined(separator: ", ")
+                }
+            case .geo(let geo):
+                return "📍 \(geo.latitude), \(geo.longitude)"
+            }
+        }
+        return "📍 Location"
     }
 }
 

@@ -29,7 +29,7 @@ public final class FeedService: Sendable {
     public init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
         self.anchorPDSService = AnchorPDSService(session: session)
-        self.blueskyService = BlueskyService()
+        self.blueskyService = BlueskyService(session: session)
     }
     
     // MARK: - Convenience Initializers

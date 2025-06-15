@@ -74,6 +74,11 @@ public final class ATProtoClient: ATProtoClientProtocol {
         )
 
         let (data, response) = try await session.data(for: httpRequest)
+        
+        // Debug response
+        if let httpResponse = response as? HTTPURLResponse {
+        }
+        
         try validateResponse(response)
 
         do {

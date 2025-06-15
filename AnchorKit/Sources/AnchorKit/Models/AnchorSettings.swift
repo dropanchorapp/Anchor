@@ -13,17 +13,22 @@ public struct AnchorSettings: Codable, Sendable {
 
     /// Preferred place categories to prioritize in searches
     public let preferredCategories: [String]
+    
+    /// Whether to create Bluesky posts when checking in (in addition to AnchorPDS records)
+    public let createBlueskyPosts: Bool
 
     public init(
         defaultMessage: String = "",
         includeEmoji: Bool = true,
         searchRadius: Double = 1000.0, // 1km default
-        preferredCategories: [String] = ["climbing", "gym", "cafe"]
+        preferredCategories: [String] = ["climbing", "gym", "cafe"],
+        createBlueskyPosts: Bool = true // Default to enabled for backward compatibility
     ) {
         self.defaultMessage = defaultMessage
         self.includeEmoji = includeEmoji
         self.searchRadius = searchRadius
         self.preferredCategories = preferredCategories
+        self.createBlueskyPosts = createBlueskyPosts
     }
 }
 
@@ -66,7 +71,8 @@ extension AnchorSettings {
             defaultMessage: message,
             includeEmoji: includeEmoji,
             searchRadius: searchRadius,
-            preferredCategories: preferredCategories
+            preferredCategories: preferredCategories,
+            createBlueskyPosts: createBlueskyPosts
         )
     }
 
@@ -76,7 +82,8 @@ extension AnchorSettings {
             defaultMessage: defaultMessage,
             includeEmoji: enabled,
             searchRadius: searchRadius,
-            preferredCategories: preferredCategories
+            preferredCategories: preferredCategories,
+            createBlueskyPosts: createBlueskyPosts
         )
     }
 
@@ -86,7 +93,19 @@ extension AnchorSettings {
             defaultMessage: defaultMessage,
             includeEmoji: includeEmoji,
             searchRadius: max(100, min(5000, radius)), // Clamp between 100m and 5km
-            preferredCategories: preferredCategories
+            preferredCategories: preferredCategories,
+            createBlueskyPosts: createBlueskyPosts
+        )
+    }
+    
+    /// Update Bluesky posting preference
+    public func withBlueskyPostsEnabled(_ enabled: Bool) -> AnchorSettings {
+        AnchorSettings(
+            defaultMessage: defaultMessage,
+            includeEmoji: includeEmoji,
+            searchRadius: searchRadius,
+            preferredCategories: preferredCategories,
+            createBlueskyPosts: enabled
         )
     }
 }

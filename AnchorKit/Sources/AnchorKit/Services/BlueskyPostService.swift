@@ -53,13 +53,6 @@ public final class BlueskyPostService: BlueskyPostServiceProtocol {
             record: postRecord
         )
 
-        do {
-            let response = try await client.createPost(request: request, credentials: credentials)
-            print("✅ Successfully created post: \(response.uri)")
-            return response
-        } catch {
-            print("❌ Failed to create post: \(error)")
-            throw error
-        }
+        return try await client.createPost(request: request, credentials: credentials)
     }
 }

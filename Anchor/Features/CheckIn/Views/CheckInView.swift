@@ -13,10 +13,19 @@ struct CheckInView: View {
     @State private var isPosting = false
     @State private var errorMessage: String?
     @State private var showingError = false
+    @State private var shouldCreateBlueskyPost: Bool
 
     // MARK: - Services
     @Environment(BlueskyService.self) private var blueskyService
     @Environment(\.modelContext) private var modelContext
+    
+    // MARK: - Initialization
+    init(place: Place, onCancel: @escaping () -> Void, onComplete: @escaping () -> Void) {
+        self.place = place
+        self.onCancel = onCancel
+        self.onComplete = onComplete
+        self._shouldCreateBlueskyPost = State(initialValue: AnchorSettings.current.createBlueskyPosts)
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -41,7 +50,7 @@ struct CheckInView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isPosting || !blueskyService.isAuthenticated)
+                .disabled(isPosting)
             }
             .padding()
 
@@ -91,14 +100,29 @@ struct CheckInView: View {
                     )
                     .padding(.horizontal)
             }
+            
+            // Bluesky posting toggle
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Also post to Bluesky", isOn: $shouldCreateBlueskyPost)
+                    .font(.subheadline)
+                    .disabled(!blueskyService.isAuthenticated)
+                    .padding(.horizontal)
+                
+                if shouldCreateBlueskyPost && !blueskyService.isAuthenticated {
+                    Text("Sign in to Bluesky to enable posting")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal)
+                }
+            }
 
-            if !blueskyService.isAuthenticated {
+            if !blueskyService.isAuthenticated && shouldCreateBlueskyPost {
                 VStack(spacing: 8) {
                     Text("⚠️ Not signed in to Bluesky")
                         .foregroundStyle(.orange)
                         .font(.caption)
 
-                    Text("Sign in through Settings to post check-ins")
+                    Text("Sign in through Settings to post to Bluesky")
                         .foregroundStyle(.secondary)
                         .font(.caption2)
                 }
@@ -114,7 +138,7 @@ struct CheckInView: View {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.8)
-                    Text("Posting check-in...")
+                    Text(shouldCreateBlueskyPost ? "Creating check-in and post..." : "Creating check-in...")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -142,9 +166,10 @@ struct CheckInView: View {
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             let messageToPost = trimmedMessage.isEmpty ? nil : trimmedMessage
 
-            let success = try await blueskyService.createCheckinWithPost(
+            let success = try await blueskyService.createCheckinWithOptionalPost(
                 place: place,
                 customMessage: messageToPost,
+                shouldCreatePost: shouldCreateBlueskyPost,
                 context: modelContext
             )
 
@@ -161,7 +186,7 @@ struct CheckInView: View {
         } catch ATProtoError.missingCredentials {
             await MainActor.run {
                 isPosting = false
-                errorMessage = "Please sign in to Bluesky first"
+                errorMessage = shouldCreateBlueskyPost ? "Please sign in to Bluesky to create posts" : "Authentication required"
                 showingError = true
             }
 
@@ -176,6 +201,20 @@ struct CheckInView: View {
             await MainActor.run {
                 isPosting = false
                 errorMessage = "Your session has expired. Please sign in again."
+                showingError = true
+            }
+            
+        } catch AnchorPDSError.authenticationRequired {
+            await MainActor.run {
+                isPosting = false
+                errorMessage = "Authentication required for AnchorPDS"
+                showingError = true
+            }
+            
+        } catch AnchorPDSError.serverError(let message) {
+            await MainActor.run {
+                isPosting = false
+                errorMessage = "AnchorPDS error: \(message)"
                 showingError = true
             }
 

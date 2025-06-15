@@ -29,6 +29,10 @@ public struct ATProtoCreatePostRequest: Codable {
     let collection: String = "app.bsky.feed.post"
     let repo: String
     let record: ATProtoPostRecord
+    
+    private enum CodingKeys: String, CodingKey {
+        case collection, repo, record
+    }
 }
 
 public struct ATProtoPostRecord: Codable {
@@ -50,6 +54,10 @@ public struct ATProtoCreateCheckinRequest: Codable {
     let collection: String = "app.dropanchor.checkin"
     let repo: String
     let record: ATProtoCheckinRecord
+    
+    private enum CodingKeys: String, CodingKey {
+        case repo, record
+    }
 }
 
 public struct ATProtoCheckinRecord: Codable {

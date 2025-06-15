@@ -45,11 +45,6 @@
 			path = AnchorTests;
 			sourceTree = "<group>";
 		};
-		3F697D832DECDAFA00AC7ACC /* AnchorUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AnchorUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,7 +78,6 @@
 			children = (
 				3F697D682DECDAF900AC7ACC /* Anchor */,
 				3F697D792DECDAFA00AC7ACC /* AnchorTests */,
-				3F697D832DECDAFA00AC7ACC /* AnchorUITests */,
 				3F697D672DECDAF900AC7ACC /* Products */,
 				3F9C6F422DECDC11009A1F50 /* AnchorKit */,
 			);
@@ -160,9 +154,6 @@
 			);
 			dependencies = (
 				3F697D822DECDAFA00AC7ACC /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				3F697D832DECDAFA00AC7ACC /* AnchorUITests */,
 			);
 			name = AnchorUITests;
 			packageProductDependencies = (

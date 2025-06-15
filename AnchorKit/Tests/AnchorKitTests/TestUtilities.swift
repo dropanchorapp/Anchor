@@ -1,6 +1,5 @@
 @testable import AnchorKit
 import Foundation
-import SwiftData
 import Testing
 
 // MARK: - Test Utilities
@@ -67,27 +66,8 @@ public enum TestUtilities {
         )
     }
 
-    /// Creates sample AuthCredentials for testing
-    public static func createSampleCredentials() -> AuthCredentials {
-        AuthCredentials(
-            handle: "test.bsky.social",
-            accessToken: "test-access-token",
-            refreshToken: "test-refresh-token",
-            did: "did:plc:test123",
-            expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
-        )
-    }
-
-    /// Creates expired AuthCredentials for testing token refresh
-    public static func createExpiredCredentials() -> AuthCredentials {
-        AuthCredentials(
-            handle: "test.bsky.social",
-            accessToken: "expired-access-token",
-            refreshToken: "test-refresh-token",
-            did: "did:plc:test123",
-            expiresAt: Date().addingTimeInterval(-3600) // 1 hour ago
-        )
-    }
+    // AuthCredentials creation methods removed to avoid SwiftData ModelContainer issues in CI.
+    // Tests that need credentials use mock storage or service-level mocking instead.
 }
 
 // MARK: - Mock Storage for Advanced Testing

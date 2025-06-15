@@ -73,7 +73,7 @@ struct SettingsWindow: View {
                 if blueskyService.isAuthenticated {
                     Button("Sign Out") {
                         Task {
-                            await blueskyService.signOut(context: modelContext)
+                            await blueskyService.signOut()
                             clearForm()
                         }
                     }
@@ -230,8 +230,7 @@ struct SettingsWindow: View {
             do {
                 let success = try await blueskyService.authenticate(
                     handle: handle,
-                    appPassword: appPassword,
-                    context: modelContext
+                    appPassword: appPassword
                 )
 
                 await MainActor.run {
@@ -269,5 +268,5 @@ struct SettingsWindow: View {
 
 #Preview {
     SettingsWindow()
-        .environment(BlueskyService())
+        .environment(BlueskyService(storage: InMemoryCredentialsStorage()))
 }

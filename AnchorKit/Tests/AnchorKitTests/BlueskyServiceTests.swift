@@ -40,22 +40,21 @@ struct BlueskyServiceTests {
     @Test("Successful authentication updates state")
     func successfulAuthentication() async throws {
         // Given: Mock successful login response
-        let loginResponse = ATProtoLoginResponse(
+        let mockResponse = ATProtoLoginResponse(
             accessJwt: "test-access-token",
             refreshJwt: "test-refresh-token",
             handle: "test.bsky.social",
-            did: "did:plc:test123"
+            did: "did:plc:test123",
+            expiresIn: 3600 // 1 hour
         )
 
-        let responseData = try JSONEncoder().encode(loginResponse)
-        let mockResponse = HTTPURLResponse(
+        let responseData = try JSONEncoder().encode(mockResponse)
+        let mockSession = MockURLSession(data: responseData, response: HTTPURLResponse(
             url: URL(string: "https://bsky.social/xrpc/com.atproto.server.createSession")!,
             statusCode: 200,
             httpVersion: nil,
             headerFields: nil
-        )!
-
-        let mockSession = MockURLSession(data: responseData, response: mockResponse)
+        )!)
         let storage = InMemoryCredentialsStorage()
         let testService = BlueskyService(session: mockSession, storage: storage)
 
@@ -85,22 +84,21 @@ struct BlueskyServiceTests {
     @Test("Sign out clears authentication state")
     func signOut() async throws {
         // Given: Authenticated service
-        let loginResponse = ATProtoLoginResponse(
+        let mockResponse = ATProtoLoginResponse(
             accessJwt: "test-access-token",
             refreshJwt: "test-refresh-token",
             handle: "test.bsky.social",
-            did: "did:plc:test123"
+            did: "did:plc:test123",
+            expiresIn: 3600 // 1 hour
         )
 
-        let responseData = try JSONEncoder().encode(loginResponse)
-        let mockResponse = HTTPURLResponse(
+        let responseData = try JSONEncoder().encode(mockResponse)
+        let mockSession = MockURLSession(data: responseData, response: HTTPURLResponse(
             url: URL(string: "https://bsky.social/xrpc/com.atproto.server.createSession")!,
             statusCode: 200,
             httpVersion: nil,
             headerFields: nil
-        )!
-
-        let mockSession = MockURLSession(data: responseData, response: mockResponse)
+        )!)
         let storage = InMemoryCredentialsStorage()
         let testService = BlueskyService(session: mockSession, storage: storage)
 

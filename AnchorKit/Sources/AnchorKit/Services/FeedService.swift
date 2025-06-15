@@ -90,6 +90,12 @@ public final class FeedService {
             posts = enrichedPosts
             return true
 
+        } catch AnchorPDSError.authenticationRequired {
+            // Handle AnchorPDS authentication specifically
+            self.error = FeedError.authenticationError("AnchorPDS authentication is currently unavailable. This is an experimental feature - check-ins are still being saved to AnchorPDS, but the global feed cannot be displayed right now.")
+            posts = [] // Clear any existing posts
+            return false
+            
         } catch {
             self.error = FeedError.decodingError(error)
             throw error
@@ -330,6 +336,7 @@ public enum FeedError: LocalizedError, Sendable {
     case invalidResponse
     case httpError(Int)
     case decodingError(Error)
+    case authenticationError(String)
 
     public var errorDescription: String? {
         switch self {
@@ -341,6 +348,8 @@ public enum FeedError: LocalizedError, Sendable {
             "HTTP error \(code) from feed API"
         case let .decodingError(error):
             "Failed to decode feed response: \(error.localizedDescription)"
+        case let .authenticationError(message):
+            message
         }
     }
 }

@@ -7,32 +7,48 @@ struct LocationPermissionView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "location.slash")
-                .foregroundStyle(.orange)
+            Image(systemName: locationService.isPermissionDenied ? "location.slash" : "location")
+                .foregroundStyle(locationService.isPermissionDenied ? .red : .orange)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Location access needed")
+                Text(locationService.isPermissionDenied ? "Location access denied" : "Location access needed")
                     .font(.caption)
                     .fontWeight(.medium)
-                Text("Enable location to find nearby places")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                
+                if locationService.isPermissionDenied {
+                    Text("Enable in System Settings > Privacy & Security > Location Services")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Enable location to find nearby places")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()
 
-            Button("Enable") {
-                Task {
-                    requestingPermission = true
-                    _ = await locationService.requestLocationPermission()
-                    requestingPermission = false
+            if locationService.shouldRequestPermission {
+                Button("Enable") {
+                    Task {
+                        requestingPermission = true
+                        _ = await locationService.requestLocationPermission()
+                        requestingPermission = false
+                    }
                 }
+                .buttonStyle(.bordered)
+                .disabled(requestingPermission)
+            } else if locationService.isPermissionDenied {
+                Button("Open Settings") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
-            .disabled(requestingPermission)
         }
         .padding()
-        .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+        .background((locationService.isPermissionDenied ? Color.red : Color.orange).opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

@@ -2,6 +2,25 @@
 import Foundation
 import Testing
 
+// MARK: - Mock Credentials
+
+/// Mock implementation of AuthCredentialsProtocol to avoid SwiftData ModelContainer issues in CI
+private struct MockAuthCredentials: AuthCredentialsProtocol {
+    let handle: String
+    let accessToken: String
+    let refreshToken: String
+    let did: String
+    let expiresAt: Date
+    
+    var isExpired: Bool {
+        expiresAt.timeIntervalSinceNow < 300 // 5 minutes buffer
+    }
+    
+    var isValid: Bool {
+        !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !isExpired
+    }
+}
+
 // Note: Mock utilities moved to TestUtilities.swift
 
 // MARK: - Test Models
@@ -341,8 +360,15 @@ struct FeedServiceTests {
 
     // MARK: - Helper Methods
 
-    private func createMockCredentials() -> AuthCredentials {
-        TestUtilities.createSampleCredentials()
+    // Mock credentials using protocol to avoid SwiftData ModelContainer issues in CI
+    private func createMockCredentials() -> AuthCredentialsProtocol {
+        MockAuthCredentials(
+            handle: "test.bsky.social",
+            accessToken: "test-access-token",
+            refreshToken: "test-refresh-token",
+            did: "did:plc:test123",
+            expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
+        )
     }
 
     private func createMockTimelineFeedItem() -> TimelineFeedItem {

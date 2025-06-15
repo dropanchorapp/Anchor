@@ -169,8 +169,7 @@ struct CheckInView: View {
             let success = try await blueskyService.createCheckinWithOptionalPost(
                 place: place,
                 customMessage: messageToPost,
-                shouldCreatePost: shouldCreateBlueskyPost,
-                context: modelContext
+                shouldCreatePost: shouldCreateBlueskyPost
             )
 
             await MainActor.run {
@@ -259,5 +258,5 @@ private extension Place {
         onCancel: {},
         onComplete: {}
     )
-    .environment(BlueskyService())
+    .environment(BlueskyService(storage: InMemoryCredentialsStorage()))
 }

@@ -33,9 +33,20 @@ public final class LocationService: NSObject, @unchecked Sendable {
             authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways
         #endif
     }
+    
+    /// Whether we should show a permission request (user hasn't decided yet)
+    public var shouldRequestPermission: Bool {
+        authorizationStatus == .notDetermined
+    }
+    
+    /// Whether permission was explicitly denied by the user
+    public var isPermissionDenied: Bool {
+        authorizationStatus == .denied || authorizationStatus == .restricted
+    }
 
     override public init() {
-        authorizationStatus = CLLocationManager().authorizationStatus
+        // Initialize with notDetermined, will be updated in setupLocationManager
+        authorizationStatus = .notDetermined
         super.init()
         print("📍 LocationService initialized")
         setupLocationManager()
@@ -44,6 +55,10 @@ public final class LocationService: NSObject, @unchecked Sendable {
     private func setupLocationManager() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        
+        // Get the current authorization status from the actual location manager
+        authorizationStatus = locationManager.authorizationStatus
+        print("📍 Current location authorization status: \(authorizationStatus.rawValue)")
 
         // Don't start location updates automatically - wait for explicit requests
         // This prevents unwanted location updates that trigger view re-renders
@@ -85,7 +100,7 @@ public final class LocationService: NSObject, @unchecked Sendable {
             return false
 
         case .authorized, .authorizedAlways:
-            print("✅ Location permission already granted")
+            print("✅ Location permission already granted (not requesting again)")
             // Get initial location if we don't have one yet
             if currentLocation == nil {
                 startLocationUpdates()
@@ -94,7 +109,7 @@ public final class LocationService: NSObject, @unchecked Sendable {
 
         #if !os(macOS)
             case .authorizedWhenInUse:
-                print("✅ Location permission already granted")
+                print("✅ Location permission already granted (not requesting again)")
                 // Get initial location if we don't have one yet
                 if currentLocation == nil {
                     startLocationUpdates()

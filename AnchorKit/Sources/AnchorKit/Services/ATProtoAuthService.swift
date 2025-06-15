@@ -54,19 +54,23 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         do {
             let response = try await client.login(request: request)
 
+            // Use actual token expiration time from AT Protocol response
+            // Default to 1 hour (3600 seconds) if not provided
+            let expirationInterval = TimeInterval(response.expiresIn ?? 3600)
+            
             let newCredentials = AuthCredentials(
                 handle: response.handle,
                 accessToken: response.accessJwt,
                 refreshToken: response.refreshJwt,
                 did: response.did,
-                expiresAt: Date().addingTimeInterval(24 * 60 * 60) // 24 hours
+                expiresAt: Date().addingTimeInterval(expirationInterval)
             )
 
             // Store credentials in memory and persistent storage
             _credentials = newCredentials
             try await storage.save(newCredentials)
 
-            print("✅ Successfully authenticated as @\(newCredentials.handle)")
+            print("✅ Successfully authenticated as @\(newCredentials.handle) (expires in \(expirationInterval/60) minutes)")
             return newCredentials
 
         } catch {
@@ -85,19 +89,23 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         do {
             let response = try await client.refresh(request: request)
 
+            // Use actual token expiration time from AT Protocol response
+            // Default to 1 hour (3600 seconds) if not provided
+            let expirationInterval = TimeInterval(response.expiresIn ?? 3600)
+
             let newCredentials = AuthCredentials(
                 handle: credentials.handle,
                 accessToken: response.accessJwt,
                 refreshToken: response.refreshJwt,
                 did: credentials.did,
-                expiresAt: Date().addingTimeInterval(24 * 60 * 60) // 24 hours
+                expiresAt: Date().addingTimeInterval(expirationInterval)
             )
 
             // Update stored credentials in memory and persistent storage
             _credentials = newCredentials
             try await storage.save(newCredentials)
 
-            print("✅ Successfully refreshed credentials for @\(newCredentials.handle)")
+            print("✅ Successfully refreshed credentials for @\(newCredentials.handle) (expires in \(expirationInterval/60) minutes)")
             return newCredentials
 
         } catch {

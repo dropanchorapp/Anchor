@@ -15,21 +15,14 @@ struct AnchorMenubarApp: App {
 
     // Shared service instances - created once at app level
     @State private var locationService: LocationService
-    @State private var blueskyService = BlueskyService()
+    @State private var blueskyService: BlueskyService
     @State private var nearbyPlacesService: NearbyPlacesService
 
     // Shared model container
     let container: ModelContainer
 
     init() {
-        // Initialize services that depend on other services
-        let locationService = LocationService()
-        let nearbyPlacesService = NearbyPlacesService(locationService: locationService)
-
-        self._locationService = State(initialValue: locationService)
-        self._nearbyPlacesService = State(initialValue: nearbyPlacesService)
-
-        // Create shared model container
+        // Create shared model container first
         do {
             let schema = Schema([
                 AuthCredentials.self
@@ -46,6 +39,15 @@ struct AnchorMenubarApp: App {
         } catch {
             fatalError("Failed to initialize model container: \(error)")
         }
+
+        // Initialize services that depend on other services
+        let locationService = LocationService()
+        let blueskyService = BlueskyService(context: container.mainContext)
+        let nearbyPlacesService = NearbyPlacesService(locationService: locationService)
+
+        self._locationService = State(initialValue: locationService)
+        self._blueskyService = State(initialValue: blueskyService)
+        self._nearbyPlacesService = State(initialValue: nearbyPlacesService)
     }
 
     var body: some Scene {
@@ -57,11 +59,11 @@ struct AnchorMenubarApp: App {
                 .environment(nearbyPlacesService)
                 .task {
                     // Load credentials immediately when ContentView appears
-                    _ = await blueskyService.loadStoredCredentials(from: container.mainContext)
+                    _ = await blueskyService.loadStoredCredentials()
 
-                    // Handle location services
-                    let permissionGranted = await locationService.requestLocationPermission()
-                    if permissionGranted {
+                    // Handle location services - only update location if we already have permission
+                    // Don't request permission on every app start
+                    if locationService.hasLocationPermission {
                         await locationService.checkAndUpdateLocationForAppUsage()
                     }
                 }

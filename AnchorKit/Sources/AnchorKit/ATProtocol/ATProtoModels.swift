@@ -12,6 +12,12 @@ public struct ATProtoLoginResponse: Codable, Sendable {
     let refreshJwt: String
     let handle: String
     let did: String
+    let expiresIn: Int? // Token expiration time in seconds
+    
+    private enum CodingKeys: String, CodingKey {
+        case accessJwt, refreshJwt, handle, did
+        case expiresIn = "expires_in"
+    }
 }
 
 public struct ATProtoRefreshRequest: Codable, Sendable {
@@ -21,6 +27,12 @@ public struct ATProtoRefreshRequest: Codable, Sendable {
 public struct ATProtoRefreshResponse: Codable, Sendable {
     let accessJwt: String
     let refreshJwt: String
+    let expiresIn: Int? // Token expiration time in seconds
+    
+    private enum CodingKeys: String, CodingKey {
+        case accessJwt, refreshJwt
+        case expiresIn = "expires_in"
+    }
 }
 
 // MARK: - Post Models

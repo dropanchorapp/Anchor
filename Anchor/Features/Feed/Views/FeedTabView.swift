@@ -18,6 +18,31 @@ struct FeedTabView: View {
                                 .font(.caption)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if let error = feedService.error {
+                        // Show error message
+                        VStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundStyle(.orange)
+                                .font(.title)
+
+                            Text("Feed Unavailable")
+                                .font(.headline)
+
+                            Text(error.localizedDescription)
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .multilineTextAlignment(.center)
+
+                            Button("Try Again") {
+                                Task {
+                                    await loadFeed()
+                                }
+                            }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(.blue)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if feedService.posts.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "checkmark.bubble")
@@ -89,7 +114,8 @@ struct FeedTabView: View {
         do {
             _ = try await feedService.fetchGlobalFeed(credentials: credentials)
         } catch {
-            print("Failed to load feed: \(error)")
+            // Error is now handled by FeedService and displayed in UI
+            // No need to print to console
         }
     }
 }
@@ -195,5 +221,5 @@ struct FeedPostView: View {
 
 #Preview {
     FeedTabView()
-        .environment(BlueskyService())
+        .environment(BlueskyService(storage: InMemoryCredentialsStorage()))
 }

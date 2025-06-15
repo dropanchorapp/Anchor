@@ -45,20 +45,21 @@ public final class AuthCredentials: AuthCredentialsProtocol {
         self.refreshToken = refreshToken
         self.did = did
         self.expiresAt = expiresAt
-        self.createdAt = Date()
+        createdAt = Date()
     }
 }
 
 // MARK: - Validation
-extension AuthCredentials {
+
+public extension AuthCredentials {
     /// Check if the access token is expired or will expire soon
-    public var isExpired: Bool {
+    var isExpired: Bool {
         // Consider expired if less than 5 minutes remaining
         expiresAt.timeIntervalSinceNow < 300
     }
 
     /// Check if credentials are valid for making API calls
-    public var isValid: Bool {
+    var isValid: Bool {
         !handle.isEmpty &&
             !accessToken.isEmpty &&
             !did.isEmpty &&
@@ -67,9 +68,10 @@ extension AuthCredentials {
 }
 
 // MARK: - SwiftData Storage
-extension AuthCredentials {
+
+public extension AuthCredentials {
     /// Save credentials to SwiftData
-    public static func save(
+    static func save(
         _ credentials: AuthCredentials,
         to context: ModelContext
     ) throws {
@@ -82,7 +84,7 @@ extension AuthCredentials {
     }
 
     /// Load current valid credentials from SwiftData
-    public static func current(from context: ModelContext) -> AuthCredentials? {
+    static func current(from context: ModelContext) -> AuthCredentials? {
         let descriptor = FetchDescriptor<AuthCredentials>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
@@ -114,7 +116,7 @@ extension AuthCredentials {
     }
 
     /// Remove all credentials from SwiftData
-    public static func clearAll(from context: ModelContext) throws {
+    static func clearAll(from context: ModelContext) throws {
         let descriptor = FetchDescriptor<AuthCredentials>()
         let credentials = try context.fetch(descriptor)
 

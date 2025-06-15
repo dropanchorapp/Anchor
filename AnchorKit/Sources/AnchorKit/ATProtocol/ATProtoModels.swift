@@ -29,7 +29,7 @@ public struct ATProtoCreatePostRequest: Codable {
     let collection: String = "app.bsky.feed.post"
     let repo: String
     let record: ATProtoPostRecord
-    
+
     private enum CodingKeys: String, CodingKey {
         case collection, repo, record
     }
@@ -54,7 +54,7 @@ public struct ATProtoCreateCheckinRequest: Codable {
     let collection: String = "app.dropanchor.checkin"
     let repo: String
     let record: ATProtoCheckinRecord
-    
+
     private enum CodingKeys: String, CodingKey {
         case repo, record
     }
@@ -79,9 +79,9 @@ public enum CheckinLocation: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
-        case .place(let place):
+        case let .place(place):
             try container.encode(place)
-        case .geo(let geo):
+        case let .geo(geo):
             try container.encode(geo)
         }
     }
@@ -195,13 +195,13 @@ public enum RichTextFeature: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         switch self {
-        case .link(let uri):
+        case let .link(uri):
             try container.encode("app.bsky.richtext.facet#link", forKey: .type)
             try container.encode(uri, forKey: .uri)
-        case .mention(let did):
+        case let .mention(did):
             try container.encode("app.bsky.richtext.facet#mention", forKey: .type)
             try container.encode(did, forKey: .did)
-        case .tag(let tag):
+        case let .tag(tag):
             try container.encode("app.bsky.richtext.facet#tag", forKey: .type)
             try container.encode(tag, forKey: .tag)
         }
@@ -242,17 +242,17 @@ public enum ATProtoError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid AT Protocol URL"
+            "Invalid AT Protocol URL"
         case .invalidResponse:
-            return "Invalid response from AT Protocol server"
-        case .httpError(let code):
-            return "HTTP error \(code) from AT Protocol server"
-        case .decodingError(let error):
-            return "Failed to decode AT Protocol response: \(error.localizedDescription)"
-        case .authenticationFailed(let message):
-            return "AT Protocol authentication failed: \(message)"
+            "Invalid response from AT Protocol server"
+        case let .httpError(code):
+            "HTTP error \(code) from AT Protocol server"
+        case let .decodingError(error):
+            "Failed to decode AT Protocol response: \(error.localizedDescription)"
+        case let .authenticationFailed(message):
+            "AT Protocol authentication failed: \(message)"
         case .missingCredentials:
-            return "Missing or invalid AT Protocol credentials"
+            "Missing or invalid AT Protocol credentials"
         }
     }
 }

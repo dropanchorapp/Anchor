@@ -33,7 +33,7 @@ public struct Place: Codable, Sendable {
     ) {
         self.elementType = elementType
         self.elementId = elementId
-        self.id = "\(elementType.rawValue):\(elementId)"
+        id = "\(elementType.rawValue):\(elementId)"
         self.name = name
         self.latitude = latitude
         self.longitude = longitude
@@ -42,8 +42,9 @@ public struct Place: Codable, Sendable {
 }
 
 // MARK: - ElementType
-extension Place {
-    public enum ElementType: String, Codable, CaseIterable, Sendable {
+
+public extension Place {
+    enum ElementType: String, Codable, CaseIterable, Sendable {
         case node
         case way
         case relation
@@ -51,37 +52,41 @@ extension Place {
 }
 
 // MARK: - Convenience Methods
-extension Place {
+
+public extension Place {
     /// Parse a place ID string into element type and ID
     /// - Parameter placeId: String in format "type:id" (e.g., "way:123456")
     /// - Returns: Tuple of (ElementType, Int64) or nil if invalid format
-    public static func parseId(_ placeId: String) -> (ElementType, Int64)? {
+    static func parseId(_ placeId: String) -> (ElementType, Int64)? {
         let components = placeId.split(separator: ":")
         guard components.count == 2,
               let elementType = ElementType(rawValue: String(components[0])),
-              let elementId = Int64(components[1]) else {
+              let elementId = Int64(components[1])
+        else {
             return nil
         }
         return (elementType, elementId)
     }
 
     /// Returns a human-readable description with coordinates
-    public var description: String {
+    var description: String {
         "\(name) (\(String(format: "%.6f", latitude)), \(String(format: "%.6f", longitude)))"
     }
 
     /// Returns the amenity or leisure type from tags
-    public var category: String? {
+    var category: String? {
         tags["amenity"] ?? tags["leisure"] ?? tags["shop"]
     }
 }
 
 // MARK: - Identifiable
+
 extension Place: Identifiable {
     // Uses the computed `id` property
 }
 
 // MARK: - Hashable
+
 extension Place: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)

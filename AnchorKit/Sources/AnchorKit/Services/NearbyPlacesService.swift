@@ -1,11 +1,10 @@
-import Foundation
 import CoreLocation
+import Foundation
 import Observation
 
 /// Service that coordinates location and nearby places functionality
 @Observable
 public final class NearbyPlacesService: @unchecked Sendable {
-
     // MARK: - Properties
 
     public private(set) var places: [Place] = []
@@ -77,18 +76,16 @@ public final class NearbyPlacesService: @unchecked Sendable {
     public func filteredPlaces(searchText: String) -> [Place] {
         // Don't trigger location updates - only use cached location for sorting
         let coordinatesForSorting = locationService.currentLocation?.coordinate
-        let sortedPlaces: [Place]
-
-        if let coordinates = coordinatesForSorting {
+        let sortedPlaces: [Place] = if let coordinates = coordinatesForSorting {
             // Sort by distance to current location using cached coordinates
-            sortedPlaces = places.sorted { place1, place2 in
+            places.sorted { place1, place2 in
                 let dist1 = abs(place1.latitude - coordinates.latitude) + abs(place1.longitude - coordinates.longitude)
                 let dist2 = abs(place2.latitude - coordinates.latitude) + abs(place2.longitude - coordinates.longitude)
                 return dist1 < dist2
             }
         } else {
             // No location available, just return places as-is
-            sortedPlaces = places
+            places
         }
 
         if searchText.isEmpty {
@@ -103,6 +100,6 @@ public final class NearbyPlacesService: @unchecked Sendable {
     // MARK: - Private Methods
 
     private func distanceFromCurrent(place: Place, current: (latitude: Double, longitude: Double)) -> Double {
-        return abs(place.latitude - current.latitude) + abs(place.longitude - current.longitude)
+        abs(place.latitude - current.latitude) + abs(place.longitude - current.longitude)
     }
 }

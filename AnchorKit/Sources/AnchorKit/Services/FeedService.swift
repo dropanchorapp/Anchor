@@ -3,12 +3,10 @@ import Foundation
 /// Service for fetching check-in feeds from AnchorPDS with Bluesky profile enrichment
 @MainActor
 @Observable
-public final class FeedService: Sendable {
-
+public final class FeedService {
     // MARK: - Properties
 
     private let anchorPDSService: AnchorPDSService
-    private let blueskyService: BlueskyService
     private let session: URLSessionProtocol
     private let baseURL = "https://bsky.social"
 
@@ -28,15 +26,14 @@ public final class FeedService: Sendable {
 
     public init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
-        self.anchorPDSService = AnchorPDSService(session: session)
-        self.blueskyService = BlueskyService(session: session)
+        anchorPDSService = AnchorPDSService(session: session)
     }
-    
+
     // MARK: - Convenience Initializers
-    
+
     @MainActor
     public static func create(session: URLSessionProtocol = URLSession.shared) -> FeedService {
-        return FeedService(session: session)
+        FeedService(session: session)
     }
 
     // MARK: - Feed Fetching
@@ -45,7 +42,7 @@ public final class FeedService: Sendable {
     /// - Parameter credentials: Authentication credentials
     /// - Returns: Success status
     public func fetchFollowingFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
-        return try await fetchGlobalFeed(credentials: credentials)
+        try await fetchGlobalFeed(credentials: credentials)
     }
 
     /// Fetch global check-in feed from AnchorPDS
@@ -59,12 +56,11 @@ public final class FeedService: Sendable {
 
         do {
             // Convert credentials to AuthCredentials if needed
-            let authCredentials: AuthCredentials
-            if let creds = credentials as? AuthCredentials {
-                authCredentials = creds
+            let authCredentials: AuthCredentials = if let creds = credentials as? AuthCredentials {
+                creds
             } else {
                 // Create AuthCredentials from protocol
-                authCredentials = AuthCredentials(
+                AuthCredentials(
                     handle: credentials.handle,
                     accessToken: credentials.accessToken,
                     refreshToken: credentials.refreshToken,
@@ -72,28 +68,28 @@ public final class FeedService: Sendable {
                     expiresAt: credentials.expiresAt
                 )
             }
-            
+
             // Fetch global feed from AnchorPDS
             let feedResponse = try await anchorPDSService.getGlobalFeed(
                 limit: 50,
                 cursor: nil,
                 credentials: authCredentials
             )
-            
+
             // Convert AnchorPDS responses to FeedPost format with profile enrichment
             var enrichedPosts: [FeedPost] = []
-            
+
             for checkinResponse in feedResponse.checkins {
                 // Get profile info from Bluesky for this DID
                 let profileInfo = await getProfileInfo(for: checkinResponse.author.did)
-                
+
                 let feedPost = FeedPost(from: checkinResponse, profileInfo: profileInfo)
                 enrichedPosts.append(feedPost)
             }
-            
+
             posts = enrichedPosts
             return true
-            
+
         } catch {
             self.error = FeedError.decodingError(error)
             throw error
@@ -111,28 +107,29 @@ public final class FeedService: Sendable {
             guard let url = URL(string: "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=\(did)") else {
                 return nil
             }
-            
+
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
             request.setValue("application/json", forHTTPHeaderField: "Accept")
             request.setValue("Anchor/1.0 (macOS)", forHTTPHeaderField: "User-Agent")
-            
+
             let (data, response) = try await session.data(for: request)
-            
+
             guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
+                  httpResponse.statusCode == 200
+            else {
                 return nil
             }
-            
+
             let profileResponse = try JSONDecoder().decode(BlueskyProfileResponse.self, from: data)
-            
+
             return BlueskyProfileInfo(
                 did: profileResponse.did,
                 handle: profileResponse.handle,
                 displayName: profileResponse.displayName,
                 avatar: profileResponse.avatar
             )
-            
+
         } catch {
             print("Failed to fetch profile for DID \(did): \(error)")
             return nil
@@ -166,34 +163,34 @@ public struct FeedPost: Identifiable, Sendable {
     public let record: ATProtoRecord
     public let checkinRecord: AnchorPDSCheckinRecord?
 
-    internal init(from feedItem: TimelineFeedItem) {
-        self.id = feedItem.post.uri
-        self.author = FeedAuthor(from: feedItem.post.author)
-        self.record = ATProtoRecord(from: feedItem.post.record)
+    init(from feedItem: TimelineFeedItem) {
+        id = feedItem.post.uri
+        author = FeedAuthor(from: feedItem.post.author)
+        record = ATProtoRecord(from: feedItem.post.record)
 
         // Extract checkin record if available
         if let embed = feedItem.post.embed,
-           let _ = embed.record {
-            self.checkinRecord = nil // Legacy support
+           embed.record != nil {
+            checkinRecord = nil // Legacy support
         } else {
-            self.checkinRecord = nil
+            checkinRecord = nil
         }
     }
-    
+
     // New initializer for AnchorPDS responses
-    internal init(from checkinResponse: AnchorPDSCheckinResponse, profileInfo: BlueskyProfileInfo?) {
-        self.id = checkinResponse.uri
-        self.author = FeedAuthor(
+    init(from checkinResponse: AnchorPDSCheckinResponse, profileInfo: BlueskyProfileInfo?) {
+        id = checkinResponse.uri
+        author = FeedAuthor(
             did: checkinResponse.author.did,
             handle: profileInfo?.handle ?? checkinResponse.author.did,
             displayName: profileInfo?.displayName,
             avatar: profileInfo?.avatar
         )
-        self.record = ATProtoRecord(
+        record = ATProtoRecord(
             text: checkinResponse.value.text,
             createdAt: ISO8601DateFormatter().date(from: checkinResponse.value.createdAt) ?? Date()
         )
-        self.checkinRecord = checkinResponse.value
+        checkinRecord = checkinResponse.value
     }
 }
 
@@ -203,15 +200,15 @@ public struct FeedAuthor: Sendable {
     public let displayName: String?
     public let avatar: String?
 
-    internal init(from author: TimelineAuthor) {
-        self.did = author.did
-        self.handle = author.handle
-        self.displayName = author.displayName
-        self.avatar = author.avatar
+    init(from author: TimelineAuthor) {
+        did = author.did
+        handle = author.handle
+        displayName = author.displayName
+        avatar = author.avatar
     }
-    
+
     // New initializer for AnchorPDS responses with profile info
-    internal init(did: String, handle: String, displayName: String?, avatar: String?) {
+    init(did: String, handle: String, displayName: String?, avatar: String?) {
         self.did = did
         self.handle = handle
         self.displayName = displayName
@@ -232,20 +229,20 @@ public struct CheckinEmbedRecord: Sendable {
     public let text: String?
     public let locations: [String] // Simplified for now
 
-    internal init(from record: EmbedRecordView) {
-        self.uri = record.uri ?? ""
-        self.cid = record.cid ?? ""
+    init(from record: EmbedRecordView) {
+        uri = record.uri ?? ""
+        cid = record.cid ?? ""
 
         // For now, just store basic info
         // In a full implementation, we'd parse the actual checkin record
-        self.text = nil
-        self.locations = []
+        text = nil
+        locations = []
     }
 }
 
 // MARK: - API Response Models
 
-internal struct BlueskyProfileResponse: Codable {
+struct BlueskyProfileResponse: Codable {
     let did: String
     let handle: String
     let displayName: String?
@@ -254,7 +251,7 @@ internal struct BlueskyProfileResponse: Codable {
     let followersCount: Int?
     let followsCount: Int?
     let postsCount: Int?
-    
+
     // We only need the basic fields for our use case
     private enum CodingKeys: String, CodingKey {
         case did, handle, displayName, avatar, description
@@ -262,17 +259,17 @@ internal struct BlueskyProfileResponse: Codable {
     }
 }
 
-internal struct TimelineResponse: Codable {
+struct TimelineResponse: Codable {
     let feed: [TimelineFeedItem]
     let cursor: String?
 }
 
-internal struct TimelineFeedItem: Codable {
+struct TimelineFeedItem: Codable {
     let post: TimelinePost
     let reason: TimelineReason?
 }
 
-internal struct TimelinePost: Codable {
+struct TimelinePost: Codable {
     let uri: String
     let cid: String
     let author: TimelineAuthor
@@ -284,14 +281,14 @@ internal struct TimelinePost: Codable {
     let indexedAt: String
 }
 
-internal struct TimelineAuthor: Codable {
+struct TimelineAuthor: Codable {
     let did: String
     let handle: String
     let displayName: String?
     let avatar: String?
 }
 
-internal struct PostEmbedView: Codable {
+struct PostEmbedView: Codable {
     let type: String
     let record: EmbedRecordView?
 
@@ -301,13 +298,13 @@ internal struct PostEmbedView: Codable {
     }
 }
 
-internal struct EmbedRecordView: Codable {
+struct EmbedRecordView: Codable {
     let uri: String?
     let cid: String?
     let value: EmbedRecordValue?
 }
 
-internal struct EmbedRecordValue: Codable {
+struct EmbedRecordValue: Codable {
     let type: String
     let text: String?
     let createdAt: String?
@@ -318,7 +315,7 @@ internal struct EmbedRecordValue: Codable {
     }
 }
 
-internal struct TimelineReason: Codable {
+struct TimelineReason: Codable {
     let type: String
 
     private enum CodingKeys: String, CodingKey {
@@ -337,13 +334,13 @@ public enum FeedError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid feed API URL"
+            "Invalid feed API URL"
         case .invalidResponse:
-            return "Invalid response from feed API"
-        case .httpError(let code):
-            return "HTTP error \(code) from feed API"
-        case .decodingError(let error):
-            return "Failed to decode feed response: \(error.localizedDescription)"
+            "Invalid response from feed API"
+        case let .httpError(code):
+            "HTTP error \(code) from feed API"
+        case let .decodingError(error):
+            "Failed to decode feed response: \(error.localizedDescription)"
         }
     }
 }

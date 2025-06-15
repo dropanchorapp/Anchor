@@ -1,6 +1,7 @@
 import Foundation
 
 // MARK: - AT Protocol Location Data Models
+
 // Based on community lexicons: community.lexicon.location.geo and community.lexicon.location.address
 
 /// AT Protocol geo location record (community.lexicon.location.geo)

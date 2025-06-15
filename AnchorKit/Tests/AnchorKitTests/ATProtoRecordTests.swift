@@ -1,10 +1,9 @@
-import Testing
-import Foundation
 @testable import AnchorKit
+import Foundation
+import Testing
 
 @Suite("AT Protocol Record", .tags(.unit, .models, .markdown, .facets))
 struct ATProtoRecordTests {
-
     // MARK: - Markdown Formatting Tests
 
     @Test("Text with no facets returns unchanged")
@@ -21,7 +20,7 @@ struct ATProtoRecordTests {
     func formatTextWithFacets_singleLink() {
         let text = "Check out https://example.com for more info"
         let linkFacet = ATProtoFacet(
-            index: 10...28, // "https://example.com"
+            index: 10 ... 28, // "https://example.com"
             feature: .link("https://example.com")
         )
         let record = ATProtoRecord(text: text, facets: [linkFacet])
@@ -36,8 +35,8 @@ struct ATProtoRecordTests {
     func formatTextWithFacets_multipleLinks() {
         let text = "Visit https://example.com and https://test.org today"
         let facets = [
-            ATProtoFacet(index: 6...24, feature: .link("https://example.com")), // "https://example.com"
-            ATProtoFacet(index: 30...45, feature: .link("https://test.org"))    // "https://test.org"
+            ATProtoFacet(index: 6 ... 24, feature: .link("https://example.com")), // "https://example.com"
+            ATProtoFacet(index: 30 ... 45, feature: .link("https://test.org")), // "https://test.org"
         ]
         let record = ATProtoRecord(text: text, facets: facets)
 
@@ -51,7 +50,7 @@ struct ATProtoRecordTests {
     func formatTextWithFacets_hashtag() {
         let text = "Love this #climbing session today!"
         let hashtagFacet = ATProtoFacet(
-            index: 10...18, // "#climbing"
+            index: 10 ... 18, // "#climbing"
             feature: .hashtag("climbing")
         )
         let record = ATProtoRecord(text: text, facets: [hashtagFacet])
@@ -68,7 +67,7 @@ struct ATProtoRecordTests {
     func formatTextWithFacets_overlappingIndices() {
         let text = "Short text"
         let linkFacet = ATProtoFacet(
-            index: 5...50, // Beyond text length
+            index: 5 ... 50, // Beyond text length
             feature: .link("https://example.com")
         )
         let record = ATProtoRecord(text: text, facets: [linkFacet])
@@ -81,8 +80,8 @@ struct ATProtoRecordTests {
     func formatTextWithFacets_reverseOrder() {
         let text = "Visit https://first.com then https://second.org today"
         let facets = [
-            ATProtoFacet(index: 29...46, feature: .link("https://second.org")), // Second link first
-            ATProtoFacet(index: 6...22, feature: .link("https://first.com"))   // First link second
+            ATProtoFacet(index: 29 ... 46, feature: .link("https://second.org")), // Second link first
+            ATProtoFacet(index: 6 ... 22, feature: .link("https://first.com")), // First link second
         ]
         let record = ATProtoRecord(text: text, facets: facets)
 
@@ -114,15 +113,15 @@ struct ATProtoRecordTests {
                 TimelineFacet(
                     index: FacetIndex(byteStart: 10, byteEnd: 29),
                     features: [
-                        FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
+                        FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
                     ]
                 ),
                 TimelineFacet(
                     index: FacetIndex(byteStart: 30, byteEnd: 35),
                     features: [
-                        FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test")
+                        FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test"),
                     ]
-                )
+                ),
             ]
         )
 
@@ -191,13 +190,13 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 0, byteEnd: 16),
             features: [
-                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice123", tag: nil)
+                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice123", tag: nil),
             ]
         )
 
         let facet = try #require(ATProtoFacet(from: timelineFacet))
 
-        if case .mention(let did) = facet.feature {
+        if case let .mention(did) = facet.feature {
             #expect(did == "did:plc:alice123")
         } else {
             Issue.record("Should be mention feature")
@@ -209,13 +208,13 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 0, byteEnd: 9),
             features: [
-                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "climbing")
+                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "climbing"),
             ]
         )
 
         let facet = try #require(ATProtoFacet(from: timelineFacet))
 
-        if case .hashtag(let tag) = facet.feature {
+        if case let .hashtag(tag) = facet.feature {
             #expect(tag == "climbing")
         } else {
             Issue.record("Should be hashtag feature")
@@ -227,7 +226,7 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 0, byteEnd: 10),
             features: [
-                FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil)
+                FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil),
             ]
         )
 
@@ -241,7 +240,7 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 10, byteEnd: 5), // End before start
             features: [
-                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
+                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
             ]
         )
 
@@ -257,13 +256,13 @@ struct ATProtoRecordTests {
             features: [
                 FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil),
                 FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
-                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test")
+                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test"),
             ]
         )
 
         let facet = try #require(ATProtoFacet(from: timelineFacet))
 
-        if case .link(let url) = facet.feature {
+        if case let .link(url) = facet.feature {
             #expect(url == "https://example.com")
         } else {
             Issue.record("Should use first supported feature (link)")

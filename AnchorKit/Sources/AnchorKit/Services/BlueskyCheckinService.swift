@@ -12,7 +12,6 @@ public protocol BlueskyCheckinServiceProtocol {
 
 @MainActor
 public final class BlueskyCheckinService: BlueskyCheckinServiceProtocol {
-
     // MARK: - Properties
 
     private let client: ATProtoClientProtocol
@@ -33,7 +32,7 @@ public final class BlueskyCheckinService: BlueskyCheckinServiceProtocol {
 
     // MARK: - Check-in Creation
 
-    public func createCheckin(place: Place, customMessage: String?, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse {
+    public func createCheckin(place: Place, customMessage _: String?, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse {
         // Build structured location data
         let location = buildCheckinLocation(for: place)
 
@@ -136,14 +135,13 @@ public final class BlueskyCheckinService: BlueskyCheckinServiceProtocol {
     }
 
     private func buildPlaceURI(for place: Place) -> String {
-        let elementType: String
-        switch place.elementType {
+        let elementType = switch place.elementType {
         case .node:
-            elementType = "node"
+            "node"
         case .way:
-            elementType = "way"
+            "way"
         case .relation:
-            elementType = "relation"
+            "relation"
         }
 
         return "https://www.openstreetmap.org/\(elementType)/\(place.elementId)"

@@ -1,11 +1,10 @@
-import Foundation
 import CoreLocation
+import Foundation
 import Observation
 
 /// Service for handling geolocation using CoreLocation
 @Observable
 public final class LocationService: NSObject, @unchecked Sendable {
-
     private let locationManager = CLLocationManager()
     private var permissionCompletion: ((Bool) -> Void)?
 
@@ -29,14 +28,14 @@ public final class LocationService: NSObject, @unchecked Sendable {
     /// Whether we have permission to access location
     public var hasLocationPermission: Bool {
         #if os(macOS)
-        authorizationStatus == .authorized || authorizationStatus == .authorizedAlways
+            authorizationStatus == .authorized || authorizationStatus == .authorizedAlways
         #else
-        authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways
+            authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways
         #endif
     }
 
-    public override init() {
-        self.authorizationStatus = CLLocationManager().authorizationStatus
+    override public init() {
+        authorizationStatus = CLLocationManager().authorizationStatus
         super.init()
         print("📍 LocationService initialized")
         setupLocationManager()
@@ -94,13 +93,13 @@ public final class LocationService: NSObject, @unchecked Sendable {
             return true
 
         #if !os(macOS)
-        case .authorizedWhenInUse:
-            print("✅ Location permission already granted")
-            // Get initial location if we don't have one yet
-            if currentLocation == nil {
-                startLocationUpdates()
-            }
-            return true
+            case .authorizedWhenInUse:
+                print("✅ Location permission already granted")
+                // Get initial location if we don't have one yet
+                if currentLocation == nil {
+                    startLocationUpdates()
+                }
+                return true
         #endif
 
         case .notDetermined:
@@ -113,9 +112,9 @@ public final class LocationService: NSObject, @unchecked Sendable {
 
                 // For menubar apps, this WILL trigger the system dialog
                 #if os(macOS)
-                locationManager.requestWhenInUseAuthorization()
+                    locationManager.requestWhenInUseAuthorization()
                 #else
-                locationManager.requestWhenInUseAuthorization()
+                    locationManager.requestWhenInUseAuthorization()
                 #endif
             }
 
@@ -227,8 +226,9 @@ public final class LocationService: NSObject, @unchecked Sendable {
 }
 
 // MARK: - LocationError
-extension LocationService {
-    public enum LocationError: LocalizedError {
+
+public extension LocationService {
+    enum LocationError: LocalizedError {
         case permissionDenied
         case locationUnavailable
         case timeout
@@ -237,19 +237,20 @@ extension LocationService {
         public var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                return "Location permission denied"
+                "Location permission denied"
             case .locationUnavailable:
-                return "Current location unavailable"
+                "Current location unavailable"
             case .timeout:
-                return "Location request timed out"
-            case .unknown(let error):
-                return "Location error: \(error.localizedDescription)"
+                "Location request timed out"
+            case let .unknown(error):
+                "Location error: \(error.localizedDescription)"
             }
         }
     }
 }
 
 // MARK: - CLLocationManagerDelegate
+
 extension LocationService: CLLocationManagerDelegate {
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let oldStatus = authorizationStatus
@@ -269,7 +270,7 @@ extension LocationService: CLLocationManagerDelegate {
             print(granted ? "✅ Location permission granted!" : "❌ Location permission denied")
 
             // Only start location updates if permission was granted AND we're explicitly requesting it
-            if granted && (currentLocation == nil || shouldUpdateLocation()) {
+            if granted, currentLocation == nil || shouldUpdateLocation() {
                 startLocationUpdates()
             }
 
@@ -279,7 +280,7 @@ extension LocationService: CLLocationManagerDelegate {
         // Let the app explicitly request location when needed
     }
 
-    public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    public func locationManager(_: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
 
         // Update current location and timestamp
@@ -288,7 +289,7 @@ extension LocationService: CLLocationManagerDelegate {
 
         let coords = location.coordinate
         print("📍 Location updated: \(String(format: "%.6f", coords.latitude)), " +
-                "\(String(format: "%.6f", coords.longitude)) (cached for 10 minutes)")
+            "\(String(format: "%.6f", coords.longitude)) (cached for 10 minutes)")
 
         // If we were waiting for permission, complete the request
         if let completion = permissionCompletion {
@@ -301,7 +302,7 @@ extension LocationService: CLLocationManagerDelegate {
         stopLocationUpdates()
     }
 
-    public func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    public func locationManager(_: CLLocationManager, didFailWithError error: Error) {
         print("📍 Location error: \(error.localizedDescription)")
 
         if let completion = permissionCompletion {

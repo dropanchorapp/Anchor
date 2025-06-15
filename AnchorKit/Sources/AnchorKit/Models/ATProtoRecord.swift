@@ -13,7 +13,7 @@ public struct ATProtoRecord: Sendable {
         self.facets = facets
         self.createdAt = createdAt
         self.type = type
-        self.formattedText = Self.formatTextWithFacets(text: text, facets: facets)
+        formattedText = Self.formatTextWithFacets(text: text, facets: facets)
     }
 
     /// Convert raw text and facets to markdown
@@ -29,19 +29,19 @@ public struct ATProtoRecord: Sendable {
             let endIndex = min(facet.index.upperBound, text.count - 1)
 
             // Skip if facet range is invalid
-            guard startIndex <= endIndex && endIndex < text.count else { continue }
+            guard startIndex <= endIndex, endIndex < text.count else { continue }
 
             // Add text before facet
             if startIndex > currentIndex {
                 let beforeStart = text.index(text.startIndex, offsetBy: currentIndex)
                 let beforeEnd = text.index(text.startIndex, offsetBy: startIndex)
-                result += String(text[beforeStart..<beforeEnd])
+                result += String(text[beforeStart ..< beforeEnd])
             }
 
             // Add facet as markdown link - use endIndex + 1 for exclusive upper bound in range
             let facetStart = text.index(text.startIndex, offsetBy: startIndex)
             let facetEnd = text.index(text.startIndex, offsetBy: endIndex + 1)
-            let linkText = String(text[facetStart..<facetEnd])
+            let linkText = String(text[facetStart ..< facetEnd])
             result += "[\(linkText)](\(facet.feature.url))"
             currentIndex = endIndex + 1
         }
@@ -75,12 +75,12 @@ public enum ATProtoFeature: Sendable {
 
     public var url: String {
         switch self {
-        case .link(let url):
+        case let .link(url):
             return url
-        case .mention(let did):
+        case let .mention(did):
             // Convert DID to profile URL
             return "https://bsky.app/profile/\(did)"
-        case .hashtag(let tag):
+        case let .hashtag(tag):
             // Convert hashtag to search URL
             let encodedTag = tag.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics) ?? tag
             return "https://bsky.app/search?q=%23\(encodedTag)"
@@ -93,16 +93,16 @@ public enum ATProtoFeature: Sendable {
 extension ATProtoRecord {
     /// Create from timeline record data
     init(from timelineRecord: TimelineRecord) {
-        self.text = timelineRecord.text
-        self.type = timelineRecord.type
+        text = timelineRecord.text
+        type = timelineRecord.type
 
         // Parse created date
         let formatter = ISO8601DateFormatter()
-        self.createdAt = formatter.date(from: timelineRecord.createdAt) ?? Date()
+        createdAt = formatter.date(from: timelineRecord.createdAt) ?? Date()
 
         // Convert timeline facets to AT Proto facets
-        self.facets = timelineRecord.facets?.compactMap { ATProtoFacet(from: $0) } ?? []
-        self.formattedText = Self.formatTextWithFacets(text: text, facets: facets)
+        facets = timelineRecord.facets?.compactMap { ATProtoFacet(from: $0) } ?? []
+        formattedText = Self.formatTextWithFacets(text: text, facets: facets)
     }
 }
 
@@ -114,7 +114,7 @@ extension ATProtoFacet {
         guard startIndex < endIndex else { return nil }
 
         // Convert from AT Protocol's exclusive end index to Swift's inclusive ClosedRange
-        self.index = startIndex...(endIndex - 1)
+        index = startIndex ... (endIndex - 1)
 
         // Find the first supported feature
         for featureData in timelineFacet.features {
@@ -149,7 +149,7 @@ extension ATProtoFeature {
 
 // MARK: - Updated Timeline Models
 
-internal struct TimelineRecord: Codable {
+struct TimelineRecord: Codable {
     let text: String
     let createdAt: String
     let type: String
@@ -161,17 +161,17 @@ internal struct TimelineRecord: Codable {
     }
 }
 
-internal struct TimelineFacet: Codable {
+struct TimelineFacet: Codable {
     let index: FacetIndex
     let features: [FacetFeature]
 }
 
-internal struct FacetIndex: Codable {
+struct FacetIndex: Codable {
     let byteStart: Int
     let byteEnd: Int
 }
 
-internal struct FacetFeature: Codable {
+struct FacetFeature: Codable {
     let type: String
     let uri: String?
     let did: String?

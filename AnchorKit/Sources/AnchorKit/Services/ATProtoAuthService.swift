@@ -7,20 +7,20 @@ import SwiftData
 public protocol ATProtoAuthServiceProtocol {
     var isAuthenticated: Bool { get async }
     var credentials: AuthCredentials? { get }
-    func authenticate(handle: String, appPassword: String, context: ModelContext) async throws -> AuthCredentials
-    func refreshCredentials(_ credentials: AuthCredentials, context: ModelContext) async throws -> AuthCredentials
-    func loadStoredCredentials(from context: ModelContext) async -> AuthCredentials?
-    func clearCredentials(from context: ModelContext) async
+    func authenticate(handle: String, appPassword: String) async throws -> AuthCredentials
+    func refreshCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials
+    func loadStoredCredentials() async -> AuthCredentials?
+    func clearCredentials() async
 }
 
 // MARK: - AT Protocol Authentication Service
 
 @Observable
 public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
-
     // MARK: - Properties
 
     private let client: ATProtoClientProtocol
+    private let storage: CredentialsStorageProtocol
 
     /// Current authentication credentials (backing storage)
     @MainActor
@@ -36,18 +36,19 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
     /// Current authentication credentials (MainActor-bound)
     @MainActor
     public var credentials: AuthCredentials? {
-        return _credentials
+        _credentials
     }
 
     // MARK: - Initialization
 
-    public init(client: ATProtoClientProtocol) {
+    public init(client: ATProtoClientProtocol, storage: CredentialsStorageProtocol) {
         self.client = client
+        self.storage = storage
     }
 
     // MARK: - Authentication Methods
 
-    public func authenticate(handle: String, appPassword: String, context: ModelContext) async throws -> AuthCredentials {
+    public func authenticate(handle: String, appPassword: String) async throws -> AuthCredentials {
         let request = ATProtoLoginRequest(identifier: handle, password: appPassword)
 
         do {
@@ -61,12 +62,9 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
                 expiresAt: Date().addingTimeInterval(24 * 60 * 60) // 24 hours
             )
 
-            // Store credentials
-            await MainActor.run {
-                self._credentials = newCredentials
-            }
-
-            try AuthCredentials.save(newCredentials, to: context)
+            // Store credentials in memory and persistent storage
+            _credentials = newCredentials
+            try await storage.save(newCredentials)
 
             print("✅ Successfully authenticated as @\(newCredentials.handle)")
             return newCredentials
@@ -81,7 +79,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         }
     }
 
-    public func refreshCredentials(_ credentials: AuthCredentials, context: ModelContext) async throws -> AuthCredentials {
+    public func refreshCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials {
         let request = ATProtoRefreshRequest(refreshJwt: credentials.refreshToken)
 
         do {
@@ -95,12 +93,9 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
                 expiresAt: Date().addingTimeInterval(24 * 60 * 60) // 24 hours
             )
 
-            // Update stored credentials
-            await MainActor.run {
-                self._credentials = newCredentials
-            }
-
-            try AuthCredentials.save(newCredentials, to: context)
+            // Update stored credentials in memory and persistent storage
+            _credentials = newCredentials
+            try await storage.save(newCredentials)
 
             print("✅ Successfully refreshed credentials for @\(newCredentials.handle)")
             return newCredentials
@@ -115,11 +110,9 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         }
     }
 
-    public func loadStoredCredentials(from context: ModelContext) async -> AuthCredentials? {
-        let loadedCredentials = AuthCredentials.current(from: context)
-        await MainActor.run {
-            self._credentials = loadedCredentials
-        }
+    public func loadStoredCredentials() async -> AuthCredentials? {
+        let loadedCredentials = await storage.load()
+        _credentials = loadedCredentials
 
         if let credentials = loadedCredentials {
             print("🔑 Loaded stored credentials for @\(credentials.handle)")
@@ -130,14 +123,11 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         return loadedCredentials
     }
 
-    public func clearCredentials(from context: ModelContext) async {
-        let hasCredentials = await MainActor.run { _credentials != nil }
-        if hasCredentials {
-            try? AuthCredentials.clearAll(from: context)
+    public func clearCredentials() async {
+        if _credentials != nil {
+            try? await storage.clear()
         }
-        await MainActor.run {
-            _credentials = nil
-        }
+        _credentials = nil
         print("🗑️ Cleared stored credentials")
     }
 }

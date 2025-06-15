@@ -1,15 +1,14 @@
-import Testing
-import Foundation
 @testable import AnchorKit
+import Foundation
+import Testing
 
 @Suite("Core Models", .tags(.unit, .models))
 struct CoreModelTests {
-
     @Test("Place model creation and properties")
     func placeModelCreation() {
         let place = Place(
             elementType: .way,
-            elementId: 123456,
+            elementId: 123_456,
             name: "Test Climbing Gym",
             latitude: 37.7749,
             longitude: -122.4194,
@@ -19,13 +18,13 @@ struct CoreModelTests {
         #expect(place.id == "way:123456")
         #expect(place.name == "Test Climbing Gym")
         #expect(place.elementType == .way)
-        #expect(place.elementId == 123456)
+        #expect(place.elementId == 123_456)
         #expect(place.latitude == 37.7749)
         #expect(place.longitude == -122.4194)
     }
 
     @Test("Place ID parsing", arguments: [
-        ("way:123456", Place.ElementType.way, 123456, true),
+        ("way:123456", Place.ElementType.way, 123_456, true),
         ("node:789", Place.ElementType.node, 789, true),
         ("relation:42", Place.ElementType.relation, 42, true),
         ("invalid", Place.ElementType.way, 0, false),
@@ -47,16 +46,9 @@ struct CoreModelTests {
 
 @Suite("Authentication Models", .tags(.unit, .models, .auth))
 struct AuthenticationModelTests {
-
     @Test("Valid credentials properties")
     func authCredentialsStorage() {
-        let credentials = MockAuthCredentials(
-            handle: "test.bsky.social",
-            accessToken: "test-access-token",
-            refreshToken: "test-refresh-token",
-            did: "did:plc:test123",
-            expiresAt: Date().addingTimeInterval(3600)
-        )
+        let credentials = TestUtilities.createSampleCredentials()
 
         #expect(credentials.handle == "test.bsky.social")
         #expect(credentials.accessToken == "test-access-token")
@@ -68,13 +60,7 @@ struct AuthenticationModelTests {
 
     @Test("Expired credentials validation")
     func authCredentialsExpiration() {
-        let expiredCredentials = MockAuthCredentials(
-            handle: "test.bsky.social",
-            accessToken: "test-access-token",
-            refreshToken: "test-refresh-token",
-            did: "did:plc:test123",
-            expiresAt: Date().addingTimeInterval(-3600)
-        )
+        let expiredCredentials = TestUtilities.createExpiredCredentials()
 
         #expect(expiredCredentials.isExpired)
         #expect(!expiredCredentials.isValid)
@@ -83,7 +69,6 @@ struct AuthenticationModelTests {
 
 @Suite("Settings Models", .tags(.unit, .models))
 struct SettingsModelTests {
-
     @Test("Default settings values")
     func anchorSettingsDefaults() {
         let settings = AnchorSettings()

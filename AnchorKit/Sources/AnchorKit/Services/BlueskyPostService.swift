@@ -11,7 +11,6 @@ public protocol BlueskyPostServiceProtocol {
 
 @MainActor
 public final class BlueskyPostService: BlueskyPostServiceProtocol {
-
     // MARK: - Properties
 
     private let client: ATProtoClientProtocol
@@ -39,7 +38,7 @@ public final class BlueskyPostService: BlueskyPostServiceProtocol {
         )
 
         // Add embed if provided
-        if let embedRecord = embedRecord {
+        if let embedRecord {
             postRecord = ATProtoPostRecord(
                 text: text,
                 createdAt: ISO8601DateFormatter().string(from: Date()),

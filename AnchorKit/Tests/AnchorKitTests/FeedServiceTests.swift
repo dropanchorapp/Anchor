@@ -1,13 +1,13 @@
-import Testing
-import Foundation
 @testable import AnchorKit
+import Foundation
+import Testing
 
 // Note: Mock utilities moved to TestUtilities.swift
 
 // MARK: - Test Models
 
 // Mirror of the internal BlueskyProfileResponse for testing
-internal struct BlueskyProfileResponse: Codable {
+struct BlueskyProfileResponse: Codable {
     let did: String
     let handle: String
     let displayName: String?
@@ -25,7 +25,7 @@ final class MockAnchorPDSService {
     var mockGlobalFeedResponse: AnchorPDSFeedResponse?
     var shouldThrowError = false
     var thrownError: Error = NSError(domain: "test", code: 1, userInfo: nil)
-    
+
     func getGlobalFeed() async throws -> AnchorPDSFeedResponse {
         if shouldThrowError {
             throw thrownError
@@ -38,7 +38,7 @@ final class MockAnchorPDSService {
 final class MockBlueskyService {
     var mockProfileInfo: [String: BlueskyProfileInfo] = [:]
     var shouldThrowError = false
-    
+
     func getProfile(for did: String) async throws -> BlueskyProfileInfo? {
         if shouldThrowError {
             throw NSError(domain: "test", code: 1, userInfo: nil)
@@ -49,21 +49,20 @@ final class MockBlueskyService {
 
 @Suite("Feed Service", .tags(.unit, .services, .feed))
 struct FeedServiceTests {
-
     let feedService: FeedService
-    let mockSession: MockURLSession
+    let mockSession: MutableMockURLSession
     let mockAnchorPDSService: MockAnchorPDSService
     let mockBlueskyService: MockBlueskyService
 
     @MainActor
     init() {
-        mockSession = MockURLSession()
+        mockSession = MutableMockURLSession()
         mockAnchorPDSService = MockAnchorPDSService()
         mockBlueskyService = MockBlueskyService()
-        
+
         // Create FeedService with mocked dependencies
         feedService = FeedService(session: mockSession)
-        
+
         // Note: In a real implementation, we'd need dependency injection
         // For now, we'll test the public interface and mock the network responses
     }
@@ -174,7 +173,7 @@ struct FeedServiceTests {
         // Mock AnchorPDS response
         let mockAnchorPDSResponse = createMockAnchorPDSFeedResponse()
         let mockAnchorPDSData = try JSONEncoder().encode(mockAnchorPDSResponse)
-        
+
         // Mock Bluesky profile responses for both users
         let mockProfile1 = BlueskyProfileResponse(
             did: "did:plc:test123",
@@ -187,7 +186,7 @@ struct FeedServiceTests {
             postsCount: 25
         )
         let mockProfile1Data = try JSONEncoder().encode(mockProfile1)
-        
+
         let mockProfile2 = BlueskyProfileResponse(
             did: "did:plc:test456",
             handle: "climber2.bsky.social",
@@ -220,7 +219,7 @@ struct FeedServiceTests {
                     statusCode: 200,
                     httpVersion: nil,
                     headerFields: nil
-                )!)
+                )!),
             ]
         }
 
@@ -232,7 +231,7 @@ struct FeedServiceTests {
         await #expect(feedService.posts.count == 2) // Mock response has 2 check-ins
         await #expect(feedService.isLoading == false)
         await #expect(feedService.error == nil)
-        
+
         // Verify the posts have the expected structure with profile enrichment
         let posts = await feedService.posts
         let firstPost = posts.first!
@@ -241,7 +240,7 @@ struct FeedServiceTests {
         #expect(firstPost.author.handle == "climber1.bsky.social")
         #expect(firstPost.author.displayName == "Test Climber 1")
         #expect(firstPost.author.avatar == "https://example.com/avatar1.jpg")
-        
+
         let secondPost = posts[1]
         #expect(secondPost.author.did == "did:plc:test456")
         #expect(secondPost.author.handle == "climber2.bsky.social")
@@ -342,18 +341,12 @@ struct FeedServiceTests {
 
     // MARK: - Helper Methods
 
-    private func createMockCredentials() -> MockAuthCredentials {
-        return MockAuthCredentials(
-            handle: "test.bsky.social",
-            accessToken: "test-access-token",
-            refreshToken: "test-refresh-token",
-            did: "did:plc:test",
-            expiresAt: Date().addingTimeInterval(3600)
-        )
+    private func createMockCredentials() -> AuthCredentials {
+        TestUtilities.createSampleCredentials()
     }
 
     private func createMockTimelineFeedItem() -> TimelineFeedItem {
-        return TimelineFeedItem(
+        TimelineFeedItem(
             post: TimelinePost(
                 uri: "at://did:plc:test/app.bsky.feed.post/123",
                 cid: "bafyreicid123",
@@ -371,9 +364,9 @@ struct FeedServiceTests {
                         TimelineFacet(
                             index: FacetIndex(byteStart: 10, byteEnd: 29),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
+                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
                             ]
-                        )
+                        ),
                     ]
                 ),
                 embed: nil,
@@ -425,7 +418,7 @@ struct FeedServiceTests {
     }
 
     private func createMockTimelineFeedItemWithMultipleFacets() -> TimelineFeedItem {
-        return TimelineFeedItem(
+        TimelineFeedItem(
             post: TimelinePost(
                 uri: "at://did:plc:test/app.bsky.feed.post/123",
                 cid: "bafyreicid123",
@@ -443,21 +436,21 @@ struct FeedServiceTests {
                         TimelineFacet(
                             index: FacetIndex(byteStart: 4, byteEnd: 20),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice", tag: nil)
+                                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice", tag: nil),
                             ]
                         ),
                         TimelineFacet(
                             index: FacetIndex(byteStart: 27, byteEnd: 46),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
+                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
                             ]
                         ),
                         TimelineFacet(
                             index: FacetIndex(byteStart: 47, byteEnd: 55),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "awesome")
+                                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "awesome"),
                             ]
-                        )
+                        ),
                     ]
                 ),
                 embed: nil,
@@ -471,7 +464,7 @@ struct FeedServiceTests {
     }
 
     private func createMockTimelineFeedItemWithUnicode() -> TimelineFeedItem {
-        return TimelineFeedItem(
+        TimelineFeedItem(
             post: TimelinePost(
                 uri: "at://did:plc:test/app.bsky.feed.post/123",
                 cid: "bafyreicid123",
@@ -489,9 +482,9 @@ struct FeedServiceTests {
                         TimelineFacet(
                             index: FacetIndex(byteStart: 19, byteEnd: 41),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://café.example.com", did: nil, tag: nil)
+                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://café.example.com", did: nil, tag: nil),
                             ]
-                        )
+                        ),
                     ]
                 ),
                 embed: nil,
@@ -505,10 +498,10 @@ struct FeedServiceTests {
     }
 
     private func createMockTimelineResponse() -> TimelineResponse {
-        return TimelineResponse(
+        TimelineResponse(
             feed: [
                 createMockTimelineFeedItemWithCheckin(),
-                createMockTimelineFeedItemWithCheckin()
+                createMockTimelineFeedItemWithCheckin(),
             ],
             cursor: "next-page-cursor"
         )
@@ -554,7 +547,7 @@ struct FeedServiceTests {
             createdAt: "2024-01-15T12:00:00Z",
             locations: [.geo(geoLocation)]
         )
-        
+
         return AnchorPDSCheckinResponse(
             uri: "at://did:plc:test123/app.dropanchor.checkin/abc123",
             cid: "bafyreicid123",
@@ -565,7 +558,7 @@ struct FeedServiceTests {
 
     private func createMockAnchorPDSFeedResponse() -> AnchorPDSFeedResponse {
         let checkin1 = createMockAnchorPDSCheckinResponse()
-        
+
         let geoLocation2 = CommunityGeoLocation(latitude: 40.7128, longitude: -74.0060)
         let checkinRecord2 = AnchorPDSCheckinRecord(
             text: "Another check-in!",
@@ -578,9 +571,7 @@ struct FeedServiceTests {
             value: checkinRecord2,
             author: AnchorPDSAuthor(did: "did:plc:test456")
         )
-        
+
         return AnchorPDSFeedResponse(checkins: [checkin1, checkin2], cursor: nil)
     }
-
-
 }

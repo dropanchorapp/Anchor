@@ -6,11 +6,11 @@ import SwiftData
 @MainActor
 public protocol BlueskyServiceProtocol {
     var isAuthenticated: Bool { get }
-    func loadStoredCredentials(from context: ModelContext) async -> AuthCredentials?
-    func authenticate(handle: String, appPassword: String, context: ModelContext) async throws -> Bool
-    func signOut(context: ModelContext) async
-    func createCheckinWithPost(place: Place, customMessage: String?, context: ModelContext) async throws -> Bool
-    func createCheckinWithOptionalPost(place: Place, customMessage: String?, shouldCreatePost: Bool, context: ModelContext) async throws -> Bool
+    func loadStoredCredentials() async -> AuthCredentials?
+    func authenticate(handle: String, appPassword: String) async throws -> Bool
+    func signOut() async
+    func createCheckinWithPost(place: Place, customMessage: String?) async throws -> Bool
+    func createCheckinWithOptionalPost(place: Place, customMessage: String?, shouldCreatePost: Bool) async throws -> Bool
     func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet])
     func getAppPasswordURL() -> URL
 }
@@ -20,7 +20,6 @@ public protocol BlueskyServiceProtocol {
 /// Main Bluesky service that coordinates AT Protocol authentication, posting, and check-ins
 @Observable
 public final class BlueskyService: BlueskyServiceProtocol {
-
     // MARK: - Properties
 
     private let authService: ATProtoAuthServiceProtocol
@@ -39,10 +38,34 @@ public final class BlueskyService: BlueskyServiceProtocol {
 
     // MARK: - Initialization
 
-    public convenience init(session: URLSessionProtocol = URLSession.shared) {
+    /// Convenience initializer for production use with SwiftData storage
+    public convenience init(session: URLSessionProtocol = URLSession.shared, context: ModelContext) {
         let client = ATProtoClient(session: session)
         let richTextProcessor = RichTextProcessor()
-        let authService = ATProtoAuthService(client: client)
+        let storage = SwiftDataCredentialsStorage(context: context)
+        let authService = ATProtoAuthService(client: client, storage: storage)
+        let postService = BlueskyPostService(client: client, richTextProcessor: richTextProcessor)
+        let checkinService = BlueskyCheckinService(
+            client: client,
+            richTextProcessor: richTextProcessor,
+            postService: postService
+        )
+        let anchorPDSService = AnchorPDSService(session: session)
+
+        self.init(
+            authService: authService,
+            postService: postService,
+            checkinService: checkinService,
+            richTextProcessor: richTextProcessor,
+            anchorPDSService: anchorPDSService
+        )
+    }
+
+    /// Convenience initializer for testing with in-memory storage
+    public convenience init(session: URLSessionProtocol = URLSession.shared, storage: CredentialsStorageProtocol) {
+        let client = ATProtoClient(session: session)
+        let richTextProcessor = RichTextProcessor()
+        let authService = ATProtoAuthService(client: client, storage: storage)
         let postService = BlueskyPostService(client: client, richTextProcessor: richTextProcessor)
         let checkinService = BlueskyCheckinService(
             client: client,
@@ -76,35 +99,35 @@ public final class BlueskyService: BlueskyServiceProtocol {
 
     // MARK: - Authentication
 
-    public func loadStoredCredentials(from context: ModelContext) async -> AuthCredentials? {
-        let result = await authService.loadStoredCredentials(from: context)
+    public func loadStoredCredentials() async -> AuthCredentials? {
+        let result = await authService.loadStoredCredentials()
         await updateAuthenticationState()
         return result
     }
 
-    public func authenticate(handle: String, appPassword: String, context: ModelContext) async throws -> Bool {
-        _ = try await authService.authenticate(handle: handle, appPassword: appPassword, context: context)
+    public func authenticate(handle: String, appPassword: String) async throws -> Bool {
+        _ = try await authService.authenticate(handle: handle, appPassword: appPassword)
         await updateAuthenticationState()
         return true
     }
 
-    public func signOut(context: ModelContext) async {
-        await authService.clearCredentials(from: context)
+    public func signOut() async {
+        await authService.clearCredentials()
         await updateAuthenticationState()
     }
 
     public func getAppPasswordURL() -> URL {
-        return URL(string: "https://bsky.app/settings/app-passwords")!
+        URL(string: "https://bsky.app/settings/app-passwords")!
     }
 
     // MARK: - Check-ins & Posts
 
-    public func createCheckinWithPost(place: Place, customMessage: String?, context: ModelContext) async throws -> Bool {
+    public func createCheckinWithPost(place: Place, customMessage: String?) async throws -> Bool {
         // Maintain backward compatibility - always create both check-in and post
-        return try await createCheckinWithOptionalPost(place: place, customMessage: customMessage, shouldCreatePost: true, context: context)
+        try await createCheckinWithOptionalPost(place: place, customMessage: customMessage, shouldCreatePost: true)
     }
-    
-    public func createCheckinWithOptionalPost(place: Place, customMessage: String?, shouldCreatePost: Bool, context: ModelContext) async throws -> Bool {
+
+    public func createCheckinWithOptionalPost(place: Place, customMessage: String?, shouldCreatePost: Bool) async throws -> Bool {
         guard let credentials = authService.credentials else {
             throw ATProtoError.missingCredentials
         }
@@ -112,7 +135,7 @@ public final class BlueskyService: BlueskyServiceProtocol {
         // Refresh credentials if needed
         var activeCredentials = credentials
         if activeCredentials.isExpired {
-            activeCredentials = try await authService.refreshCredentials(activeCredentials, context: context)
+            activeCredentials = try await authService.refreshCredentials(activeCredentials)
         }
 
         // Step 1: Always create check-in on AnchorPDS
@@ -121,7 +144,7 @@ public final class BlueskyService: BlueskyServiceProtocol {
             customMessage: customMessage,
             credentials: activeCredentials
         )
-        
+
         // Step 2: Optionally create post on user's home PDS (Bluesky)
         if shouldCreatePost {
             let (postText, _) = richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
@@ -138,18 +161,18 @@ public final class BlueskyService: BlueskyServiceProtocol {
     // MARK: - Rich Text Processing
 
     public func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet]) {
-        return richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
+        richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
     }
 
     // MARK: - Private Methods
 
-    private func refreshCredentialsIfNeeded(context: ModelContext) async throws -> AuthCredentials {
+    private func refreshCredentialsIfNeeded() async throws -> AuthCredentials {
         guard let credentials = authService.credentials else {
             throw ATProtoError.missingCredentials
         }
 
         if credentials.isExpired {
-            return try await authService.refreshCredentials(credentials, context: context)
+            return try await authService.refreshCredentials(credentials)
         }
 
         return credentials

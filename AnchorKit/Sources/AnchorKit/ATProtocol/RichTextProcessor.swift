@@ -10,7 +10,6 @@ public protocol RichTextProcessorProtocol: Sendable {
 // MARK: - Rich Text Processor Implementation
 
 public final class RichTextProcessor: RichTextProcessorProtocol {
-
     public init() {}
 
     // MARK: - Public Methods
@@ -35,7 +34,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
         var facets: [RichTextFacet] = []
 
         // Add custom message if provided
-        if let customMessage = customMessage, !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if let customMessage, !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             text = customMessage + "\n\n"
 
             // Detect facets in custom message
@@ -102,7 +101,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
                 let range = match.range
                 let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
                 let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
-                let matchedText = String(text[startIndex..<endIndex])
+                let matchedText = String(text[startIndex ..< endIndex])
 
                 // Convert to byte indices for AT Protocol
                 let beforeMatch = String(text.prefix(upTo: startIndex))
@@ -144,7 +143,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
                 let range = match.range
                 let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
                 let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
-                let matchedText = String(text[startIndex..<endIndex])
+                let matchedText = String(text[startIndex ..< endIndex])
 
                 // Skip domains with invalid TLDs
                 let handleForValidation = String(matchedText.dropFirst()) // Remove @
@@ -186,7 +185,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
                 let range = match.range
                 let startIndex = text.utf16.index(text.startIndex, offsetBy: range.location)
                 let endIndex = text.utf16.index(startIndex, offsetBy: range.length)
-                let matchedText = String(text[startIndex..<endIndex])
+                let matchedText = String(text[startIndex ..< endIndex])
 
                 // Convert to byte indices
                 let beforeMatch = String(text.prefix(upTo: startIndex))
@@ -210,14 +209,13 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
     }
 
     private func buildPlaceURL(for place: Place) -> String {
-        let elementTypePath: String
-        switch place.elementType {
+        let elementTypePath = switch place.elementType {
         case .node:
-            elementTypePath = "node"
+            "node"
         case .way:
-            elementTypePath = "way"
+            "way"
         case .relation:
-            elementTypePath = "relation"
+            "relation"
         }
 
         return "https://www.openstreetmap.org/\(elementTypePath)/\(place.elementId)"
@@ -239,7 +237,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
         // 2. Must contain only letters (no numbers in real TLDs)
         // 3. Must not be known invalid TLDs
         guard tld.count >= 2 else { return false }
-        guard tld.allSatisfy({ $0.isLetter }) else { return false }
+        guard tld.allSatisfy(\.isLetter) else { return false }
 
         // Invalid TLDs that should not be accepted for mentions
         // Note: .test is actually valid (RFC 6761 reserved for testing)

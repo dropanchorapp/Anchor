@@ -1,11 +1,10 @@
-import Testing
+@testable import AnchorKit
 import CoreLocation
 import Foundation
-@testable import AnchorKit
+import Testing
 
 @Suite("Overpass Service", .tags(.integration, .services, .network, .location))
 struct OverpassServiceTests {
-
     let overpassService: OverpassService
 
     init() {
@@ -69,7 +68,7 @@ struct OverpassServiceTests {
     @Test("Broader query for amenities in San Francisco")
     func broaderQuery() async throws {
         // Test with a broader query to find any named place
-        let coordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194) // San Francisco downtown
+        let _ = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194) // San Francisco downtown
 
         print("🧪 Testing broader query in San Francisco downtown")
 
@@ -98,11 +97,13 @@ struct OverpassServiceTests {
         }
 
         if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let elements = json["elements"] as? [[String: Any]] {
+           let elements = json["elements"] as? [[String: Any]]
+        {
             print("✅ Found \(elements.count) places with names")
             for element in elements.prefix(10) {
                 if let tags = element["tags"] as? [String: String],
-                   let name = tags["name"] {
+                   let name = tags["name"]
+                {
                     let amenity = tags["amenity"] ?? "unknown"
                     print("   - \(name) (\(amenity))")
                 }

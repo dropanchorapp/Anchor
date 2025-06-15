@@ -1,9 +1,8 @@
-import Foundation
 import CoreLocation
+import Foundation
 
 /// Service for querying OpenStreetMap data via Overpass API
 public final class OverpassService: @unchecked Sendable {
-
     // MARK: - Properties
 
     private let session: URLSession
@@ -78,7 +77,6 @@ public final class OverpassService: @unchecked Sendable {
         radiusMeters: Double = 1000,
         categories: [String] = []
     ) async throws -> [Place] {
-
         // Cleanup expired cache entries occasionally
         cleanupExpiredCache()
 
@@ -152,7 +150,7 @@ public final class OverpassService: @unchecked Sendable {
         near coordinate: CLLocationCoordinate2D,
         radiusMeters: Double = 2000
     ) async throws -> [Place] {
-        return try await findNearbyPlaces(
+        try await findNearbyPlaces(
             near: coordinate,
             radiusMeters: radiusMeters,
             categories: ["leisure=climbing", "sport=climbing"]
@@ -170,7 +168,7 @@ public final class OverpassService: @unchecked Sendable {
         radiusMeters: Double = 1000,
         categories: [String]
     ) async throws -> [Place] {
-        return try await findNearbyPlaces(
+        try await findNearbyPlaces(
             near: coordinate,
             radiusMeters: radiusMeters,
             categories: categories
@@ -187,7 +185,6 @@ public final class OverpassService: @unchecked Sendable {
 // MARK: - Private Methods
 
 private extension OverpassService {
-
     /// Create a cache key based on rounded coordinates and search parameters
     /// Rounds coordinates to ~100 meter precision (3 decimal places ≈ 111m)
     func createCacheKey(
@@ -246,7 +243,7 @@ private extension OverpassService {
 
     /// Get the default categories when none are specified
     func getDefaultCategories() -> [String] {
-        return [
+        [
             "amenity=restaurant",
             "amenity=cafe",
             "amenity=bar",
@@ -312,7 +309,8 @@ private extension OverpassService {
     func parseElement(_ element: OverpassElement) -> Place? {
         guard let elementType = Place.ElementType(rawValue: element.type),
               let name = element.tags?["name"],
-              !name.isEmpty else {
+              !name.isEmpty
+        else {
             return nil
         }
 
@@ -376,17 +374,17 @@ public enum OverpassError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid Overpass API URL"
+            "Invalid Overpass API URL"
         case .invalidResponse:
-            return "Invalid response from Overpass API"
-        case .httpError(let code):
-            return "HTTP error \(code) from Overpass API"
+            "Invalid response from Overpass API"
+        case let .httpError(code):
+            "HTTP error \(code) from Overpass API"
         case .noData:
-            return "No data received from Overpass API"
-        case .networkError(let urlError):
-            return "Network error: \(urlError.localizedDescription)"
-        case .decodingError(let error):
-            return "Failed to decode Overpass response: \(error.localizedDescription)"
+            "No data received from Overpass API"
+        case let .networkError(urlError):
+            "Network error: \(urlError.localizedDescription)"
+        case let .decodingError(error):
+            "Failed to decode Overpass response: \(error.localizedDescription)"
         }
     }
 }

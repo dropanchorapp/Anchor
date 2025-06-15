@@ -12,12 +12,12 @@ public struct CommunityGeoLocation: Codable, Sendable {
     public let type: String = "community.lexicon.location.geo"
     public let latitude: String
     public let longitude: String
-    
+
     private enum CodingKeys: String, CodingKey {
         case latitude, longitude
         case type = "$type"
     }
-    
+
     public init(latitude: Double, longitude: Double) {
         self.latitude = String(latitude)
         self.longitude = String(longitude)
@@ -32,12 +32,12 @@ public struct CommunityAddressLocation: Codable, Sendable {
     public let country: String?
     public let postalCode: String?
     public let name: String?
-    
+
     private enum CodingKeys: String, CodingKey {
         case street, locality, region, country, postalCode, name
         case type = "$type"
     }
-    
+
     public init(street: String? = nil, locality: String? = nil, region: String? = nil, country: String? = nil, postalCode: String? = nil, name: String? = nil) {
         self.street = street
         self.locality = locality
@@ -51,17 +51,17 @@ public struct CommunityAddressLocation: Codable, Sendable {
 public enum LocationItem: Codable, Sendable {
     case geo(CommunityGeoLocation)
     case address(CommunityAddressLocation)
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
-        case .geo(let geo):
+        case let .geo(geo):
             try container.encode(geo)
-        case .address(let address):
+        case let .address(address):
             try container.encode(address)
         }
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let geo = try? container.decode(CommunityGeoLocation.self) {
@@ -79,12 +79,12 @@ public struct AnchorPDSCheckinRecord: Codable, Sendable {
     public let text: String
     public let createdAt: String
     public let locations: [LocationItem]?
-    
+
     private enum CodingKeys: String, CodingKey {
         case text, createdAt, locations
         case type = "$type"
     }
-    
+
     public init(text: String, createdAt: String, locations: [LocationItem]? = nil) {
         self.text = text
         self.createdAt = createdAt
@@ -97,9 +97,9 @@ public struct AnchorPDSCreateRecordRequest: Codable {
     let collection: String
     let record: AnchorPDSCheckinRecord
     let rkey: String?
-    
+
     public init(record: AnchorPDSCheckinRecord, rkey: String? = nil) {
-        self.collection = "app.dropanchor.checkin"
+        collection = "app.dropanchor.checkin"
         self.record = record
         self.rkey = rkey
     }
@@ -111,7 +111,7 @@ public struct AnchorPDSCreateRecordRequest: Codable {
 public struct AnchorPDSFeedResponse: Codable {
     let checkins: [AnchorPDSCheckinResponse]
     let cursor: String?
-    
+
     public init(checkins: [AnchorPDSCheckinResponse], cursor: String? = nil) {
         self.checkins = checkins
         self.cursor = cursor
@@ -123,7 +123,7 @@ public struct AnchorPDSCheckinResponse: Codable {
     let cid: String
     let value: AnchorPDSCheckinRecord // Using unified model
     let author: AnchorPDSAuthor
-    
+
     public init(uri: String, cid: String, value: AnchorPDSCheckinRecord, author: AnchorPDSAuthor) {
         self.uri = uri
         self.cid = cid
@@ -132,11 +132,9 @@ public struct AnchorPDSCheckinResponse: Codable {
     }
 }
 
-
-
 public struct AnchorPDSAuthor: Codable {
     let did: String
-    
+
     public init(did: String) {
         self.did = did
     }
@@ -152,23 +150,23 @@ public enum AnchorPDSError: LocalizedError, Sendable {
     case authenticationRequired
     case recordCreationFailed(String)
     case serverError(String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid AnchorPDS URL"
+            "Invalid AnchorPDS URL"
         case .invalidResponse:
-            return "Invalid response from AnchorPDS server"
-        case .httpError(let code):
-            return "HTTP error \(code) from AnchorPDS server"
-        case .decodingError(let error):
-            return "Failed to decode AnchorPDS response: \(error.localizedDescription)"
+            "Invalid response from AnchorPDS server"
+        case let .httpError(code):
+            "HTTP error \(code) from AnchorPDS server"
+        case let .decodingError(error):
+            "Failed to decode AnchorPDS response: \(error.localizedDescription)"
         case .authenticationRequired:
-            return "Authentication required for AnchorPDS"
-        case .recordCreationFailed(let message):
-            return "Failed to create record on AnchorPDS: \(message)"
-        case .serverError(let message):
-            return "AnchorPDS server error: \(message)"
+            "Authentication required for AnchorPDS"
+        case let .recordCreationFailed(message):
+            "Failed to create record on AnchorPDS: \(message)"
+        case let .serverError(message):
+            "AnchorPDS server error: \(message)"
         }
     }
 }
@@ -186,38 +184,37 @@ public protocol AnchorPDSClientProtocol: Sendable {
 
 @MainActor
 public final class AnchorPDSClient: AnchorPDSClientProtocol {
-    
     // MARK: - Properties
-    
+
     private let session: URLSessionProtocol
     private let baseURL: String
-    
+
     // MARK: - Initialization
-    
+
     public init(baseURL: String = "https://anchorpds.val.run", session: URLSessionProtocol = URLSession.shared) {
         self.baseURL = baseURL
         self.session = session
     }
-    
+
     // MARK: - Record Creation
-    
+
     public func createRecord(request: AnchorPDSCreateRecordRequest, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse {
         print("🔍 AnchorPDS Request: \(request)")
-        
+
         let httpRequest = try buildAuthenticatedRequest(
             endpoint: "/xrpc/com.atproto.repo.createRecord",
             method: "POST",
             body: request,
             accessToken: credentials.accessToken
         )
-        
+
         if let bodyData = httpRequest.httpBody, let bodyString = String(data: bodyData, encoding: .utf8) {
             print("🔍 AnchorPDS Request Body: \(bodyString)")
         }
-        
+
         let (data, response) = try await session.data(for: httpRequest)
         try validateResponse(response)
-        
+
         do {
             return try JSONDecoder().decode(ATProtoCreateRecordResponse.self, from: data)
         } catch {
@@ -226,22 +223,22 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
             throw AnchorPDSError.decodingError(error)
         }
     }
-    
+
     // MARK: - Feed Operations
-    
+
     public func listCheckins(user: String? = nil, limit: Int = 50, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(min(limit, 100)))
         ]
-        
-        if let user = user {
+
+        if let user {
             queryItems.append(URLQueryItem(name: "user", value: user))
         }
-        
-        if let cursor = cursor {
+
+        if let cursor {
             queryItems.append(URLQueryItem(name: "cursor", value: cursor))
         }
-        
+
         let httpRequest = try buildAuthenticatedRequest(
             endpoint: "/xrpc/app.dropanchor.listCheckins",
             method: "GET",
@@ -249,26 +246,26 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
             queryItems: queryItems,
             accessToken: credentials.accessToken
         )
-        
+
         let (data, response) = try await session.data(for: httpRequest)
         try validateResponse(response)
-        
+
         do {
             return try JSONDecoder().decode(AnchorPDSFeedResponse.self, from: data)
         } catch {
             throw AnchorPDSError.decodingError(error)
         }
     }
-    
+
     public func getGlobalFeed(limit: Int = 50, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(min(limit, 100)))
         ]
-        
-        if let cursor = cursor {
+
+        if let cursor {
             queryItems.append(URLQueryItem(name: "cursor", value: cursor))
         }
-        
+
         let httpRequest = try buildAuthenticatedRequest(
             endpoint: "/xrpc/app.dropanchor.getGlobalFeed",
             method: "GET",
@@ -276,57 +273,57 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
             queryItems: queryItems,
             accessToken: credentials.accessToken
         )
-        
+
         let (data, response) = try await session.data(for: httpRequest)
         try validateResponse(response)
-        
+
         do {
             return try JSONDecoder().decode(AnchorPDSFeedResponse.self, from: data)
         } catch {
             throw AnchorPDSError.decodingError(error)
         }
     }
-    
+
     // MARK: - Private Methods
-    
-    private func buildRequest<T: Codable>(
+
+    private func buildRequest(
         endpoint: String,
         method: String,
-        body: T? = nil,
+        body: (some Codable)? = nil,
         queryItems: [URLQueryItem]? = nil
     ) throws -> URLRequest {
         guard var urlComponents = URLComponents(string: baseURL + endpoint) else {
             throw AnchorPDSError.invalidURL
         }
-        
-        if let queryItems = queryItems {
+
+        if let queryItems {
             urlComponents.queryItems = queryItems
         }
-        
+
         guard let url = urlComponents.url else {
             throw AnchorPDSError.invalidURL
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Anchor/1.0 (macOS)", forHTTPHeaderField: "User-Agent")
-        
-        if let body = body {
+
+        if let body {
             do {
                 request.httpBody = try JSONEncoder().encode(body)
             } catch {
                 throw AnchorPDSError.decodingError(error)
             }
         }
-        
+
         return request
     }
-    
-    private func buildAuthenticatedRequest<T: Codable>(
+
+    private func buildAuthenticatedRequest(
         endpoint: String,
         method: String,
-        body: T? = nil,
+        body: (some Codable)? = nil,
         queryItems: [URLQueryItem]? = nil,
         accessToken: String
     ) throws -> URLRequest {
@@ -334,19 +331,19 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         return request
     }
-    
+
     private func validateResponse(_ response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AnchorPDSError.invalidResponse
         }
-        
-        guard 200...299 ~= httpResponse.statusCode else {
+
+        guard 200 ... 299 ~= httpResponse.statusCode else {
             switch httpResponse.statusCode {
             case 401:
                 throw AnchorPDSError.authenticationRequired
-            case 400...499:
+            case 400 ... 499:
                 throw AnchorPDSError.httpError(httpResponse.statusCode)
-            case 500...599:
+            case 500 ... 599:
                 throw AnchorPDSError.serverError("Server error \(httpResponse.statusCode)")
             default:
                 throw AnchorPDSError.httpError(httpResponse.statusCode)

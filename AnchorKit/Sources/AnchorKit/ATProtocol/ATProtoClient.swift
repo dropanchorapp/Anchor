@@ -14,7 +14,6 @@ public protocol ATProtoClientProtocol: Sendable {
 
 @MainActor
 public final class ATProtoClient: ATProtoClientProtocol {
-
     // MARK: - Properties
 
     private let session: URLSessionProtocol
@@ -74,11 +73,10 @@ public final class ATProtoClient: ATProtoClientProtocol {
         )
 
         let (data, response) = try await session.data(for: httpRequest)
-        
+
         // Debug response
-        if let httpResponse = response as? HTTPURLResponse {
-        }
-        
+        if response is HTTPURLResponse {}
+
         try validateResponse(response)
 
         do {
@@ -108,10 +106,10 @@ public final class ATProtoClient: ATProtoClientProtocol {
 
     // MARK: - Private Methods
 
-    private func buildRequest<T: Codable>(
+    private func buildRequest(
         endpoint: String,
         method: String,
-        body: T? = nil
+        body: (some Codable)? = nil
     ) throws -> URLRequest {
         guard let url = URL(string: baseURL + endpoint) else {
             throw ATProtoError.invalidURL
@@ -122,7 +120,7 @@ public final class ATProtoClient: ATProtoClientProtocol {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Anchor/1.0 (macOS)", forHTTPHeaderField: "User-Agent")
 
-        if let body = body {
+        if let body {
             do {
                 request.httpBody = try JSONEncoder().encode(body)
             } catch {
@@ -133,10 +131,10 @@ public final class ATProtoClient: ATProtoClientProtocol {
         return request
     }
 
-    private func buildAuthenticatedRequest<T: Codable>(
+    private func buildAuthenticatedRequest(
         endpoint: String,
         method: String,
-        body: T? = nil,
+        body: (some Codable)? = nil,
         accessToken: String
     ) throws -> URLRequest {
         var request = try buildRequest(endpoint: endpoint, method: method, body: body)
@@ -149,7 +147,7 @@ public final class ATProtoClient: ATProtoClientProtocol {
             throw ATProtoError.invalidResponse
         }
 
-        guard 200...299 ~= httpResponse.statusCode else {
+        guard 200 ... 299 ~= httpResponse.statusCode else {
             throw ATProtoError.httpError(httpResponse.statusCode)
         }
     }

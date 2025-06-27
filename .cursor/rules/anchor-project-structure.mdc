@@ -3,36 +3,81 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Anchor CLI Project Structure Guide
+# Anchor Project Structure Guide
 
 ## Overview
 
-Anchor is a minimal command-line check-in app using the AT Protocol to post check-ins (called "drops") to Bluesky. Built with Swift 6 for macOS, it uses OpenStreetMap via Overpass API for location search and CoreLocation for geolocation.
+Anchor is a minimal check-in app ecosystem using the AT Protocol to post check-ins (called "drops") to Bluesky. The project includes multiple targets sharing a common core, built with Swift 6, using OpenStreetMap via Overpass API for location search and CoreLocation for geolocation.
 
 ## Project Architecture
 
-The project follows a modular architecture with two main components:
+The project follows a modular architecture with shared core components and multiple platform-specific targets, using **MV Pattern** (Model-View without ViewModels) for SwiftUI applications:
 
 ### Core Components
 
 - **AnchorKit** - Core reusable logic module located in `AnchorKit/`
-- **AnchorCLI** - CLI entry point executable located in `AnchorCLI/`
+- **Shared Models & Services** - Common business logic shared across all targets
+- **Stores** - `@Observable` classes for business logic operations (no ViewModels)
+
+### Platform Targets
+
+- **AnchorCLI** - Command-line interface executable (macOS)
+- **Anchor** - SwiftUI menu bar app (macOS 14.0+)
+- **AnchorMobile** - SwiftUI mobile app (iOS 26.0+)
 
 ### Key Files
 
-- [Package.swift](mdc:Package.swift) - Main package definition with executable target
-- [AnchorKit/Package.swift](mdc:AnchorKit/Package.swift) - Core module package definition
-- [AnchorCLI/Sources/AnchorCLI/main.swift](mdc:AnchorCLI/Sources/AnchorCLI/main.swift) - CLI entry point
-- [AnchorCLI/Sources/AnchorCLI/CLICommands.swift](mdc:AnchorCLI/Sources/AnchorCLI/CLICommands.swift) - CLI command definitions
-- [AnchorKit/Sources/AnchorKit/AnchorKit.swift](mdc:AnchorKit/Sources/AnchorKit/AnchorKit.swift) - Core module entry point
+#### Core Module
+- [AnchorKit/Package.swift](mdc:Anchor/Anchor/AnchorKit/Package.swift) - Core module package definition
+- [AnchorKit/Sources/AnchorKit/AnchorKit.swift](mdc:Anchor/Anchor/AnchorKit/Sources/AnchorKit/AnchorKit.swift) - Core module entry point
 
-### Planned Directory Structure (Per Implementation Plan)
+#### CLI Target
+- [Package.swift](mdc:Anchor/Anchor/Package.swift) - Main package definition with executable target
+- [AnchorCLI/Sources/AnchorCLI/main.swift](mdc:Anchor/Anchor/AnchorCLI/Sources/AnchorCLI/main.swift) - CLI entry point
+- [AnchorCLI/Sources/AnchorCLI/CLICommands.swift](mdc:Anchor/Anchor/AnchorCLI/Sources/AnchorCLI/CLICommands.swift) - CLI command definitions
+
+#### Menu Bar App Target
+- [Anchor.xcodeproj/project.pbxproj](mdc:Anchor/Anchor/Anchor.xcodeproj/project.pbxproj) - Xcode project configuration
+- [Anchor/AnchorMenubarApp.swift](mdc:Anchor/Anchor/Anchor/AnchorMenubarApp.swift) - Menu bar app entry point
+- [Anchor/ContentView.swift](mdc:Anchor/Anchor/Anchor/ContentView.swift) - Main UI view
+
+#### Mobile App Target
+- [AnchorMobile/AnchorMobileApp.swift](mdc:Anchor/Anchor/AnchorMobile/AnchorMobileApp.swift) - Mobile app entry point
+- [AnchorMobile/ContentView.swift](mdc:Anchor/Anchor/AnchorMobile/ContentView.swift) - Main mobile UI view
+
+### Directory Structure
 
 ```
 AnchorKit/Sources/AnchorKit/
 ├── Models/         ← Data models (Place, AuthCredentials, AnchorSettings)
 ├── Services/       ← API services (Bluesky, Overpass, CoreLocation)
+├── Stores/         ← Minimal @Observable business logic classes
+│   ├── AnchorStore.swift      ← Main app store (check-ins, location, auth)
+│   └── SettingsStore.swift    ← Settings management (if needed)
+├── ATProtocol/     ← AT Protocol client and models
 └── Utils/          ← Utility functions and helpers
+
+Anchor/Features/    ← Menu bar app feature modules (feature-based organization)
+├── CheckIn/
+│   └── Views/      ← SwiftUI views (@Environment(AnchorStore.self))
+├── Feed/
+│   └── Views/      ← Feed display views (@Query + @Environment(AnchorStore.self))
+├── Nearby/
+│   └── Views/      ← Nearby places views (@Environment(AnchorStore.self))
+└── Settings/
+    └── Views/      ← Settings UI (@Environment(SettingsStore.self))
+
+AnchorMobile/Features/ ← Mobile app feature modules (same minimal pattern)
+├── CheckIn/Views/
+├── Feed/Views/
+├── Nearby/Views/
+└── Settings/Views/
+
+Docs/               ← Local documentation
+├── mv_pattern_guidelines.md      ← MV Pattern architecture guide
+├── swift-concurrency.md          ← Swift 6 concurrency guide
+├── SwiftData-api-20250627.md     ← SwiftData API reference
+└── SwiftUI-api-20250627.md       ← SwiftUI API reference
 ```
 
 ## CLI Commands (MVP Scope)
@@ -44,17 +89,51 @@ AnchorKit/Sources/AnchorKit/
 
 ## Key Technologies
 
-- **Swift 6** - Modern Swift with strict concurrency
+### Cross-Platform
+- **Swift 6** - Modern Swift with strict concurrency (see [swift-concurrency.md](mdc:Anchor/Anchor/Docs/swift-concurrency.md))
+- **SwiftUI** - Declarative UI framework (see [SwiftUI-api-20250627.md](mdc:Anchor/Anchor/Docs/SwiftUI-api-20250627.md))
+- **SwiftData** - Data persistence framework (see [SwiftData-api-20250627.md](mdc:Anchor/Anchor/Docs/SwiftData-api-20250627.md))
 - **AT Protocol** - Bluesky backend communication
-- **CoreLocation** - macOS geolocation services
+- **CoreLocation** - Location services for all platforms
 - **Overpass API** - OpenStreetMap POI queries via `overpass.private.coffee`
-- **UserDefaults** - Local storage for auth tokens and settings
+
+### Platform-Specific
+- **Swift ArgumentParser** - CLI command parsing (CLI only)
+- **UserDefaults** - Local storage for settings and auth tokens
+
+## Architecture Patterns
+
+### MV Pattern (Model-View)
+Follow the **MV Pattern** guidelines (see [mv_pattern_guidelines.md](mdc:Anchor/Anchor/Docs/mv_pattern_guidelines.md)):
+
+- **No ViewModels** - Use `@Observable` classes for business logic
+- **Views own UI state** - Use `@State` for temporary UI concerns
+- **Stores handle operations** - Create focused `@Observable` classes
+- **Environment for sharing** - Use `@Environment` across view hierarchies
+
+### SwiftData Integration Pattern
+```swift
+// Hybrid Pattern: @Query for display + Store for operations
+struct CheckInListView: View {
+    @Query private var checkins: [CheckIn]           // Display data
+    @Environment(AnchorStore.self) private var store  // Business operations
+    
+    var body: some View {
+        List(checkins) { CheckInRowView(checkin: $0) }
+            .toolbar {
+                Button("Drop Anchor") { 
+                    Task { try? await store.createCheckIn() }
+                }
+            }
+    }
+}
+```
 
 ## Data Models
 
-### Place Model
+### Core Models (Shared)
 ```swift
-struct Place {
+struct Place: Sendable {
     let id: String       // e.g. "way:987654"
     let name: String
     let lat: Double
@@ -63,12 +142,83 @@ struct Place {
 }
 ```
 
-### Auth & Settings
-- `AuthCredentials` - Stores Bluesky handle and token
+### SwiftData Models (GUI Apps)
+- `AuthCredentials` - Stores Bluesky handle and token (SwiftData @Model)
 - `AnchorSettings` - User preferences including default check-in message
+- `CheckIn` - User check-in records with location and timestamp
+
+### UserDefaults Models (CLI)
+- Lightweight storage for CLI-specific settings and credentials
+
+## Store Organization
+
+### Main Business Logic Store
+```swift
+@Observable
+class AnchorStore {
+    // State
+    private(set) var isCreatingCheckIn = false
+    private(set) var currentLocation: CLLocation?
+    private(set) var nearbyPlaces: [Place] = []
+    private(set) var error: Error?
+    
+    // Services
+    private let locationService: LocationService
+    private let blueskyService: BlueskyService
+    private let overpassService: OverpassService
+    
+    // Core functionality
+    func createCheckIn(message: String? = nil) async throws {
+        // Handle check-in creation, location, posting to Bluesky
+    }
+    
+    func loadNearbyPlaces() async throws {
+        // Handle location and nearby place discovery
+    }
+}
+```
+
+### Minimal Dependency Injection
+```swift
+@main
+struct AnchorApp: App {
+    @State private var anchorStore = AnchorStore()
+    @State private var settingsStore = SettingsStore() // Only if needed
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .environment(anchorStore)
+                .environment(settingsStore)
+        }
+    }
+}
+```
+
+## Platform Requirements
+
+- **CLI**: macOS 14.0+
+- **Menu Bar App**: macOS 14.0+
+- **Mobile App**: iOS 26.0+
+
+## Testing Strategy
+
+- **Swift Testing** - Used across all targets (not XCTest)
+- **AnchorKit/Tests/** - Core business logic tests
+- **Store Testing** - Focus on `@Observable` store classes, not views
+- **AnchorTests/** - Menu bar app tests
+- **AnchorMobileTests/** - Mobile app tests
+- **AnchorMobileUITests** - Mobile app UI tests
 
 ## API Integration
 
 - **Bluesky Posts** - Uses `app.bsky.feed.post` record type
 - **Overpass Queries** - Searches for climbing gyms and other POIs using bbox queries
 - **Authentication** - `com.atproto.server.createSession` for Bluesky login
+
+## Documentation References
+
+- **[MV Pattern Guidelines](mdc:Anchor/Anchor/Docs/mv_pattern_guidelines.md)** - SwiftUI-native architecture patterns
+- **[Swift Concurrency Guide](mdc:Anchor/Anchor/Docs/swift-concurrency.md)** - Complete Swift 6 concurrency reference
+- **[SwiftData API](mdc:Anchor/Anchor/Docs/SwiftData-api-20250627.md)** - SwiftData framework documentation
+- **[SwiftUI API](mdc:Anchor/Anchor/Docs/SwiftUI-api-20250627.md)** - SwiftUI framework documentation

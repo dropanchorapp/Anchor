@@ -1,5 +1,29 @@
 import Foundation
 import SwiftData
+import Security
+
+//
+// MARK: - Credentials Storage
+//
+// This module provides multiple storage implementations for authentication credentials:
+//
+// 1. **KeychainCredentialsStorage** (RECOMMENDED)
+//    - Uses iOS/macOS Keychain for secure, persistent storage
+//    - Survives app rebuilds and updates
+//    - Platform standard for authentication tokens
+//    - Simple single source of truth
+//
+// 2. **SwiftDataCredentialsStorage** (Legacy)
+//    - Hybrid approach using SwiftData + Keychain fallback
+//    - More complex but provides fast access via SwiftData
+//    - Maintained for backward compatibility
+//
+// 3. **InMemoryCredentialsStorage** (Testing)
+//    - Memory-only storage for unit tests
+//    - No persistence across app restarts
+//
+// For new implementations, use KeychainCredentialsStorage directly.
+//
 
 // MARK: - Credentials Storage Protocol
 
@@ -11,9 +35,120 @@ public protocol CredentialsStorageProtocol {
     func clear() async throws
 }
 
-// MARK: - SwiftData Implementation
+// MARK: - Keychain Implementation
 
-/// Production implementation using SwiftData for persistent storage
+/// Keychain-based implementation that persists across app rebuilds
+@MainActor
+public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
+    private let service: String
+    private let account: String
+    
+    public init(service: String = "com.anchor.app.credentials", account: String = "bluesky-auth") {
+        self.service = service
+        self.account = account
+    }
+    
+    public func save(_ credentials: AuthCredentials) async throws {
+        // Encode credentials to JSON
+        let credentialsData = CredentialsData(
+            handle: credentials.handle,
+            accessToken: credentials.accessToken,
+            refreshToken: credentials.refreshToken,
+            did: credentials.did,
+            expiresAt: credentials.expiresAt,
+            createdAt: credentials.createdAt
+        )
+        
+        let data = try JSONEncoder().encode(credentialsData)
+        
+        // Delete any existing keychain item
+        let deleteQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        SecItemDelete(deleteQuery as CFDictionary)
+        
+        // Add new keychain item
+        let addQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+        
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            throw CredentialsStorageError.keychainError(status)
+        }
+        
+        print("🔐 Saved credentials to keychain for @\(credentials.handle)")
+    }
+    
+    public func load() async -> AuthCredentials? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        
+        guard status == errSecSuccess,
+              let data = result as? Data else {
+            print("🔐 No credentials found in keychain")
+            return nil
+        }
+        
+        do {
+            let credentialsData = try JSONDecoder().decode(CredentialsData.self, from: data)
+            let credentials = AuthCredentials(
+                handle: credentialsData.handle,
+                accessToken: credentialsData.accessToken,
+                refreshToken: credentialsData.refreshToken,
+                did: credentialsData.did,
+                expiresAt: credentialsData.expiresAt
+            )
+            
+            print("🔐 Loaded credentials from keychain for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
+            
+            // Check if credentials are still valid
+            if credentials.isValid {
+                return credentials
+            } else {
+                print("🔐 Keychain credentials expired, cleaning up")
+                try? await clear()
+                return nil
+            }
+        } catch {
+            print("🔐 Error decoding keychain credentials: \(error)")
+            try? await clear()
+            return nil
+        }
+    }
+    
+    public func clear() async throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        
+        let status = SecItemDelete(query as CFDictionary)
+        if status == errSecSuccess {
+            print("🔐 Cleared credentials from keychain")
+        }
+    }
+}
+
+// MARK: - SwiftData Implementation (Legacy)
+
+/// Legacy implementation using SwiftData only - kept for backward compatibility
+/// Note: Data will be lost on app rebuilds. Use KeychainCredentialsStorage for persistent storage.
 @MainActor
 public final class SwiftDataCredentialsStorage: CredentialsStorageProtocol {
     private let context: ModelContext
@@ -26,9 +161,11 @@ public final class SwiftDataCredentialsStorage: CredentialsStorageProtocol {
         // Clear any existing credentials first
         try await clear()
         
-        // Insert the new credentials
+        // Insert into SwiftData
         context.insert(credentials)
         try context.save()
+        
+        print("💾 Saved credentials to SwiftData (warning: will be lost on rebuild)")
     }
 
     public func load() async -> AuthCredentials? {
@@ -38,26 +175,26 @@ public final class SwiftDataCredentialsStorage: CredentialsStorageProtocol {
 
         do {
             let allCredentials = try context.fetch(descriptor)
-            print("🔍 Found \(allCredentials.count) stored credentials")
+            print("🔍 Found \(allCredentials.count) stored credentials in SwiftData")
 
             guard let credentials = allCredentials.first else {
-                print("🔍 No credentials found in database")
+                print("🔍 No credentials found in SwiftData")
                 return nil
             }
 
-            print("🔍 Checking credentials for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
+            print("🔍 Checking SwiftData credentials for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
 
             // Check if credentials are still valid
             if credentials.isValid {
                 return credentials
             } else {
-                print("🔍 Credentials expired, cleaning up")
+                print("🔍 SwiftData credentials expired, cleaning up")
                 // Clean up invalid credentials
                 try? await clear()
                 return nil
             }
         } catch {
-            print("🔍 Error fetching credentials: \(error)")
+            print("🔍 Error fetching credentials from SwiftData: \(error)")
             return nil
         }
     }
@@ -71,6 +208,7 @@ public final class SwiftDataCredentialsStorage: CredentialsStorageProtocol {
         }
 
         try context.save()
+        print("💾 Cleared credentials from SwiftData")
     }
 }
 
@@ -93,5 +231,29 @@ public final class InMemoryCredentialsStorage: CredentialsStorageProtocol {
 
     public func clear() async throws {
         credentials = nil
+    }
+}
+
+// MARK: - Supporting Types
+
+/// Codable representation of credentials for JSON encoding/decoding
+private struct CredentialsData: Codable {
+    let handle: String
+    let accessToken: String
+    let refreshToken: String
+    let did: String
+    let expiresAt: Date
+    let createdAt: Date
+}
+
+/// Errors that can occur during credentials storage operations
+public enum CredentialsStorageError: Error, LocalizedError {
+    case keychainError(OSStatus)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .keychainError(let status):
+            return "Keychain error: \(status)"
+        }
     }
 }

@@ -82,7 +82,10 @@ struct ATProtoModelsTests {
         let record = AnchorPDSCheckinRecord(
             text: "Test check-in",
             createdAt: "2025-01-15T12:00:00Z",
-            locations: [.geo(geoLocation), .address(addressLocation)]
+            locations: [.geo(geoLocation), .address(addressLocation)],
+            category: "cafe",
+            categoryGroup: "Food & Drink",
+            categoryIcon: "☕"
         )
 
         // When
@@ -98,6 +101,9 @@ struct ATProtoModelsTests {
         #expect(jsonObject["$type"] as? String == "app.dropanchor.checkin")
         #expect(jsonObject["text"] as? String == "Test check-in")
         #expect(jsonObject["createdAt"] as? String == "2025-01-15T12:00:00Z")
+        #expect(jsonObject["category"] as? String == "cafe")
+        #expect(jsonObject["categoryGroup"] as? String == "Food & Drink")
+        #expect(jsonObject["categoryIcon"] as? String == "☕")
 
         guard let locations = jsonObject["locations"] as? [[String: Any]] else {
             Issue.record("Locations should be array of dictionaries")
@@ -179,7 +185,10 @@ struct ATProtoModelsTests {
             createdAt: "2025-01-15T12:00:00Z",
             locations: [
                 .geo(CommunityGeoLocation(latitude: 40.7128, longitude: -74.0060)),
-            ]
+            ],
+            category: "museum",
+            categoryGroup: "Culture",
+            categoryIcon: "🏛️"
         )
 
         // When - Encode and decode (simulating server round-trip)
@@ -190,6 +199,9 @@ struct ATProtoModelsTests {
         #expect(decodedRecord.text == originalRecord.text)
         #expect(decodedRecord.createdAt == originalRecord.createdAt)
         #expect(decodedRecord.locations?.count == originalRecord.locations?.count)
+        #expect(decodedRecord.category == originalRecord.category)
+        #expect(decodedRecord.categoryGroup == originalRecord.categoryGroup)
+        #expect(decodedRecord.categoryIcon == originalRecord.categoryIcon)
 
         // Verify the location data is preserved
         if case let .geo(originalGeo) = originalRecord.locations?.first,

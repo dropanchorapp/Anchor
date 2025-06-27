@@ -18,7 +18,11 @@ struct PlaceRowView: View {
                         .foregroundStyle(.primary)
                         .lineLimit(1)
 
-                    if let category = place.category {
+                    if let categoryGroup = place.categoryGroup {
+                        Text(categoryGroup.rawValue)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let category = place.category {
                         Text(category.capitalized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -48,25 +52,7 @@ struct PlaceRowView: View {
     }
 
     private var categoryIcon: String {
-        place.categoryIcon
-    }
-}
-
-private extension Place {
-    var categoryIcon: String {
-        if let category = self.category {
-            switch category {
-            case "climbing": return "🧗‍♂️"
-            case "restaurant", "fast_food": return "🍽️"
-            case "cafe": return "☕"
-            case "bar", "pub": return "🍺"
-            case "sports", "outdoor": return "🏪"
-            case "museum": return "🏛️"
-            case "attraction": return "🎯"
-            default: return "📍"
-            }
-        }
-        return "📍"
+        place.icon
     }
 }
 

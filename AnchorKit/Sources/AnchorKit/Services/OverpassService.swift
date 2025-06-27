@@ -69,12 +69,12 @@ public final class OverpassService: @unchecked Sendable {
     /// Find nearby places within a given radius
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
-    ///   - radiusMeters: Search radius in meters (default: 1000)
+    ///   - radiusMeters: Search radius in meters (default from config)
     ///   - categories: Optional filter for specific OSM tags (e.g., ["leisure=climbing"])
     /// - Returns: Array of nearby places
     public func findNearbyPlaces(
         near coordinate: CLLocationCoordinate2D,
-        radiusMeters: Double = 1000,
+        radiusMeters: Double = Double(AnchorConfig.shared.locationSearchRadius),
         categories: [String] = []
     ) async throws -> [Place] {
         // Cleanup expired cache entries occasionally
@@ -160,12 +160,12 @@ public final class OverpassService: @unchecked Sendable {
     /// Find places by multiple categories
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
-    ///   - radiusMeters: Search radius in meters (default: 1000)
+    ///   - radiusMeters: Search radius in meters (default from config)
     ///   - categories: Array of category filters (e.g., ["amenity=restaurant", "leisure=climbing"])
     /// - Returns: Array of places matching any of the categories
     public func findPlacesByCategories(
         near coordinate: CLLocationCoordinate2D,
-        radiusMeters: Double = 1000,
+        radiusMeters: Double = Double(AnchorConfig.shared.locationSearchRadius),
         categories: [String]
     ) async throws -> [Place] {
         try await findNearbyPlaces(
@@ -179,6 +179,45 @@ public final class OverpassService: @unchecked Sendable {
     public func clearCache() {
         clearAllCache()
         print("📍 Cleared all cached places")
+    }
+    
+    /// Get all available place categories
+    /// - Returns: Array of all OpenStreetMap categories supported for place discovery
+    public func getAllAvailableCategories() -> [String] {
+        PlaceCategorization.getAllCategories()
+    }
+    
+    /// Get prioritized categories (most commonly visited places)
+    /// - Returns: Array of high-priority categories for efficient searching
+    public func getPrioritizedCategories() -> [String] {
+        PlaceCategorization.getPrioritizedCategories()
+    }
+    
+    /// Find places by category group (e.g., all "Food & Drink" places)
+    /// - Parameters:
+    ///   - coordinate: Center coordinate for search
+    ///   - radiusMeters: Search radius in meters (default from config)
+    ///   - categoryGroup: The category group to search for
+    /// - Returns: Array of places in the specified category group
+    public func findPlacesByGroup(
+        near coordinate: CLLocationCoordinate2D,
+        radiusMeters: Double = Double(AnchorConfig.shared.locationSearchRadius),
+        categoryGroup: PlaceCategorization.CategoryGroup
+    ) async throws -> [Place] {
+        let allCategories = PlaceCategorization.getAllCategories()
+        let groupCategories = allCategories.filter { category in
+            let parts = category.split(separator: "=")
+            guard parts.count == 2 else { return false }
+            let tag = String(parts[0])
+            let value = String(parts[1])
+            return PlaceCategorization.getCategoryGroup(for: tag, value: value) == categoryGroup
+        }
+        
+        return try await findPlacesByCategories(
+            near: coordinate,
+            radiusMeters: radiusMeters,
+            categories: groupCategories
+        )
     }
 }
 
@@ -243,21 +282,7 @@ private extension OverpassService {
 
     /// Get the default categories when none are specified
     func getDefaultCategories() -> [String] {
-        [
-            "amenity=restaurant",
-            "amenity=cafe",
-            "amenity=bar",
-            "amenity=pub",
-            "amenity=fast_food",
-            "leisure=climbing",
-            "leisure=sports_centre",
-            "leisure=fitness_centre",
-            "shop=outdoor",
-            "shop=sports",
-            "tourism=attraction",
-            "tourism=museum",
-            "tourism=gallery"
-        ]
+        PlaceCategorization.getPrioritizedCategories()
     }
 
     func buildOverpassQuery(
@@ -280,7 +305,7 @@ private extension OverpassService {
         }
 
         let query = """
-        [out:json][timeout:10];
+        [out:json][timeout:\(AnchorConfig.shared.overpassTimeout)];
         (
           \(queryParts.joined(separator: "\n  "))
         );

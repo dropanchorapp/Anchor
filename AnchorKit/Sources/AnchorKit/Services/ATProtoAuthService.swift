@@ -15,7 +15,6 @@ public protocol ATProtoAuthServiceProtocol {
 
 // MARK: - AT Protocol Authentication Service
 
-@Observable
 public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
     // MARK: - Properties
 

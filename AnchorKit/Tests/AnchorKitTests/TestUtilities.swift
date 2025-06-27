@@ -8,15 +8,16 @@ import Testing
 public enum TestUtilities {
     // MARK: - Service Creation
 
-    /// Creates a BlueskyService with in-memory storage for testing
+    /// Creates a CheckInStore with in-memory storage for testing
     @MainActor
-    public static func createTestBlueskyService(session: URLSessionProtocol = MockURLSession()) -> BlueskyService {
-        BlueskyService(session: session, storage: createTestStorage())
+    public static func createTestCheckInStore(session: URLSessionProtocol = MockURLSession()) -> CheckInStore {
+        let authStore = AuthStore(session: session, storage: createTestStorage())
+        return CheckInStore(authStore: authStore, session: session)
     }
 
     /// Creates an ATProtoAuthService with in-memory storage for testing
     @MainActor
-    public static func createTestAuthService(session: URLSessionProtocol = MockURLSession()) -> ATProtoAuthService {
+    public static func createTestAuthStore(session: URLSessionProtocol = MockURLSession()) -> ATProtoAuthService {
         let client = ATProtoClient(session: session)
         return ATProtoAuthService(client: client, storage: createTestStorage())
     }
@@ -27,18 +28,19 @@ public enum TestUtilities {
         InMemoryCredentialsStorage()
     }
 
-    /// Creates a BlueskyService with custom storage for advanced testing scenarios
+    /// Creates a CheckInStore with custom storage for advanced testing scenarios
     @MainActor
-    public static func createTestBlueskyService(
+    public static func createTestCheckInStore(
         session: URLSessionProtocol = MockURLSession(),
         storage: CredentialsStorageProtocol
-    ) -> BlueskyService {
-        BlueskyService(session: session, storage: storage)
+    ) -> CheckInStore {
+        let authStore = AuthStore(session: session, storage: storage)
+        return CheckInStore(authStore: authStore, session: session)
     }
 
-    /// Creates an ATProtoAuthService with custom storage for advanced testing scenarios
+    /// Creates an ATProtoAuthStore with custom storage for advanced testing scenarios
     @MainActor
-    public static func createTestAuthService(
+    public static func createTestAuthStore(
         session: URLSessionProtocol = MockURLSession(),
         storage: CredentialsStorageProtocol
     ) -> ATProtoAuthService {
@@ -68,6 +70,53 @@ public enum TestUtilities {
 
     // AuthCredentials creation methods removed to avoid SwiftData ModelContainer issues in CI.
     // Tests that need credentials use mock storage or service-level mocking instead.
+}
+
+// MARK: - Mock AuthStore for Testing
+
+@MainActor
+public final class MockAuthStore: AuthStoreProtocol {
+    public var isAuthenticated: Bool = false
+    public var credentials: AuthCredentials? = nil
+    public var handle: String? = nil
+    public var shouldThrowAuthError: Bool = false
+    
+    public init() {}
+    
+    public func loadStoredCredentials() async -> AuthCredentials? {
+        return credentials
+    }
+    
+    public func authenticate(handle: String, appPassword: String) async throws -> Bool {
+        if shouldThrowAuthError {
+            throw ATProtoError.authenticationFailed("Mock auth error")
+        }
+        return true
+    }
+    
+    public func signOut() async {
+        credentials = nil
+        isAuthenticated = false
+    }
+    
+    public func getAppPasswordURL() -> URL {
+        URL(string: "https://bsky.app/settings/app-passwords")!
+    }
+    
+    public func getValidCredentials() async throws -> AuthCredentials {
+        if shouldThrowAuthError {
+            throw ATProtoError.missingCredentials
+        }
+        
+        // Return a mock credential for testing
+        return AuthCredentials(
+            handle: "test.bsky.social",
+            accessToken: "test-token",
+            refreshToken: "test-refresh",
+            did: "did:plc:test123",
+            expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
+        )
+    }
 }
 
 // MARK: - Mock Storage for Advanced Testing

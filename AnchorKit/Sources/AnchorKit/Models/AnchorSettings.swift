@@ -18,9 +18,9 @@ public struct AnchorSettings: Codable, Sendable {
     public let createBlueskyPosts: Bool
 
     public init(
-        defaultMessage: String = "",
+        defaultMessage: String = AnchorConfig.shared.defaultCheckInMessage,
         includeEmoji: Bool = true,
-        searchRadius: Double = 1000.0, // 1km default
+        searchRadius: Double = Double(AnchorConfig.shared.locationSearchRadius), // From config
         preferredCategories: [String] = ["climbing", "gym", "cafe"],
         createBlueskyPosts: Bool = true // Default to enabled for backward compatibility
     ) {

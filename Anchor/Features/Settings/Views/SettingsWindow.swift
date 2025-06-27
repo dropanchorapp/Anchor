@@ -3,7 +3,8 @@ import SwiftData
 import AnchorKit
 
 struct SettingsWindow: View {
-    @Environment(BlueskyService.self) private var blueskyService
+    @Environment(AuthStore.self) private var authStore
+    @Environment(CheckInStore.self) private var checkInStore
     @Environment(LocationService.self) private var locationService
     @Environment(NearbyPlacesService.self) private var nearbyPlacesService
     @Environment(\.modelContext) private var modelContext
@@ -52,7 +53,7 @@ struct SettingsWindow: View {
         }
         .alert("App Password Info", isPresented: $showingAppPasswordInfo) {
             Button("Open Bluesky Settings") {
-                NSWorkspace.shared.open(blueskyService.getAppPasswordURL())
+                NSWorkspace.shared.open(authStore.getAppPasswordURL())
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -70,10 +71,10 @@ struct SettingsWindow: View {
 
                 Spacer()
 
-                if blueskyService.isAuthenticated {
+                if authStore.isAuthenticated {
                     Button("Sign Out") {
                         Task {
-                            await blueskyService.signOut()
+                            await authStore.signOut()
                             clearForm()
                         }
                     }
@@ -82,7 +83,7 @@ struct SettingsWindow: View {
                 }
             }
 
-            if blueskyService.isAuthenticated {
+            if authStore.isAuthenticated {
                 authenticatedView
             } else {
                 authenticationForm
@@ -102,7 +103,7 @@ struct SettingsWindow: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
 
-                    if let handle = blueskyService.credentials?.handle {
+                    if let handle = authStore.credentials?.handle {
                         Text("@\(handle)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -175,7 +176,7 @@ struct SettingsWindow: View {
                     .foregroundStyle(.secondary)
 
                 Button("Create one in Bluesky Settings") {
-                    NSWorkspace.shared.open(blueskyService.getAppPasswordURL())
+                    NSWorkspace.shared.open(authStore.getAppPasswordURL())
                 }
                 .buttonStyle(.plain)
                 .font(.caption2)
@@ -228,7 +229,7 @@ struct SettingsWindow: View {
 
         Task {
             do {
-                let success = try await blueskyService.authenticate(
+                let success = try await authStore.authenticate(
                     handle: handle,
                     appPassword: appPassword
                 )
@@ -267,6 +268,8 @@ struct SettingsWindow: View {
 }
 
 #Preview {
+    let authStore = AuthStore(storage: InMemoryCredentialsStorage())
     SettingsWindow()
-        .environment(BlueskyService(storage: InMemoryCredentialsStorage()))
+        .environment(authStore)
+                    .environment(CheckInStore(authStore: authStore))
 }

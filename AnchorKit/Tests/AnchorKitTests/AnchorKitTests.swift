@@ -53,7 +53,7 @@ struct SettingsModelTests {
     func anchorSettingsDefaults() {
         let settings = AnchorSettings()
 
-        #expect(settings.defaultMessage == "")
+        #expect(settings.defaultMessage == "Dropped ⚓")
         #expect(settings.includeEmoji == true)
         #expect(settings.searchRadius == 1000.0)
         #expect(settings.preferredCategories == ["climbing", "gym", "cafe"])

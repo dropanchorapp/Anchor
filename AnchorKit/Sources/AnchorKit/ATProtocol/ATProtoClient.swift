@@ -21,7 +21,7 @@ public final class ATProtoClient: ATProtoClientProtocol {
 
     // MARK: - Initialization
 
-    public init(baseURL: String = "https://bsky.social", session: URLSessionProtocol = URLSession.shared) {
+    public init(baseURL: String = AnchorConfig.shared.blueskyPDSURL, session: URLSessionProtocol = URLSession.shared) {
         self.baseURL = baseURL
         self.session = session
     }

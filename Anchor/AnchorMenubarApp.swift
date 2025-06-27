@@ -15,7 +15,8 @@ struct AnchorMenubarApp: App {
 
     // Shared service instances - created once at app level
     @State private var locationService: LocationService
-    @State private var blueskyService: BlueskyService
+    @State private var authStore: AuthStore
+    @State private var checkInStore: CheckInStore
     @State private var nearbyPlacesService: NearbyPlacesService
 
     // Shared model container
@@ -42,11 +43,13 @@ struct AnchorMenubarApp: App {
 
         // Initialize services that depend on other services
         let locationService = LocationService()
-        let blueskyService = BlueskyService(context: container.mainContext)
+        let authStore = AuthStore()
+        let checkInStore = CheckInStore(authStore: authStore)
         let nearbyPlacesService = NearbyPlacesService(locationService: locationService)
 
         self._locationService = State(initialValue: locationService)
-        self._blueskyService = State(initialValue: blueskyService)
+        self._authStore = State(initialValue: authStore)
+        self._checkInStore = State(initialValue: checkInStore)
         self._nearbyPlacesService = State(initialValue: nearbyPlacesService)
     }
 
@@ -55,11 +58,12 @@ struct AnchorMenubarApp: App {
             ContentView()
                 .frame(width: 320, height: 400)
                 .environment(locationService)
-                .environment(blueskyService)
+                .environment(authStore)
+                .environment(checkInStore)
                 .environment(nearbyPlacesService)
                 .task {
                     // Load credentials immediately when ContentView appears
-                    _ = await blueskyService.loadStoredCredentials()
+                    _ = await authStore.loadStoredCredentials()
 
                     // Handle location services - only update location if we already have permission
                     // Don't request permission on every app start
@@ -89,7 +93,8 @@ struct AnchorMenubarApp: App {
 
         Window("Settings", id: "settings") {
             SettingsWindow()
-                .environment(blueskyService)
+                .environment(authStore)
+                .environment(checkInStore)
                 .environment(locationService)
                 .environment(nearbyPlacesService)
         }
@@ -103,7 +108,7 @@ struct AnchorMenubarApp: App {
 
     /// Status indicator icon for authentication state
     private var statusIndicatorIcon: String {
-        if blueskyService.isAuthenticated {
+        if authStore.isAuthenticated {
             return "checkmark.circle.fill"
         } else {
             return "xmark.circle.fill"
@@ -112,7 +117,7 @@ struct AnchorMenubarApp: App {
 
     /// Status indicator color for authentication state
     private var statusIndicatorColor: Color {
-        if blueskyService.isAuthenticated {
+        if authStore.isAuthenticated {
             return .green
         } else {
             return .red

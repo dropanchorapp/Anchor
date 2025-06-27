@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3F77C5252E0EC24500CC0D38 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F77C5242E0EC24500CC0D38 /* AnchorKit */; };
 		3F9C6F462DECDC6B009A1F50 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F9C6F452DECDC6B009A1F50 /* AnchorKit */; };
 /* End PBXBuildFile section */
 
@@ -25,12 +26,29 @@
 			remoteGlobalIDString = 3F697D652DECDAF900AC7ACC;
 			remoteInfo = Anchor;
 		};
+		3F77C5022E0EC17200CC0D38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3F697D5E2DECDAF900AC7ACC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3F77C4F22E0EC17000CC0D38;
+			remoteInfo = AnchorMobile;
+		};
+		3F77C50C2E0EC17200CC0D38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3F697D5E2DECDAF900AC7ACC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3F77C4F22E0EC17000CC0D38;
+			remoteInfo = AnchorMobile;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		3F697D662DECDAF900AC7ACC /* Anchor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Anchor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F697D762DECDAFA00AC7ACC /* AnchorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F697D802DECDAFA00AC7ACC /* AnchorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F77C4F32E0EC17000CC0D38 /* AnchorMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AnchorMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F77C5012E0EC17200CC0D38 /* AnchorMobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F77C50B2E0EC17200CC0D38 /* AnchorMobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F9C6F422DECDC11009A1F50 /* AnchorKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AnchorKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -43,6 +61,21 @@
 		3F697D792DECDAFA00AC7ACC /* AnchorTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AnchorTests;
+			sourceTree = "<group>";
+		};
+		3F77C4F42E0EC17000CC0D38 /* AnchorMobile */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AnchorMobile;
+			sourceTree = "<group>";
+		};
+		3F77C5042E0EC17200CC0D38 /* AnchorMobileTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AnchorMobileTests;
+			sourceTree = "<group>";
+		};
+		3F77C50E2E0EC17200CC0D38 /* AnchorMobileUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AnchorMobileUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -70,6 +103,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3F77C4F02E0EC17000CC0D38 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3F77C5252E0EC24500CC0D38 /* AnchorKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F77C4FE2E0EC17200CC0D38 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F77C5082E0EC17200CC0D38 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +133,9 @@
 			children = (
 				3F697D682DECDAF900AC7ACC /* Anchor */,
 				3F697D792DECDAFA00AC7ACC /* AnchorTests */,
+				3F77C4F42E0EC17000CC0D38 /* AnchorMobile */,
+				3F77C5042E0EC17200CC0D38 /* AnchorMobileTests */,
+				3F77C50E2E0EC17200CC0D38 /* AnchorMobileUITests */,
 				3F697D672DECDAF900AC7ACC /* Products */,
 				3F9C6F422DECDC11009A1F50 /* AnchorKit */,
 			);
@@ -89,6 +147,9 @@
 				3F697D662DECDAF900AC7ACC /* Anchor.app */,
 				3F697D762DECDAFA00AC7ACC /* AnchorTests.xctest */,
 				3F697D802DECDAFA00AC7ACC /* AnchorUITests.xctest */,
+				3F77C4F32E0EC17000CC0D38 /* AnchorMobile.app */,
+				3F77C5012E0EC17200CC0D38 /* AnchorMobileTests.xctest */,
+				3F77C50B2E0EC17200CC0D38 /* AnchorMobileUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -162,6 +223,75 @@
 			productReference = 3F697D802DECDAFA00AC7ACC /* AnchorUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		3F77C4F22E0EC17000CC0D38 /* AnchorMobile */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F77C5192E0EC17200CC0D38 /* Build configuration list for PBXNativeTarget "AnchorMobile" */;
+			buildPhases = (
+				3F77C4EF2E0EC17000CC0D38 /* Sources */,
+				3F77C4F02E0EC17000CC0D38 /* Frameworks */,
+				3F77C4F12E0EC17000CC0D38 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3F77C4F42E0EC17000CC0D38 /* AnchorMobile */,
+			);
+			name = AnchorMobile;
+			packageProductDependencies = (
+				3F77C5242E0EC24500CC0D38 /* AnchorKit */,
+			);
+			productName = AnchorMobile;
+			productReference = 3F77C4F32E0EC17000CC0D38 /* AnchorMobile.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3F77C5002E0EC17200CC0D38 /* AnchorMobileTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F77C51A2E0EC17200CC0D38 /* Build configuration list for PBXNativeTarget "AnchorMobileTests" */;
+			buildPhases = (
+				3F77C4FD2E0EC17200CC0D38 /* Sources */,
+				3F77C4FE2E0EC17200CC0D38 /* Frameworks */,
+				3F77C4FF2E0EC17200CC0D38 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3F77C5032E0EC17200CC0D38 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3F77C5042E0EC17200CC0D38 /* AnchorMobileTests */,
+			);
+			name = AnchorMobileTests;
+			packageProductDependencies = (
+			);
+			productName = AnchorMobileTests;
+			productReference = 3F77C5012E0EC17200CC0D38 /* AnchorMobileTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		3F77C50A2E0EC17200CC0D38 /* AnchorMobileUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F77C51B2E0EC17200CC0D38 /* Build configuration list for PBXNativeTarget "AnchorMobileUITests" */;
+			buildPhases = (
+				3F77C5072E0EC17200CC0D38 /* Sources */,
+				3F77C5082E0EC17200CC0D38 /* Frameworks */,
+				3F77C5092E0EC17200CC0D38 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3F77C50D2E0EC17200CC0D38 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3F77C50E2E0EC17200CC0D38 /* AnchorMobileUITests */,
+			);
+			name = AnchorMobileUITests;
+			packageProductDependencies = (
+			);
+			productName = AnchorMobileUITests;
+			productReference = 3F77C50B2E0EC17200CC0D38 /* AnchorMobileUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -169,7 +299,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					3F697D652DECDAF900AC7ACC = {
@@ -182,6 +312,17 @@
 					3F697D7F2DECDAFA00AC7ACC = {
 						CreatedOnToolsVersion = 16.4;
 						TestTargetID = 3F697D652DECDAF900AC7ACC;
+					};
+					3F77C4F22E0EC17000CC0D38 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					3F77C5002E0EC17200CC0D38 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 3F77C4F22E0EC17000CC0D38;
+					};
+					3F77C50A2E0EC17200CC0D38 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 3F77C4F22E0EC17000CC0D38;
 					};
 				};
 			};
@@ -205,6 +346,9 @@
 				3F697D652DECDAF900AC7ACC /* Anchor */,
 				3F697D752DECDAFA00AC7ACC /* AnchorTests */,
 				3F697D7F2DECDAFA00AC7ACC /* AnchorUITests */,
+				3F77C4F22E0EC17000CC0D38 /* AnchorMobile */,
+				3F77C5002E0EC17200CC0D38 /* AnchorMobileTests */,
+				3F77C50A2E0EC17200CC0D38 /* AnchorMobileUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -225,6 +369,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3F697D7E2DECDAFA00AC7ACC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F77C4F12E0EC17000CC0D38 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F77C4FF2E0EC17200CC0D38 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F77C5092E0EC17200CC0D38 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -255,6 +420,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3F77C4EF2E0EC17000CC0D38 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F77C4FD2E0EC17200CC0D38 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F77C5072E0EC17200CC0D38 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -267,6 +453,16 @@
 			isa = PBXTargetDependency;
 			target = 3F697D652DECDAF900AC7ACC /* Anchor */;
 			targetProxy = 3F697D812DECDAFA00AC7ACC /* PBXContainerItemProxy */;
+		};
+		3F77C5032E0EC17200CC0D38 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3F77C4F22E0EC17000CC0D38 /* AnchorMobile */;
+			targetProxy = 3F77C5022E0EC17200CC0D38 /* PBXContainerItemProxy */;
+		};
+		3F77C50D2E0EC17200CC0D38 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3F77C4F22E0EC17000CC0D38 /* AnchorMobile */;
+			targetProxy = 3F77C50C2E0EC17200CC0D38 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -525,6 +721,163 @@
 			};
 			name = Release;
 		};
+		3F77C5132E0EC17200CC0D38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9Z77B473HX;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.AnchorMobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3F77C5142E0EC17200CC0D38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9Z77B473HX;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.AnchorMobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3F77C5152E0EC17200CC0D38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9Z77B473HX;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.AnchorMobileTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AnchorMobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AnchorMobile";
+			};
+			name = Debug;
+		};
+		3F77C5162E0EC17200CC0D38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9Z77B473HX;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.AnchorMobileTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AnchorMobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AnchorMobile";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3F77C5172E0EC17200CC0D38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9Z77B473HX;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.AnchorMobileUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = AnchorMobile;
+			};
+			name = Debug;
+		};
+		3F77C5182E0EC17200CC0D38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9Z77B473HX;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.AnchorMobileUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = AnchorMobile;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -564,6 +917,33 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		3F77C5192E0EC17200CC0D38 /* Build configuration list for PBXNativeTarget "AnchorMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F77C5132E0EC17200CC0D38 /* Debug */,
+				3F77C5142E0EC17200CC0D38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3F77C51A2E0EC17200CC0D38 /* Build configuration list for PBXNativeTarget "AnchorMobileTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F77C5152E0EC17200CC0D38 /* Debug */,
+				3F77C5162E0EC17200CC0D38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3F77C51B2E0EC17200CC0D38 /* Build configuration list for PBXNativeTarget "AnchorMobileUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F77C5172E0EC17200CC0D38 /* Debug */,
+				3F77C5182E0EC17200CC0D38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -574,6 +954,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3F77C5242E0EC24500CC0D38 /* AnchorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnchorKit;
+		};
 		3F9C6F452DECDC6B009A1F50 /* AnchorKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AnchorKit;

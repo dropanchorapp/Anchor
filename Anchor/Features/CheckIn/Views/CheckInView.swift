@@ -16,7 +16,8 @@ struct CheckInView: View {
     @State private var shouldCreateBlueskyPost: Bool
 
     // MARK: - Services
-    @Environment(BlueskyService.self) private var blueskyService
+    @Environment(AuthStore.self) private var authStore
+    @Environment(CheckInStore.self) private var checkInStore
     @Environment(\.modelContext) private var modelContext
     
     // MARK: - Initialization
@@ -105,10 +106,10 @@ struct CheckInView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Toggle("Also post to Bluesky", isOn: $shouldCreateBlueskyPost)
                     .font(.subheadline)
-                    .disabled(!blueskyService.isAuthenticated)
+                    .disabled(!authStore.isAuthenticated)
                     .padding(.horizontal)
                 
-                if shouldCreateBlueskyPost && !blueskyService.isAuthenticated {
+                if shouldCreateBlueskyPost && !authStore.isAuthenticated {
                     Text("Sign in to Bluesky to enable posting")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -116,7 +117,7 @@ struct CheckInView: View {
                 }
             }
 
-            if !blueskyService.isAuthenticated && shouldCreateBlueskyPost {
+            if !authStore.isAuthenticated && shouldCreateBlueskyPost {
                 VStack(spacing: 8) {
                     Text("⚠️ Not signed in to Bluesky")
                         .foregroundStyle(.orange)
@@ -166,7 +167,7 @@ struct CheckInView: View {
             let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
             let messageToPost = trimmedMessage.isEmpty ? nil : trimmedMessage
 
-            let success = try await blueskyService.createCheckinWithOptionalPost(
+            let success = try await checkInStore.createCheckinWithOptionalPost(
                 place: place,
                 customMessage: messageToPost,
                 shouldCreatePost: shouldCreateBlueskyPost
@@ -258,5 +259,9 @@ private extension Place {
         onCancel: {},
         onComplete: {}
     )
-    .environment(BlueskyService(storage: InMemoryCredentialsStorage()))
+    .environment(AuthStore(session: URLSession.shared, storage: InMemoryCredentialsStorage()))
+    .environment(CheckInStore(
+        authStore: AuthStore(session: URLSession.shared, storage: InMemoryCredentialsStorage()),
+        session: URLSession.shared
+    ))
 }

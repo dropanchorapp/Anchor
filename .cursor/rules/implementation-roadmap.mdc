@@ -3,63 +3,71 @@ description: rule, roadmap, plan
 globs: 
 alwaysApply: false
 ---
-# Implementation Roadmap for Anchor CLI
+# Implementation Roadmap for Anchor Project
 
 ## Development Phases
 
 ### Phase 1: Core Infrastructure ✅ (In Progress)
-- [x] Package structure with AnchorKit and AnchorCLI modules
-- [x] Basic [Package.swift](mdc:Package.swift) configuration
-- [x] CLI entry point in [main.swift](mdc:AnchorCLI/Sources/AnchorCLI/main.swift)
+- [x] Package structure with AnchorKit shared module
+- [x] Basic [Package.swift](mdc:Anchor/Package.swift) configuration
+- [x] CLI entry point in [main.swift](mdc:Anchor/AnchorCLI/Sources/AnchorCLI/main.swift)
+- [x] Menu bar app with [AnchorMenubarApp.swift](mdc:Anchor/Anchor/AnchorMenubarApp.swift)
+- [x] Mobile app foundation with [AnchorMobileApp.swift](mdc:Anchor/AnchorMobile/AnchorMobileApp.swift)
 - [ ] Swift ArgumentParser integration for CLI commands
-- [ ] Basic command structure in [CLICommands.swift](mdc:AnchorCLI/Sources/AnchorCLI/CLICommands.swift)
+- [ ] Basic command structure in [CLICommands.swift](mdc:Anchor/AnchorCLI/Sources/AnchorCLI/CLICommands.swift)
 
 ### Phase 2: Data Models & Storage
 **Location**: `AnchorKit/Sources/AnchorKit/Models/`
 
 #### Required Models:
-- [ ] `Place.swift` - Location data from Overpass API
-- [ ] `AuthCredentials.swift` - Bluesky authentication storage
-- [ ] `AnchorSettings.swift` - User preferences and defaults
+- [x] [Place.swift](mdc:Anchor/AnchorKit/Sources/AnchorKit/Models/Place.swift) - Location data from Overpass API
+- [x] [AuthCredentials.swift](mdc:Anchor/AnchorKit/Sources/AnchorKit/Models/AuthCredentials.swift) - SwiftData model for authentication
+- [x] [AnchorSettings.swift](mdc:Anchor/AnchorKit/Sources/AnchorKit/Models/AnchorSettings.swift) - User preferences and defaults
+- [x] [Item.swift](mdc:Anchor/AnchorMobile/Item.swift) - Mobile app SwiftData model example
 
 #### Storage Implementation:
-- [ ] UserDefaults extensions for secure credential storage
-- [ ] Settings persistence and retrieval
+- [x] SwiftData ModelContainer setup for GUI apps
+- [x] UserDefaults extensions for CLI credential storage
+- [ ] Settings persistence and retrieval across platforms
 - [ ] Migration handling for settings updates
 
 ### Phase 3: Service Layer
 **Location**: `AnchorKit/Sources/AnchorKit/Services/`
 
 #### Core Services:
-- [ ] `LocationService.swift` - CoreLocation wrapper with authorization
-- [ ] `OverpassService.swift` - OpenStreetMap POI queries
-- [ ] `BlueskyService.swift` - AT Protocol authentication and posting
+- [x] [LocationService.swift](mdc:Anchor/AnchorKit/Sources/AnchorKit/Services/LocationService.swift) - CoreLocation wrapper with authorization
+- [x] [OverpassService.swift](mdc:Anchor/AnchorKit/Sources/AnchorKit/Services/OverpassService.swift) - OpenStreetMap POI queries
+- [x] [BlueskyService.swift](mdc:Anchor/AnchorKit/Sources/AnchorKit/Services/BlueskyService.swift) - AT Protocol authentication and posting
+- [x] [CredentialsStorage.swift](mdc:Anchor/AnchorKit/Sources/AnchorKit/Services/CredentialsStorage.swift) - Platform-agnostic credential management
 
 #### Service Features:
-- [ ] Async/await network operations
-- [ ] Proper error handling with custom error types
+- [x] Async/await network operations
+- [x] Proper error handling with custom error types
 - [ ] Response caching for location queries
 - [ ] Token refresh for Bluesky authentication
 
-### Phase 4: CLI Commands Implementation
+### Phase 4: Platform-Specific Implementation
 
-#### `anchor login`
+#### CLI Commands Implementation
+**Target**: AnchorCLI
+
+##### `anchor login`
 - [ ] Interactive Bluesky authentication
 - [ ] Credential storage and validation
 - [ ] Session management
 
-#### `anchor settings`
+##### `anchor settings`
 - [ ] Default message configuration
 - [ ] Settings display and modification
 - [ ] Validation of user inputs
 
-#### `anchor nearby`
+##### `anchor nearby`
 - [ ] Current location detection
 - [ ] Overpass API integration for POI search
 - [ ] Optional text filtering (`--filter climbing`)
 - [ ] Formatted output with place IDs
 
-#### `anchor drop`
+##### `anchor drop`
 - [ ] Interactive mode (no arguments)
   - Location detection
   - Nearby POI selection
@@ -69,51 +77,114 @@ alwaysApply: false
   - `--message <text>` option
 - [ ] Bluesky post creation and submission
 
+#### Menu Bar App Features
+**Target**: Anchor (macOS)
+**Location**: `Anchor/Features/`
+
+##### Core Views:
+- [x] [CheckInView.swift](mdc:Anchor/Anchor/Features/CheckIn/Views/CheckInView.swift) - Check-in functionality
+- [x] [FeedTabView.swift](mdc:Anchor/Anchor/Features/Feed/Views/FeedTabView.swift) - Social feed display
+- [x] [NearbyTabView.swift](mdc:Anchor/Anchor/Features/Nearby/Views/NearbyTabView.swift) - Nearby places discovery
+- [x] [SettingsWindow.swift](mdc:Anchor/Anchor/Features/Settings/Views/SettingsWindow.swift) - App settings and preferences
+
+##### Menu Bar Integration:
+- [ ] Status bar item configuration
+- [ ] Popover-based interface
+- [ ] Keyboard shortcuts and accessibility
+
+#### Mobile App Features
+**Target**: AnchorMobile (iOS 26.0+)
+**Location**: `AnchorMobile/`
+
+##### Core Features:
+- [x] [AnchorMobileApp.swift](mdc:Anchor/AnchorMobile/AnchorMobileApp.swift) - App entry point with SwiftData
+- [x] [ContentView.swift](mdc:Anchor/AnchorMobile/ContentView.swift) - Main navigation interface
+- [ ] Tab-based navigation (Check-in, Feed, Nearby, Settings)
+- [ ] Responsive design for different iPhone screen sizes
+- [ ] iOS-specific location permissions handling
+
+##### Mobile-Specific Features:
+- [ ] Pull-to-refresh for feeds
+- [ ] Haptic feedback for interactions
+- [ ] Background app refresh for location updates
+- [ ] iOS sharing integration for check-ins
+
 ### Phase 5: Testing & Validation
-**Location**: `AnchorKit/Tests/`
+**Testing Framework**: Swift Testing (not XCTest)
 
 #### Test Coverage:
-- [ ] Unit tests for all Models
-- [ ] Service layer tests with mocked network calls
-- [ ] CLI command integration tests
+**AnchorKit Tests** (`AnchorKit/Tests/`):
+- [x] Unit tests for all Models using Swift Testing
+- [x] Service layer tests with mocked network calls
+- [x] Protocol-based mocking to avoid SwiftData ModelContainer issues
 - [ ] Error handling validation
 - [ ] Location service permission testing
 
+**Platform-Specific Tests**:
+- [ ] CLI command integration tests (`AnchorTests/`)
+- [ ] Menu bar app UI tests (`AnchorTests/`)
+- [x] Mobile app unit tests (`AnchorMobileTests/`)
+- [x] Mobile app UI tests (`AnchorMobileUITests/`)
+
 ### Phase 6: Polish & Documentation
-- [ ] Comprehensive error messages
+- [ ] Comprehensive error messages across all platforms
 - [ ] User-friendly CLI help and usage
+- [ ] iOS app store preparation and assets
 - [ ] Installation and setup documentation
 - [ ] API rate limiting and retry logic
 
 ## MVP Acceptance Criteria
 
-### Required Functionality:
+### Required Functionality (All Platforms):
 1. **Authentication**: Successfully login to Bluesky and store credentials
 2. **Location**: Get current location and find nearby climbing gyms
 3. **Check-in**: Post formatted check-in messages to Bluesky feed
 4. **Settings**: Configure and persist default check-in message
 
+### Platform-Specific Requirements:
+
+#### CLI (AnchorCLI):
+- Unix-style command interface
+- Scriptable and automation-friendly
+- Minimal dependencies
+
+#### Menu Bar App (Anchor):
+- Native macOS experience
+- Quick access from menu bar
+- System integration (notifications, etc.)
+
+#### Mobile App (AnchorMobile):
+- Native iOS experience
+- Touch-optimized interface
+- Mobile-specific features (camera, sharing, etc.)
+
 ### Quality Requirements:
 - Swift 6 strict concurrency compliance
+- SwiftData integration for GUI apps
 - Graceful error handling for network and permission issues
-- Intuitive CLI interface following Unix conventions
+- Intuitive interfaces following platform conventions
 - Secure credential storage
 
 ## Architecture Decisions
 
-### Package Structure Rationale:
-- **AnchorKit**: Reusable business logic for potential iOS app
-- **AnchorCLI**: Platform-specific CLI interface
+### Multi-Platform Structure Rationale:
+- **AnchorKit**: Shared business logic across all platforms
+- **Platform Targets**: Optimized for each platform's conventions
 - **Local Package Dependency**: Allows independent development and testing
 
 ### Technology Choices:
 - **Swift 6**: Modern async/await concurrency model
-- **CoreLocation**: Native macOS location services
+- **SwiftUI**: Declarative UI for menu bar and mobile apps
+- **SwiftData**: Modern Core Data replacement for GUI apps
+- **CoreLocation**: Native location services across platforms
 - **AT Protocol**: Direct Bluesky integration without third-party SDK
 - **Overpass API**: Rich OpenStreetMap data with flexible queries
+- **Swift Testing**: Modern testing framework (not XCTest)
 
 ### Future Extensibility:
 - Custom `app.anchor.drop` record type for structured data
-- iOS companion app using same AnchorKit core
+- watchOS companion app using same AnchorKit core
+- iPad-optimized layouts for mobile app
 - Offline queuing and sync capabilities
 - Additional POI categories beyond climbing gyms
+- Cross-platform sync between devices

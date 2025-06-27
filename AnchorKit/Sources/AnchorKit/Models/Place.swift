@@ -75,7 +75,25 @@ public extension Place {
 
     /// Returns the amenity or leisure type from tags
     var category: String? {
-        tags["amenity"] ?? tags["leisure"] ?? tags["shop"]
+        tags["amenity"] ?? tags["leisure"] ?? tags["shop"] ?? tags["tourism"]
+    }
+    
+    /// Returns the category group for this place (e.g., "Food & Drink", "Sports & Fitness")
+    var categoryGroup: PlaceCategorization.CategoryGroup? {
+        if let tag = tags.keys.first(where: { ["amenity", "leisure", "shop", "tourism"].contains($0) }),
+           let value = tags[tag] {
+            return PlaceCategorization.getCategoryGroup(for: tag, value: value)
+        }
+        return nil
+    }
+    
+    /// Returns an appropriate icon for this place based on its category
+    var icon: String {
+        if let tag = tags.keys.first(where: { ["amenity", "leisure", "shop", "tourism"].contains($0) }),
+           let value = tags[tag] {
+            return PlaceCategorization.getIcon(for: tag, value: value)
+        }
+        return "📍"
     }
 }
 

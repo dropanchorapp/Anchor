@@ -2,15 +2,16 @@ import SwiftUI
 import AnchorKit
 
 struct FeedTabView: View {
-    @Environment(BlueskyService.self) private var blueskyService
-    @State private var feedService = FeedService()
+    @Environment(AuthStore.self) private var authStore
+    @Environment(CheckInStore.self) private var checkInStore
+    @State private var feedStore = FeedStore()
 
     var body: some View {
         VStack(spacing: 16) {
-            if blueskyService.isAuthenticated {
+            if authStore.isAuthenticated {
                 // Feed content
                 Group {
-                    if feedService.isLoading {
+                    if feedStore.isLoading {
                         VStack(spacing: 12) {
                             ProgressView()
                             Text("Loading check-ins...")
@@ -18,7 +19,7 @@ struct FeedTabView: View {
                                 .font(.caption)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if let error = feedService.error {
+                    } else if let error = feedStore.error {
                         // Show error message
                         VStack(spacing: 12) {
                             Image(systemName: "exclamationmark.triangle")
@@ -43,7 +44,7 @@ struct FeedTabView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if feedService.posts.isEmpty {
+                    } else if feedStore.posts.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "checkmark.bubble")
                                 .foregroundStyle(.secondary)
@@ -70,7 +71,7 @@ struct FeedTabView: View {
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 12) {
-                                ForEach(feedService.posts, id: \.id) { post in
+                                ForEach(feedStore.posts, id: \.id) { post in
                                     FeedPostView(post: post)
                                 }
                             }
@@ -109,117 +110,72 @@ struct FeedTabView: View {
     }
 
     private func loadFeed() async {
-        guard let credentials = blueskyService.credentials else { return }
+        guard let credentials = authStore.credentials else { return }
 
         do {
-            _ = try await feedService.fetchGlobalFeed(credentials: credentials)
+            _ = try await feedStore.fetchGlobalFeed(credentials: credentials)
         } catch {
-            // Error is now handled by FeedService and displayed in UI
+            // Error is now handled by FeedStore and displayed in UI
             // No need to print to console
         }
     }
 }
 
-struct FeedPostView: View {
-    let post: FeedPost
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Author info
-            Button {
-                openBlueskyProfile(handle: post.author.handle)
-            } label: {
-                HStack(spacing: 8) {
-                    AsyncImage(url: post.author.avatar.flatMap(URL.init)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Circle()
-                            .fill(.secondary)
-                            .overlay {
-                                Text(String(post.author.handle.prefix(1).uppercased()))
-                                    .font(.caption)
-                                    .foregroundStyle(.white)
-                            }
-                    }
-                    .frame(width: 32, height: 32)
-                    .clipShape(Circle())
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(post.author.displayName ?? post.author.handle)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
-
-                        Text("@\(post.author.handle)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Text(post.record.createdAt, style: .relative)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .buttonStyle(.plain)
-
-            // Check-in content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(.init(post.record.formattedText))
-                    .font(.caption)
-                
-                // Show location info if available from checkin record
-                if let checkinRecord = post.checkinRecord,
-                   let locations = checkinRecord.locations,
-                   !locations.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "location")
-                            .foregroundStyle(.secondary)
-                            .font(.caption2)
-                        
-                        Text(formatLocationInfo(locations))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-    }
-
-    private func openBlueskyProfile(handle: String) {
-        if let url = URL(string: "https://bsky.app/profile/\(handle)") {
-            NSWorkspace.shared.open(url)
-        }
-    }
+#Preview("Authenticated with Posts") {
+    let storage = InMemoryCredentialsStorage()
+    let authStore = AuthStore(storage: storage)
+    let checkInStore = CheckInStore(authStore: authStore)
     
-    private func formatLocationInfo(_ locations: [LocationItem]) -> String {
-        for location in locations {
-            switch location {
-            case .address(let address):
-                var components: [String] = []
-                if let name = address.name {
-                    components.append(name)
-                }
-                if let locality = address.locality {
-                    components.append(locality)
-                }
-                if !components.isEmpty {
-                    return components.joined(separator: ", ")
-                }
-            case .geo(let geo):
-                return "📍 \(geo.latitude), \(geo.longitude)"
+    FeedTabView()
+        .environment(authStore)
+        .environment(checkInStore)
+        .frame(width: 300, height: 500)
+        .onAppear {
+            Task {
+                let testCredentials = AuthCredentials(
+                    handle: "alice.bsky.social",
+                    accessToken: "fake-jwt",
+                    refreshToken: "fake-refresh",
+                    did: "did:plc:test",
+                    expiresAt: Date().addingTimeInterval(3600)
+                )
+                try? await storage.save(testCredentials)
+                _ = await authStore.loadStoredCredentials()
             }
         }
-        return "📍 Location"
-    }
 }
 
-#Preview {
+#Preview("Unauthenticated") {
+    let storage = InMemoryCredentialsStorage()
+    let authStore = AuthStore(storage: storage)
+    let checkInStore = CheckInStore(authStore: authStore)
+    
     FeedTabView()
-        .environment(BlueskyService(storage: InMemoryCredentialsStorage()))
+        .environment(authStore)
+        .environment(checkInStore)
+        .frame(width: 300, height: 500)
+}
+
+#Preview("Loading State") {
+    let storage = InMemoryCredentialsStorage()
+    let authStore = AuthStore(storage: storage)
+    let checkInStore = CheckInStore(authStore: authStore)
+    
+    FeedTabView()
+        .environment(authStore)
+        .environment(checkInStore)
+        .frame(width: 300, height: 500)
+        .onAppear {
+            Task {
+                let testCredentials = AuthCredentials(
+                    handle: "alice.bsky.social",
+                    accessToken: "fake-jwt",
+                    refreshToken: "fake-refresh",
+                    did: "did:plc:test",
+                    expiresAt: Date().addingTimeInterval(3600)
+                )
+                try? await storage.save(testCredentials)
+                _ = await authStore.loadStoredCredentials()
+            }
+        }
 }

@@ -9,6 +9,7 @@ extension Tag {
     @Tag static var facets: Self
     @Tag static var models: Self
     @Tag static var services: Self
+    @Tag static var stores: Self
     @Tag static var auth: Self
     @Tag static var location: Self
     @Tag static var feed: Self

@@ -79,16 +79,30 @@ public struct AnchorPDSCheckinRecord: Codable, Sendable {
     public let text: String
     public let createdAt: String
     public let locations: [LocationItem]?
+    // Optional place categorization fields
+    public let category: String?          // OSM category value (e.g., "restaurant", "climbing", "hotel")
+    public let categoryGroup: String?     // Human-readable group (e.g., "Food & Drink", "Sports & Fitness")
+    public let categoryIcon: String?      // Unicode emoji icon (e.g., "🍽️", "🧗‍♂️", "🏨")
 
     private enum CodingKeys: String, CodingKey {
-        case text, createdAt, locations
+        case text, createdAt, locations, category, categoryGroup, categoryIcon
         case type = "$type"
     }
 
-    public init(text: String, createdAt: String, locations: [LocationItem]? = nil) {
+    public init(
+        text: String, 
+        createdAt: String, 
+        locations: [LocationItem]? = nil,
+        category: String? = nil,
+        categoryGroup: String? = nil,
+        categoryIcon: String? = nil
+    ) {
         self.text = text
         self.createdAt = createdAt
         self.locations = locations
+        self.category = category
+        self.categoryGroup = categoryGroup
+        self.categoryIcon = categoryIcon
     }
 }
 
@@ -191,7 +205,7 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
 
     // MARK: - Initialization
 
-    public init(baseURL: String = "https://anchorpds.val.run", session: URLSessionProtocol = URLSession.shared) {
+    public init(baseURL: String = AnchorConfig.shared.anchorPDSURL, session: URLSessionProtocol = URLSession.shared) {
         self.baseURL = baseURL
         self.session = session
     }
@@ -226,7 +240,7 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
 
     // MARK: - Feed Operations
 
-    public func listCheckins(user: String? = nil, limit: Int = 50, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func listCheckins(user: String? = nil, limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(min(limit, 100)))
         ]
@@ -257,7 +271,7 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
         }
     }
 
-    public func getGlobalFeed(limit: Int = 50, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func getGlobalFeed(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(min(limit, 100)))
         ]

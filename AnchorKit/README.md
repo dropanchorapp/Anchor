@@ -25,7 +25,7 @@ AnchorKit is a reusable Swift package that provides the business logic for Ancho
 
 - `LocationService` - CoreLocation wrapper with menubar app permission handling
 - `OverpassService` - OpenStreetMap POI queries with intelligent caching
-- `BlueskyService` - AT Protocol communication for posts and authentication
+- `CheckInStore` - Check-in creation and management with dual posting architecture
 - `NearbyPlacesService` - Coordinated location and place discovery
 
 ### Key Technologies
@@ -49,9 +49,8 @@ let nearbyService = NearbyPlacesService(locationService: locationService)
 await nearbyService.searchNearbyPlaces()
 
 // Bluesky integration
-let blueskyService = BlueskyService()
-try await blueskyService.authenticate(handle: "user.bsky.social", password: "password")
-try await blueskyService.postCheckIn(place: selectedPlace, message: "Great climbing session!")
+let checkInStore = CheckInStore()
+try await checkInStore.createCheckinWithPost(place: selectedPlace, customMessage: "Great climbing session!")
 ```
 
 ## Platform Requirements

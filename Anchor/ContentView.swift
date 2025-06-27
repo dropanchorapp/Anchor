@@ -5,7 +5,8 @@ import AnchorKit
 
 struct ContentView: View {
     @Environment(LocationService.self) private var locationService
-    @Environment(BlueskyService.self) private var blueskyService
+    @Environment(AuthStore.self) private var authStore
+    @Environment(CheckInStore.self) private var checkInStore
     @Environment(NearbyPlacesService.self) private var nearbyPlacesService
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab: AppTab = .feed

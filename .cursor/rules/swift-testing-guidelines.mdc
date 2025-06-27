@@ -3,9 +3,9 @@ description: testing, tests, unit tests, swift testing
 globs: 
 alwaysApply: false
 ---
-# Swift Testing Framework Guidelines for Anchor CLI
+# Swift Testing Framework Guidelines for Anchor Project
 
-Follow these modern Swift Testing patterns and practices when writing tests for the Anchor CLI project.
+Follow these modern Swift Testing patterns and practices when writing tests for the multi-platform Anchor project (CLI, menu bar app, and mobile iOS app).
 
 ## Test Organization & Structure
 
@@ -50,7 +50,7 @@ Follow these modern Swift Testing patterns and practices when writing tests for 
 - Use `#expect(throws: Never.self)` to explicitly assert no error is thrown
 - Inspect thrown errors: `let error = #expect(throws: MyError.self) { ... }`
 
-## Tagging Strategy for Anchor CLI
+## Tagging Strategy for Anchor Project
 
 Define tags in a central location:
 ```swift
@@ -60,6 +60,9 @@ extension Tag {
     @Tag static var auth: Self      // Authentication-related tests
     @Tag static var location: Self  // CoreLocation tests
     @Tag static var cli: Self       // Command-line interface tests
+    @Tag static var macos: Self     // macOS-specific tests
+    @Tag static var ios: Self       // iOS-specific tests
+    @Tag static var ui: Self        // SwiftUI/UI tests
     @Tag static var regression: Self // Regression tests
     @Tag static var flaky: Self     // Known flaky tests
 }
@@ -67,6 +70,8 @@ extension Tag {
 
 Apply tags to organize and filter tests:
 - `@Test("Login flow", .tags(.auth, .network))`
+- `@Test("iOS location permissions", .tags(.location, .ios))`
+- `@Test("Menu bar interface", .tags(.ui, .macos))`
 - Use `.serialized` trait for tests that must run sequentially
 - Use `.disabled("reason")` for temporarily broken tests
 - Use `.enabled(if: condition)` for conditional test execution
@@ -83,13 +88,35 @@ For CoreLocation services:
 - Mock `CLLocationManager` for deterministic testing
 - Test permission states and error conditions
 - Validate coordinate transformations and bounding box calculations
+- Handle platform differences (macOS vs iOS location APIs)
 
-## CLI Command Testing Patterns
+## SwiftData Testing Considerations
 
+**CRITICAL**: Avoid creating real SwiftData `@Model` objects in tests due to ModelContainer requirements:
+- Use protocol-based mocking (e.g., `AuthCredentialsProtocol` with `MockAuthCredentials`)
+- Test authentication logic indirectly through service integration tests
+- Run full SwiftData tests only in environments with proper ModelContainer setup
+- Focus unit tests on business logic, not SwiftData model creation
+
+## Platform-Specific Testing Patterns
+
+### CLI Command Testing (AnchorCLI)
 - Test argument parsing separately from business logic
 - Mock service dependencies using dependency injection
 - Validate output formatting and error messages
 - Test help text and usage information
+
+### Menu Bar App Testing (Anchor - macOS)
+- Test SwiftUI view models and state management
+- Mock AnchorKit services for UI tests
+- Validate menu bar integration and popover behavior
+- Test macOS-specific features (notifications, shortcuts)
+
+### Mobile App Testing (AnchorMobile - iOS)
+- Test responsive layouts for different screen sizes
+- Validate touch interactions and gestures
+- Test iOS-specific features (haptics, sharing, background refresh)
+- Use XCUITest for complex user journey testing
 
 ## Migration from XCTest
 
@@ -128,7 +155,8 @@ final class BlueskyServiceTests {
     
     @Test("Successful authentication", .tags(.auth, .fast))
     func successfulLogin() async throws {
-        // Test implementation
+        // Test implementation using mock credentials
+        // Avoid creating real AuthCredentials @Model objects
     }
     
     @Test("Authentication with invalid credentials", 
@@ -141,18 +169,38 @@ final class BlueskyServiceTests {
 }
 ```
 
-## Anchor-Specific Testing Considerations
+## Multi-Platform Test Structure
 
-The Anchor CLI project structure includes:
-- [AnchorKit/Sources/AnchorKit/](mdc:Anchor/AnchorKit/Sources/AnchorKit) - Core library with Models, Services, and Utils
-- [AnchorKit/Tests/AnchorKitTests/](mdc:Anchor/AnchorKit/Tests/AnchorKitTests) - Unit tests for the core library
-- [AnchorTests/](mdc:Anchor/AnchorTests) - iOS app-specific tests
-- [AnchorUITests/](mdc:Anchor/AnchorUITests) - UI automation tests
+The Anchor project testing structure includes:
 
-Focus testing efforts on:
+### Core Library Tests
+- [AnchorKit/Tests/AnchorKitTests/](mdc:AnchorKit/Tests/AnchorKitTests) - Shared business logic tests
+  - Models validation (avoiding SwiftData ModelContainer issues)
+  - Service layer tests with protocol-based mocking
+  - Cross-platform utility functions
+
+### Platform-Specific Tests
+- [AnchorTests/](mdc:AnchorTests) - Menu bar app tests (macOS)
+  - SwiftUI view tests
+  - Menu bar integration tests
+  - macOS-specific functionality
+
+- [AnchorMobileTests/](mdc:AnchorMobileTests) - Mobile app unit tests (iOS)
+  - iOS-specific view model tests
+  - Mobile app business logic
+
+- [AnchorMobileUITests/](mdc:AnchorMobileUITests) - Mobile app UI tests (iOS)
+  - End-to-end user journey tests
+  - iOS app navigation and interaction tests
+
+## Focus Areas for Testing
+
+Prioritize testing for:
 - Service layer validation (Bluesky API, Overpass API, CoreLocation)
 - Model validation (`Codable` implementations, data transformations)
 - CLI command parsing and execution
-- Authentication flow and token management
+- Authentication flow and token management (using protocol mocks)
+- Cross-platform compatibility of shared AnchorKit code
+- Platform-specific UI interactions and state management
 
-Always prioritize test clarity and maintainability over brevity. Use descriptive test names and organize tests logically to make the test suite a valuable living documentation of the system's behavior.
+Always prioritize test clarity and maintainability over brevity. Use descriptive test names and organize tests logically to make the test suite a valuable living documentation of the system's behavior across all platforms.

@@ -51,7 +51,10 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
         let checkinRecord = AnchorPDSCheckinRecord(
             text: checkinText,
             createdAt: ISO8601DateFormatter().string(from: Date()),
-            locations: locations.isEmpty ? nil : locations
+            locations: locations.isEmpty ? nil : locations,
+            category: place.category,
+            categoryGroup: place.categoryGroup?.rawValue,
+            categoryIcon: place.icon
         )
 
         // Create the request
@@ -69,7 +72,7 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
 
     // MARK: - Feed Operations
 
-    public func listUserCheckins(limit: Int = 50, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func listUserCheckins(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
         do {
             let response = try await client.listCheckins(
                 user: nil, // nil means current user's check-ins
@@ -85,7 +88,7 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
         }
     }
 
-    public func getGlobalFeed(limit: Int = 50, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func getGlobalFeed(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
         do {
             let response = try await client.getGlobalFeed(
                 limit: limit,
@@ -135,27 +138,31 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
         return nil
     }
 
+    /// Builds the text content for check-in records stored on AnchorPDS
+    ///
+    /// **IMPORTANT DESIGN DECISION:**
+    /// Check-in records contain ONLY the user's original message, without any additional
+    /// formatting, location info, or hashtags. This keeps the record clean and preserves
+    /// exactly what the user intended to say.
+    ///
+    /// Location information is stored separately in structured `locations` fields,
+    /// not mixed into the text content.
+    ///
+    /// This is different from Bluesky posts, which include marketing taglines and hashtags
+    /// for social media engagement (see `RichTextProcessor.buildCheckinText()`).
+    ///
+    /// - Parameters:
+    ///   - place: The place being checked into (used for structured location data)
+    ///   - customMessage: The user's original message, if any
+    /// - Returns: The user's exact message, or empty string if no message provided
     private func buildCheckinText(for place: Place, customMessage: String?) -> String {
-        var components: [String] = []
-
-        // Add custom message if provided
+        // Store only the user's original message - no additional formatting
         if let customMessage, !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            components.append(customMessage)
+            return customMessage
         }
-
-        // Add place name
-        components.append(place.name)
-
-        // Add category if available
-        if let category = place.category {
-            components.append("(\(category))")
-        }
-
-        // Add location context if available from tags
-        if let city = place.tags["addr:city"] ?? place.tags["addr:locality"] {
-            components.append("in \(city)")
-        }
-
-        return components.joined(separator: " ")
+        
+        // If no custom message, store empty string
+        // Location context is preserved in structured location fields
+        return ""
     }
 }

@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -22,7 +22,10 @@ let package = Package(
         .target(
             name: "AnchorKit",
             dependencies: [],
-            path: "Sources/AnchorKit"
+            path: "Sources/AnchorKit",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "AnchorKitTests",

@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ### Building the App
+
 ```bash
 # Build the Xcode project
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
@@ -14,6 +15,7 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
 ```
 
 ### Running Tests
+
 ```bash
 # Run unit tests
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
@@ -23,6 +25,7 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorTests test
 ```
 
 ### Code Quality Checks
+
 ```bash
 # Run SwiftLint (should show 0 violations)
 swiftlint
@@ -35,6 +38,7 @@ swiftlint --fix --format
 ```
 
 ### Building the AnchorKit Package
+
 ```bash
 # From the AnchorKit directory
 cd Anchor/AnchorKit
@@ -45,6 +49,7 @@ swift test
 ### Code Quality & Linting
 
 #### SwiftLint Setup
+
 The project includes SwiftLint for code quality enforcement:
 
 ```bash
@@ -59,12 +64,14 @@ swiftlint --fix
 ```
 
 **Configuration:**
+
 - `.swiftlint.yml` - Project-specific rules and configuration
 - Custom rules for AT Protocol and Bluesky naming conventions
 - Integrated as Xcode build phase for automatic checking
 - CI/CD integration with `--strict` mode for pull request validation
 
 **Key Rules:**
+
 - Force unwrapping and force try violations are treated as errors
 - Custom naming conventions for AT Protocol (`ATProto`) and Bluesky
 - Disabled `trailing_whitespace` (auto-fixed by Xcode)
@@ -96,7 +103,7 @@ Anchor is a macOS menubar app for location-based check-ins to Bluesky using the 
 
 - **LocationService**: CoreLocation wrapper with proper permission handling for menubar apps
 - **OverpassService**: OpenStreetMap POI discovery via Overpass API
-- **BlueskyService**: AT Protocol authentication and posting to Bluesky
+- **CheckInStore**: Check-in creation and management with dual posting architecture
 
 ### Location Permission Strategy
 
@@ -105,11 +112,13 @@ The menubar app architecture solves critical location permission issues that CLI
 ## Development Notes
 
 ### Platform Requirements
+
 - macOS 14.0+ (declared in project settings)
 - Swift 6.0+ with strict concurrency
 - Xcode 15.0+ for development
 
 ### Key Dependencies
+
 - No external dependencies - uses built-in frameworks only
 - SwiftUI for UI
 - CoreLocation for geolocation
@@ -118,6 +127,7 @@ The menubar app architecture solves critical location permission issues that CLI
 ### Testing Strategy
 
 #### Framework & Architecture
+
 - **Swift Testing**: Modern declarative testing framework (migrated from XCTest)
 - **Unit tests**: Comprehensive business logic testing in AnchorKit package
 - **Integration tests**: Network-dependent tests for external APIs (Overpass, Bluesky)
@@ -125,10 +135,13 @@ The menubar app architecture solves critical location permission issues that CLI
 - **Dependency injection**: Protocol-based testing with URLSession mocking for network services
 
 #### Test Organization & Tags
+
 Tests are organized with semantic tags for filtering and categorization:
+
 - `.unit` - Fast unit tests for models and utilities
 - `.integration` - Tests requiring network access or external services
-- `.services` - Service layer testing (BlueskyService, FeedService, OverpassService)
+- `.services` - Service layer testing (FeedService, OverpassService, AuthService)
+- `.stores` - Store layer testing (CheckInStore)
 - `.models` - Data model testing (Place, ATProtoRecord, AuthCredentials)
 - `.auth` - Authentication and credential management tests
 - `.feed` - Feed parsing and AT Protocol record processing
@@ -138,6 +151,7 @@ Tests are organized with semantic tags for filtering and categorization:
 - `.facets` - AT Protocol facet and rich text feature tests
 
 #### Running Tests
+
 ```bash
 # Run all tests (47 tests total)
 swift test
@@ -153,13 +167,15 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 ```
 
 #### Test Coverage
+
 - **ATProtoRecord**: Markdown formatting, facet processing, timeline data conversion
 - **FeedService**: Feed fetching, filtering, error handling with URLSession mocking
-- **BlueskyService**: Rich text facet generation, check-in text formatting, URL/mention/hashtag detection
+- **CheckInStore**: Rich text facet generation, check-in text formatting, dual posting coordination
 - **OverpassService**: POI discovery, query building, API integration
 - **Core Models**: Place creation, ID parsing, settings management, credential validation
 
 #### Testing Best Practices
+
 - **Parameterized testing**: Using Swift Testing's arguments for comprehensive edge case coverage
 - **Async/await support**: Proper handling of async service methods with MainActor isolation
 - **Mocking**: Protocol-based dependency injection for URLSession and external services
@@ -167,6 +183,7 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 - **Unicode support**: Proper UTF-8 byte counting for AT Protocol facet range calculations
 
 ### Menubar App Specifics
+
 - Uses `.menuBarExtraStyle(.window)` for proper window presentation
 - Frame size: 320x400 pixels for optimal menubar experience
 - Includes quit button since app doesn't appear in dock

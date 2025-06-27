@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AnchorCustomPDSURL</key>
+	<string>https://anchorpds.val.run</string>
+	<key>BlueskyPDSURL</key>
+	<string>https://bsky.social</string>
+	<key>AnchorDefaultCheckInMessage</key>
+	<string>Dropped ⚓</string>
+	<key>AnchorMaxNearbyPlaces</key>
+	<integer>50</integer>
+	<key>AnchorLocationSearchRadius</key>
+	<integer>1000</integer>
+	<key>AnchorOverpassTimeout</key>
+	<integer>10</integer>
+</dict>
+</plist> 

@@ -1,7 +1,7 @@
 # Makefile for Anchor Project
 # Swift project with multiple targets: macOS menu bar app, iOS mobile app, and shared AnchorKit library
 
-.PHONY: help lint lint-fix lint-strict test test-swift test-xcode test-anchor test-mobile test-ui build build-anchor build-mobile build-debug build-swift clean clean-derived install-deps setup check info
+.PHONY: help lint lint-fix lint-strict test test-swift test-ui build build-anchor build-mobile build-debug build-swift clean clean-derived install-deps setup check info
 
 # Default target
 help: ## Show this help message
@@ -22,29 +22,17 @@ lint-strict: ## Run SwiftLint in strict mode (treat warnings as errors)
 	swiftlint --strict
 
 # Testing Commands
-test: test-swift test-xcode ## Run all tests (Swift package + Xcode projects)
+test: test-swift test-ui ## Run all tests (Swift package + Xcode projects)
 
 test-swift: ## Run AnchorKit Swift package tests
 	@echo "🧪 Running AnchorKit tests..."
 	cd AnchorKit && swift test
 
-test-xcode: ## Run Xcode project tests (Anchor + AnchorMobile)
+test-ui: ## Run Xcode project tests (Anchor + AnchorMobile)
 	@echo "🧪 Running Anchor macOS tests..."
 	xcodebuild test -project Anchor.xcodeproj -scheme Anchor -destination 'platform=macOS'
 	@echo "🧪 Running AnchorMobile iOS tests..."
 	xcodebuild test -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16'
-
-test-anchor: ## Run only Anchor macOS tests
-	@echo "🧪 Running Anchor macOS tests..."
-	xcodebuild test -project Anchor.xcodeproj -scheme Anchor -destination 'platform=macOS'
-
-test-mobile: ## Run only AnchorMobile iOS tests
-	@echo "🧪 Running AnchorMobile iOS tests..."
-	xcodebuild test -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16'
-
-test-ui: ## Run UI tests for AnchorMobile
-	@echo "🧪 Running AnchorMobile UI tests..."
-	xcodebuild test -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:AnchorMobileUITests
 
 # Build Commands
 build: build-anchor build-mobile ## Build all targets (Anchor + AnchorMobile)
@@ -90,7 +78,7 @@ setup: install-deps ## Setup development environment
 	@echo "✅ Development environment ready"
 
 # Quality Assurance Commands
-check: lint-fix lint test ## Run quality assurance checks (lint + test)
+check: lint-fix lint test-swift ## Run quality assurance checks (lint + test)
 
 # Info Commands
 info: ## Show project information

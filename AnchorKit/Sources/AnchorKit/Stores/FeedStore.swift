@@ -15,10 +15,15 @@ import Foundation
 public final class FeedStore {
     // MARK: - Properties
 
+    private let authStore: AuthStoreProtocol
     private let anchorPDSService: AnchorPDSService
     private let session: URLSessionProtocol
     private let multiPDSClient: MultiPDSClient
     private let baseURL = AnchorConfig.shared.blueskyPDSURL
+    
+    /// Current loading task for cancellation
+    @MainActor
+    private var loadingTask: Task<Bool, Error>?
 
     /// Current feed posts
     @MainActor
@@ -34,72 +39,123 @@ public final class FeedStore {
 
     // MARK: - Initialization
 
-    public init(session: URLSessionProtocol = URLSession.shared) {
+    public init(authStore: AuthStoreProtocol, session: URLSessionProtocol = URLSession.shared) {
+        self.authStore = authStore
         self.session = session
         self.multiPDSClient = MultiPDSClient(session: session)
         anchorPDSService = AnchorPDSService(session: session)
     }
 
-    // MARK: - Convenience Initializers
-
-    @MainActor
-    public static func create(session: URLSessionProtocol = URLSession.shared) -> FeedStore {
-        FeedStore(session: session)
-    }
-
     // MARK: - Feed Fetching
-
-    /// Fetch global check-in feed from AnchorPDS
-    /// - Parameter credentials: Authentication credentials
-    /// - Returns: Success status
-    public func fetchFollowingFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
-        try await fetchGlobalFeed(credentials: credentials)
+    
+    /// Cancel any ongoing feed loading operation
+    @MainActor
+    public func cancelLoading() {
+        loadingTask?.cancel()
+        isLoading = false
     }
 
     /// Fetch global check-in feed from AnchorPDS
-    /// - Parameter credentials: Authentication credentials
     /// - Returns: Success status
-    public func fetchGlobalFeed(credentials: AuthCredentialsProtocol) async throws -> Bool {
-        isLoading = true
-        error = nil
+    @MainActor
+    public func fetchFollowingFeed() async throws -> Bool {
+        return try await fetchGlobalFeed()
+    }
 
-        defer { isLoading = false }
+    /// Fetch global check-in feed from AnchorPDS
+    /// - Returns: Success status
+    @MainActor
+    public func fetchGlobalFeed() async throws -> Bool {
+        print("🔄 FeedStore: Starting fetchGlobalFeed...")
+        
+        // Cancel any existing loading task
+        loadingTask?.cancel()
+        
+        // Create a new task for this operation
+        let task = Task<Bool, Error> {
+            isLoading = true
+            error = nil
+            print("🔄 FeedStore: Set loading state to true")
 
-        do {
-            // Fetch global feed from AnchorPDS
-            let feedResponse = try await anchorPDSService.getGlobalFeed(
-                limit: AnchorConfig.shared.maxNearbyPlaces,
-                cursor: nil,
-                credentials: credentials
-            )
-
-            // Convert AnchorPDS responses to FeedPost format with profile enrichment
-            var enrichedPosts: [FeedPost] = []
-
-            for checkinResponse in feedResponse.checkins {
-                // Get profile info from Bluesky for this DID using authentication
-                let profileInfo = await getProfileInfo(for: checkinResponse.author.did, credentials: credentials)
-
-                let feedPost = FeedPost(from: checkinResponse, profileInfo: profileInfo)
-                enrichedPosts.append(feedPost)
+            defer { 
+                isLoading = false 
+                print("🔄 FeedStore: Set loading state to false")
             }
 
-            posts = enrichedPosts
-            return true
+            do {
+                // Check for cancellation before starting network operations
+                try Task.checkCancellation()
+                
+                // Get valid credentials (handles refresh automatically)
+                print("🔑 FeedStore: Getting valid credentials...")
+                let credentials = try await authStore.getValidCredentials()
+                print("🔑 FeedStore: Got credentials for \(credentials.handle)")
+                
+                // Fetch global feed from AnchorPDS
+                print("📡 FeedStore: Fetching global feed from AnchorPDS...")
+                let feedResponse = try await anchorPDSService.getGlobalFeed(
+                    limit: AnchorConfig.shared.maxNearbyPlaces,
+                    cursor: nil,
+                    credentials: credentials
+                )
+                print("📡 FeedStore: Received \(feedResponse.checkins.count) check-ins from AnchorPDS")
 
-        } catch AnchorPDSError.authenticationRequired {
-            // Handle AnchorPDS authentication specifically
-            self.error = FeedError.authenticationError(
-                "AnchorPDS authentication is currently unavailable. This is an experimental feature - " +
-                    "check-ins are still being saved to AnchorPDS, but the global feed cannot be displayed right now."
-            )
-            posts = [] // Clear any existing posts
-            return false
+                // Check for cancellation before processing results
+                try Task.checkCancellation()
 
-        } catch {
-            self.error = FeedError.decodingError(error)
-            throw error
+                // Convert AnchorPDS responses to FeedPost format with profile enrichment
+                var enrichedPosts: [FeedPost] = []
+
+                for (index, checkinResponse) in feedResponse.checkins.enumerated() {
+                    // Check for cancellation during processing
+                    try Task.checkCancellation()
+                    
+                    print("👤 FeedStore: Processing check-in \(index + 1)/\(feedResponse.checkins.count) from \(checkinResponse.author.did)")
+                    
+                    // Get profile info from Bluesky for this DID using authentication
+                    let profileInfo = await getProfileInfo(for: checkinResponse.author.did, accessToken: credentials.accessToken)
+
+                    let feedPost = FeedPost(from: checkinResponse, profileInfo: profileInfo)
+                    enrichedPosts.append(feedPost)
+                    print("✅ FeedStore: Added enriched post for \(checkinResponse.author.did)")
+                }
+
+                // Final cancellation check before updating UI
+                try Task.checkCancellation()
+                
+                posts = enrichedPosts
+                print("✅ FeedStore: Updated posts array with \(enrichedPosts.count) items")
+                return true
+
+            } catch AnchorPDSError.authenticationRequired {
+                // Handle AnchorPDS authentication specifically
+                print("🚫 FeedStore: AnchorPDS authentication required")
+                self.error = FeedError.authenticationError(
+                    "AnchorPDS authentication is currently unavailable. This is an experimental feature - " +
+                        "check-ins are still being saved to AnchorPDS, but the global feed cannot be displayed right now."
+                )
+                posts = [] // Clear any existing posts
+                return false
+
+            } catch is CancellationError {
+                // Handle cancellation gracefully - don't update error state
+                print("⏹️ FeedStore: Feed loading was cancelled")
+                return false
+                
+            } catch {
+                print("❌ FeedStore: Feed loading failed with error: \(error)")
+                self.error = FeedError.decodingError(error)
+                throw error
+            }
         }
+        
+        // Store the task for potential cancellation
+        loadingTask = task
+        
+        // Wait for the task to complete
+        let result = try await task.value
+        print("🏁 FeedStore: fetchGlobalFeed completed with result: \(result)")
+        return result
     }
 
     // MARK: - Private Methods
@@ -107,11 +163,11 @@ public final class FeedStore {
     /// Get profile information using multi-PDS discovery with fallback
     /// - Parameters:
     ///   - did: The DID to look up
-    ///   - credentials: Authentication credentials for making authenticated requests
+    ///   - accessToken: Access token for making authenticated requests
     /// - Returns: Profile information or nil if not found
-    private func getProfileInfo(for did: String, credentials: AuthCredentialsProtocol) async -> BlueskyProfileInfo? {
+    private func getProfileInfo(for did: String, accessToken: String) async -> BlueskyProfileInfo? {
         // Use MultiPDSClient to try user's home PDS first, then fallback to Bluesky with authentication
-        return await multiPDSClient.getProfileInfo(for: did, accessToken: credentials.accessToken)
+        return await multiPDSClient.getProfileInfo(for: did, accessToken: accessToken)
     }
 
     private func buildAuthenticatedRequest(
@@ -135,7 +191,7 @@ public final class FeedStore {
 
 // MARK: - Models
 
-public struct FeedPost: Identifiable, Sendable {
+public struct FeedPost: Identifiable, Sendable, Hashable {
     public let id: String
     public let author: FeedAuthor
     public let record: ATProtoRecord
@@ -180,7 +236,7 @@ public struct FeedPost: Identifiable, Sendable {
     }
 }
 
-public struct FeedAuthor: Sendable {
+public struct FeedAuthor: Sendable, Hashable {
     public let did: String
     public let handle: String
     public let displayName: String?

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents an AT Protocol record with rich text support
-public struct ATProtoRecord: Sendable {
+public struct ATProtoRecord: Sendable, Hashable {
     public let text: String
     public let formattedText: String // Markdown formatted version
     public let facets: [ATProtoFacet]
@@ -57,7 +57,7 @@ public struct ATProtoRecord: Sendable {
 }
 
 /// Represents a facet (rich text annotation) in AT Protocol
-public struct ATProtoFacet: Sendable {
+public struct ATProtoFacet: Sendable, Hashable {
     public let index: ClosedRange<Int>
     public let feature: ATProtoFeature
 
@@ -68,7 +68,7 @@ public struct ATProtoFacet: Sendable {
 }
 
 /// Different types of rich text features supported by AT Protocol
-public enum ATProtoFeature: Sendable {
+public enum ATProtoFeature: Sendable, Hashable {
     case link(String)
     case mention(String) // DID
     case hashtag(String)

@@ -24,7 +24,7 @@ struct CheckInView: View {
                     .padding(.horizontal)
                 
                 Button(action: {
-                    // TODO: Implement check-in functionality
+                    // Check-in functionality placeholder
                 }) {
                     Text("Check In")
                         .font(.headline)

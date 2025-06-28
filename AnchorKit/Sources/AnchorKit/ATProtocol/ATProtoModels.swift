@@ -154,7 +154,7 @@ public enum RichTextFeature: Codable {
 
 // MARK: - Error Types
 
-public enum ATProtoError: LocalizedError, Sendable {
+public enum ATProtoError: LocalizedError, Sendable, Equatable {
     case invalidURL
     case invalidResponse
     case httpError(Int)
@@ -176,6 +176,24 @@ public enum ATProtoError: LocalizedError, Sendable {
             "AT Protocol authentication failed: \(message)"
         case .missingCredentials:
             "Missing or invalid AT Protocol credentials"
+        }
+    }
+    
+    public static func == (lhs: ATProtoError, rhs: ATProtoError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidURL, .invalidURL),
+             (.invalidResponse, .invalidResponse),
+             (.missingCredentials, .missingCredentials):
+            return true
+        case let (.httpError(lhsCode), .httpError(rhsCode)):
+            return lhsCode == rhsCode
+        case let (.authenticationFailed(lhsMessage), .authenticationFailed(rhsMessage)):
+            return lhsMessage == rhsMessage
+        case let (.decodingError(lhsError), .decodingError(rhsError)):
+            // Compare error descriptions since Error doesn't conform to Equatable
+            return lhsError.localizedDescription == rhsError.localizedDescription
+        default:
+            return false
         }
     }
 }

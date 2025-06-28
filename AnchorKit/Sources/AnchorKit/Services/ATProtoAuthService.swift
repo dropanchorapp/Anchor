@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 // MARK: - AT Protocol Authentication Service Protocol
 
@@ -149,15 +148,35 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
 
     public func loadStoredCredentials() async -> AuthCredentials? {
         let loadedCredentials = await storage.load()
-        _credentials = loadedCredentials
-
-        if let credentials = loadedCredentials {
-            print("🔑 Loaded stored credentials for @\(credentials.handle) (PDS: \(credentials.pdsURL))")
-        } else {
+        
+        guard let credentials = loadedCredentials else {
             print("🔑 No stored credentials found")
+            _credentials = nil
+            return nil
         }
-
-        return loadedCredentials
+        
+        print("🔑 Loaded stored credentials for @\(credentials.handle) (PDS: \(credentials.pdsURL))")
+        
+        // If credentials are expired, try to refresh them automatically
+        if credentials.isExpired {
+            print("🔄 Credentials are expired, attempting automatic refresh...")
+            do {
+                let refreshedCredentials = try await refreshCredentials(credentials)
+                _credentials = refreshedCredentials
+                print("✅ Successfully refreshed expired credentials for @\(refreshedCredentials.handle)")
+                return refreshedCredentials
+            } catch {
+                print("❌ Failed to refresh expired credentials: \(error)")
+                // Clear the expired credentials that can't be refreshed
+                try? await storage.clear()
+                _credentials = nil
+                return nil
+            }
+        } else {
+            // Credentials are still valid
+            _credentials = credentials
+            return credentials
+        }
     }
 
     public func clearCredentials() async {

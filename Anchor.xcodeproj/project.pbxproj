@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3F77C5252E0EC24500CC0D38 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F77C5242E0EC24500CC0D38 /* AnchorKit */; };
-		3F9C6F462DECDC6B009A1F50 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F9C6F452DECDC6B009A1F50 /* AnchorKit */; };
+		3F510DFE2E10293E00B12466 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F510DFD2E10293E00B12466 /* AnchorKit */; };
+		3F510E002E10294A00B12466 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F510DFF2E10294A00B12466 /* AnchorKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,7 +85,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3F9C6F462DECDC6B009A1F50 /* AnchorKit in Frameworks */,
+				3F510DFE2E10293E00B12466 /* AnchorKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,7 +107,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3F77C5252E0EC24500CC0D38 /* AnchorKit in Frameworks */,
+				3F510E002E10294A00B12466 /* AnchorKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,6 +128,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3F510DFC2E10293E00B12466 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		3F697D5D2DECDAF900AC7ACC = {
 			isa = PBXGroup;
 			children = (
@@ -138,6 +145,7 @@
 				3F77C50E2E0EC17200CC0D38 /* AnchorMobileUITests */,
 				3F697D672DECDAF900AC7ACC /* Products */,
 				3F9C6F422DECDC11009A1F50 /* AnchorKit */,
+				3F510DFC2E10293E00B12466 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -174,7 +182,7 @@
 			);
 			name = Anchor;
 			packageProductDependencies = (
-				3F9C6F452DECDC6B009A1F50 /* AnchorKit */,
+				3F510DFD2E10293E00B12466 /* AnchorKit */,
 			);
 			productName = Anchor;
 			productReference = 3F697D662DECDAF900AC7ACC /* Anchor.app */;
@@ -240,7 +248,7 @@
 			);
 			name = AnchorMobile;
 			packageProductDependencies = (
-				3F77C5242E0EC24500CC0D38 /* AnchorKit */,
+				3F510DFF2E10294A00B12466 /* AnchorKit */,
 			);
 			productName = AnchorMobile;
 			productReference = 3F77C4F32E0EC17000CC0D38 /* AnchorMobile.app */;
@@ -336,7 +344,7 @@
 			mainGroup = 3F697D5D2DECDAF900AC7ACC;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				3F9C6F442DECDC6B009A1F50 /* XCLocalSwiftPackageReference "AnchorKit" */,
+				3F510DF92E10291C00B12466 /* XCLocalSwiftPackageReference "AnchorKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F697D672DECDAF900AC7ACC /* Products */;
@@ -947,19 +955,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		3F9C6F442DECDC6B009A1F50 /* XCLocalSwiftPackageReference "AnchorKit" */ = {
+		3F510DF92E10291C00B12466 /* XCLocalSwiftPackageReference "AnchorKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = AnchorKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		3F77C5242E0EC24500CC0D38 /* AnchorKit */ = {
+		3F510DFD2E10293E00B12466 /* AnchorKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 3F510DF92E10291C00B12466 /* XCLocalSwiftPackageReference "AnchorKit" */;
 			productName = AnchorKit;
 		};
-		3F9C6F452DECDC6B009A1F50 /* AnchorKit */ = {
+		3F510DFF2E10294A00B12466 /* AnchorKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 3F510DF92E10291C00B12466 /* XCLocalSwiftPackageReference "AnchorKit" */;
 			productName = AnchorKit;
 		};
 /* End XCSwiftPackageProductDependency section */

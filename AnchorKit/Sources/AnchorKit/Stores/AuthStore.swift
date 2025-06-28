@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 // MARK: - Authentication Store Protocol
 
@@ -67,13 +66,17 @@ public final class AuthStore: AuthStoreProtocol {
     /// Dependency injection initializer
     public init(authService: ATProtoAuthServiceProtocol) {
         self.authService = authService
+        // Load credentials immediately on initialization
+        Task { @MainActor in
+            await loadStoredCredentials()
+        }
     }
 
     // MARK: - Authentication Methods
 
     public func loadStoredCredentials() async -> AuthCredentials? {
         let result = await authService.loadStoredCredentials()
-        await updateAuthenticationState()
+        updateAuthenticationState()
         return result
     }
 
@@ -83,13 +86,13 @@ public final class AuthStore: AuthStoreProtocol {
 
     public func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool {
         _ = try await authService.authenticate(handle: handle, appPassword: appPassword, pdsURL: pdsURL)
-        await updateAuthenticationState()
+        updateAuthenticationState()
         return true
     }
 
     public func signOut() async {
         await authService.clearCredentials()
-        await updateAuthenticationState()
+        updateAuthenticationState()
     }
 
     public func getAppPasswordURL() -> URL {
@@ -115,7 +118,8 @@ public final class AuthStore: AuthStoreProtocol {
 
     /// Updates the observable authentication state for UI binding
     @MainActor
-    private func updateAuthenticationState() async {
-        isAuthenticated = await authService.isAuthenticated
+    private func updateAuthenticationState() {
+        isAuthenticated = authService.credentials?.isValid ?? false
+        print("🔄 AuthStore: Updated authentication state - isAuthenticated: \(isAuthenticated)")
     }
 }

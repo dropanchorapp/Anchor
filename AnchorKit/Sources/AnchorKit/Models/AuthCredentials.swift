@@ -1,8 +1,7 @@
 import Foundation
-import SwiftData
 
 /// Protocol for authentication credentials to enable testing
-public protocol AuthCredentialsProtocol {
+public protocol AuthCredentialsProtocol: Sendable {
     var handle: String { get }
     var accessToken: String { get }
     var refreshToken: String { get }
@@ -14,8 +13,7 @@ public protocol AuthCredentialsProtocol {
 }
 
 /// Stores Bluesky authentication credentials
-@Model
-public final class AuthCredentials: AuthCredentialsProtocol {
+public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
     /// Bluesky handle (e.g., "user.bsky.social")
     public var handle: String
 

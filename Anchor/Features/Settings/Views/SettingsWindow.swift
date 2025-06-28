@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import AnchorKit
 
 struct SettingsWindow: View {
@@ -7,7 +6,6 @@ struct SettingsWindow: View {
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(LocationService.self) private var locationService
     @Environment(NearbyPlacesService.self) private var nearbyPlacesService
-    @Environment(\.modelContext) private var modelContext
 
     @State private var handle = ""
     @State private var appPassword = ""

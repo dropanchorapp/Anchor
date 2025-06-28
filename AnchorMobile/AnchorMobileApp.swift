@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 import AnchorKit
 
 @main
@@ -14,31 +13,11 @@ struct AnchorMobileApp: App {
     // Shared services
     @State private var authStore = AuthStore()
     @State private var checkInStore: CheckInStore
-
-    // Shared model container
-    let container: ModelContainer
+    @State private var appStateStore = AppStateStore()
 
     init() {
-        // Create shared model container with same configuration as menu bar app
-        do {
-            let schema = Schema([
-                AuthCredentials.self
-            ])
-            let modelConfiguration = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1",
-                cloudKitDatabase: .none
-            )
-            container = try ModelContainer(
-                for: schema,
-                configurations: [modelConfiguration]
-            )
-        } catch {
-            fatalError("Failed to initialize model container: \(error)")
-        }
-
         // Initialize services with proper dependencies
-                let authStore = AuthStore()
+        let authStore = AuthStore()
         let checkInStore = CheckInStore(authStore: authStore)
 
         self._authStore = State(initialValue: authStore)
@@ -50,11 +29,17 @@ struct AnchorMobileApp: App {
             ContentView()
                 .environment(authStore)
                 .environment(checkInStore)
+                .environment(appStateStore)
                 .task {
-                    // Load credentials immediately when ContentView appears
-                    _ = await authStore.loadStoredCredentials()
+                    // Load credentials immediately when ContentView appears (backup)
+                    print("📱 AnchorMobileApp: Loading stored credentials in .task")
+                    let credentials = await authStore.loadStoredCredentials()
+                    if let creds = credentials {
+                        print("📱 AnchorMobileApp: Successfully loaded credentials for @\(creds.handle)")
+                    } else {
+                        print("📱 AnchorMobileApp: No stored credentials found")
+                    }
                 }
         }
-        .modelContainer(container)
     }
 }

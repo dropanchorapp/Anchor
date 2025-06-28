@@ -4,14 +4,14 @@ import AnchorKit
 struct FeedTabView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
-    @State private var feedStore = FeedStore()
+    @State private var feedStore: FeedStore?
 
     var body: some View {
         VStack(spacing: 16) {
             if authStore.isAuthenticated {
                 // Feed content
                 Group {
-                    if feedStore.isLoading {
+                    if let feedStore = feedStore, feedStore.isLoading {
                         VStack(spacing: 12) {
                             ProgressView()
                             Text("Loading check-ins...")
@@ -19,7 +19,7 @@ struct FeedTabView: View {
                                 .font(.caption)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if let error = feedStore.error {
+                    } else if let feedStore = feedStore, let error = feedStore.error {
                         // Show error message
                         VStack(spacing: 12) {
                             Image(systemName: "exclamationmark.triangle")
@@ -44,7 +44,7 @@ struct FeedTabView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if feedStore.posts.isEmpty {
+                    } else if let feedStore = feedStore, feedStore.posts.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "checkmark.bubble")
                                 .foregroundStyle(.secondary)
@@ -68,7 +68,7 @@ struct FeedTabView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else {
+                    } else if let feedStore = feedStore {
                         ScrollView {
                             LazyVStack(spacing: 12) {
                                 ForEach(feedStore.posts, id: \.id) { post in
@@ -83,6 +83,10 @@ struct FeedTabView: View {
                     await loadFeed()
                 }
                 .task {
+                    // Initialize feedStore with authStore
+                    if feedStore == nil {
+                        feedStore = FeedStore(authStore: authStore)
+                    }
                     await loadFeed()
                 }
             } else {
@@ -110,10 +114,10 @@ struct FeedTabView: View {
     }
 
     private func loadFeed() async {
-        guard let credentials = authStore.credentials else { return }
-
+        guard let feedStore = feedStore else { return }
+        
         do {
-            _ = try await feedStore.fetchGlobalFeed(credentials: credentials)
+            _ = try await feedStore.fetchGlobalFeed()
         } catch {
             // Error is now handled by FeedStore and displayed in UI
             // No need to print to console

@@ -8,7 +8,7 @@ private struct EmptyBody: Codable {}
 // MARK: - AnchorPDS Request Types
 
 /// Community lexicon location types
-public struct CommunityGeoLocation: Codable, Sendable {
+public struct CommunityGeoLocation: Codable, Sendable, Hashable {
     public let type: String = "community.lexicon.location.geo"
     public let latitude: String
     public let longitude: String
@@ -24,7 +24,7 @@ public struct CommunityGeoLocation: Codable, Sendable {
     }
 }
 
-public struct CommunityAddressLocation: Codable, Sendable {
+public struct CommunityAddressLocation: Codable, Sendable, Hashable {
     public let type: String = "community.lexicon.location.address"
     public let street: String?
     public let locality: String?
@@ -48,7 +48,7 @@ public struct CommunityAddressLocation: Codable, Sendable {
     }
 }
 
-public enum LocationItem: Codable, Sendable {
+public enum LocationItem: Codable, Sendable, Hashable {
     case geo(CommunityGeoLocation)
     case address(CommunityAddressLocation)
 
@@ -74,7 +74,7 @@ public enum LocationItem: Codable, Sendable {
 }
 
 /// Lexicon-compliant check-in record - unified model for both creating and reading records
-public struct AnchorPDSCheckinRecord: Codable, Sendable {
+public struct AnchorPDSCheckinRecord: Codable, Sendable, Hashable {
     public let type: String = "app.dropanchor.checkin"
     public let text: String
     public let createdAt: String

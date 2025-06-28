@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 // MARK: - Check-In Store Protocol
 

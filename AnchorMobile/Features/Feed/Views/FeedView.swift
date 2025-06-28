@@ -11,134 +11,123 @@ import AnchorKit
 struct FeedView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
-    @State private var feedStore = FeedStore()
+    @Environment(AppStateStore.self) private var appStateStore
+    @State private var feedStore: FeedStore?
+    @State private var selectedPost: FeedPost?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Group {
-                if authStore.isAuthenticated && authStore.credentials?.accessToken.isEmpty == false {
+                // Use direct authentication check instead of computed property to avoid SwiftUI evaluation issues
+                if authStore.isAuthenticated && authStore.credentials != nil && authStore.credentials?.accessToken.isEmpty == false {
                     // Feed content
                     Group {
-                        if feedStore.isLoading {
-                            VStack(spacing: 16) {
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                Text("Loading check-ins...")
-                                    .foregroundStyle(.secondary)
-                                    .font(.body)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else if let error = feedStore.error {
-                            // Show error message
-                            VStack(spacing: 16) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .foregroundStyle(.orange)
-                                    .font(.system(size: 40))
-
-                                Text("Feed Unavailable")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-
-                                Text(error.localizedDescription)
-                                    .foregroundStyle(.secondary)
-                                    .font(.body)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-
-                                Button("Try Again") {
-                                    Task {
-                                        await loadFeed()
-                                    }
+                        if let feedStore = feedStore, feedStore.isLoading {
+                            FeedLoadingView()
+                        } else if let feedStore = feedStore, let error = feedStore.error {
+                            FeedErrorView(error: error) {
+                                Task {
+                                    await loadFeed()
                                 }
-                                .buttonStyle(.borderedProminent)
                             }
-                            .padding()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else if feedStore.posts.isEmpty {
-                            VStack(spacing: 16) {
-                                Image(systemName: "checkmark.bubble")
-                                    .foregroundStyle(.secondary)
-                                    .font(.system(size: 40))
-
-                                Text("No check-ins found")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-
-                                Text("No check-ins found in the global feed.")
-                                    .foregroundStyle(.secondary)
-                                    .font(.body)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-
-                                Button("Refresh") {
-                                    Task {
-                                        await loadFeed()
-                                    }
+                        } else if let feedStore = feedStore, feedStore.posts.isEmpty {
+                            FeedEmptyView {
+                                Task {
+                                    await loadFeed()
                                 }
-                                .buttonStyle(.borderedProminent)
                             }
-                            .padding()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else {
+                        } else if let feedStore = feedStore {
                             List(feedStore.posts, id: \.id) { post in
-                                FeedPostView(post: post)
-                                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                                    .listRowSeparator(.hidden)
+                                FeedPostView(post: post) {
+                                    selectedPost = post
+                                }
+                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                .listRowSeparator(.visible, edges: .bottom)
+                                .listRowBackground(Color.clear)
                             }
                             .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
+                        } else {
+                            // Fallback case when feedStore is nil
+                            FeedInitializingView()
                         }
                     }
                     .refreshable {
-                        await loadFeed()
-                    }
-                    .task {
+                        // Manual refresh always bypasses time restrictions
+                        appStateStore.invalidateFeedCache()
                         await loadFeed()
                     }
                 } else {
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.slash")
-                            .foregroundStyle(.orange)
-                            .font(.system(size: 40))
-
-                        Text("Sign in to see your feed")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-
-                        Text("Connect your Bluesky account to see check-ins from people you follow.")
-                            .foregroundStyle(.secondary)
-                            .font(.body)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-
-                        Text("Go to Settings to sign in")
-                            .foregroundStyle(.blue)
-                            .font(.callout)
-                            .fontWeight(.medium)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    FeedNotAuthenticatedView()
                 }
             }
             .navigationTitle("Feed")
+            .navigationDestination(item: $selectedPost) { post in
+                CheckInDetailView(post: post)
+            }
+            .task {
+                // Initialize feedStore with authStore (always initialize, regardless of auth state)
+                if feedStore == nil {
+                    feedStore = FeedStore(authStore: authStore)
+                }
+                
+                // Only load feed if authenticated
+                if authStore.isAuthenticated && authStore.credentials != nil {
+                    await loadFeedIfNeeded()
+                }
+            }
+            .onChange(of: authStore.isAuthenticated) { oldValue, newValue in
+                // When user logs in, automatically fetch the feed
+                if !oldValue && newValue && authStore.credentials != nil {
+                    Task {
+                        // Force a fresh feed load when authentication becomes available
+                        appStateStore.invalidateFeedCache()
+                        await loadFeed()
+                    }
+                }
+            }
+            .onChange(of: authStore.credentials?.accessToken) { _, newToken in
+                // When credentials change (e.g., token refresh), refetch if we have a new valid token
+                if let newToken = newToken, !newToken.isEmpty, authStore.isAuthenticated {
+                    Task {
+                        await loadFeed()
+                    }
+                }
+            }
+            .onChange(of: appStateStore.isAppActive) { oldValue, newValue in
+                // When app becomes active, check if we should refresh
+                if !oldValue && newValue && authStore.isAuthenticated {
+                    Task {
+                        await loadFeedIfNeeded()
+                    }
+                }
+            }
         }
     }
 
+    /// Load feed only if enough time has passed since last fetch (5+ minutes)
+    private func loadFeedIfNeeded() async {
+        guard appStateStore.shouldRefreshFeed() else {
+            return
+        }
+        
+        await loadFeed()
+    }
+    
+    /// Force load feed regardless of timing (used for manual refresh and auth changes)
     private func loadFeed() async {
-        guard let credentials = authStore.credentials else { 
-            print("⚠️ No credentials available for feed loading")
+        guard let feedStore = feedStore else { 
             return 
         }
         
-        // Validate that we have a valid access token
-        guard !credentials.accessToken.isEmpty else {
-            print("⚠️ Access token is empty")
-            return
-        }
-
         do {
-            _ = try await feedStore.fetchGlobalFeed(credentials: credentials)
+            _ = try await feedStore.fetchGlobalFeed()
+            
+            // Record successful fetch
+            appStateStore.recordFeedFetch()
+        } catch is CancellationError {
+            // Ignore cancellation errors - they're expected when pull-to-refresh interrupts ongoing requests
         } catch {
-            print("❌ Feed loading failed: \(error)")
             // Error is now handled by FeedStore and displayed in UI
         }
     }
@@ -150,107 +139,48 @@ struct FeedView: View {
     FeedView()
         .environment(authStore)
         .environment(CheckInStore(authStore: authStore))
+        .environment(AppStateStore())
 }
 
 #Preview("Empty State - No Posts") {
     let authStore = AuthStore(storage: InMemoryCredentialsStorage())
-    // Simulate authenticated state with valid credentials
-    Task {
-        try? await authStore.authenticate(handle: "preview.user.bsky.social", appPassword: "preview-app-password")
-    }
     
-    return FeedView()
+    FeedView()
         .environment(authStore)
         .environment(CheckInStore(authStore: authStore))
+        .environment(AppStateStore())
+        .onAppear {
+            // Simulate authenticated state for preview
+            Task {
+                try? await authStore.authenticate(handle: "preview.user.bsky.social", appPassword: "preview-app-password")
+            }
+        }
 }
 
 #Preview("Filled State") {
     let authStore = AuthStore(storage: InMemoryCredentialsStorage())
     
     // Create a simple view that mimics FeedView but with hardcoded posts
-    return NavigationView {
+    NavigationStack {
         ScrollView {
             LazyVStack(spacing: 8) {
-                FeedPostView(post: mockCoffeeShopPost)
+                FeedPostView(post: sampleCoffeeShopPost) { }
                     .padding(.horizontal)
                 
-                FeedPostView(post: mockRestaurantPost)
+                FeedPostView(post: sampleRestaurantPost) { }
                     .padding(.horizontal)
                 
-                FeedPostView(post: mockClimbingPost)
+                FeedPostView(post: sampleClimbingPost) { }
                     .padding(.horizontal)
             }
             .padding(.top)
         }
         .navigationTitle("Feed")
+        .navigationDestination(for: FeedPost.self) { post in
+            CheckInDetailView(post: post)
+        }
     }
     .environment(authStore)
     .environment(CheckInStore(authStore: authStore))
+    .environment(AppStateStore())
 }
-
-// MARK: - Mock Data for FeedView Preview
-private let mockCoffeeShopPost = FeedPost(
-    id: "at://did:plc:preview1/app.bsky.feed.post/1",
-    author: FeedAuthor(
-        did: "did:plc:preview1",
-        handle: "coffee.lover.bsky.social",
-        displayName: "Coffee Enthusiast",
-        avatar: nil
-    ),
-    record: ATProtoRecord(
-        text: "Perfect espresso and cozy atmosphere ☕️",
-        createdAt: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date()
-    ),
-    checkinRecord: AnchorPDSCheckinRecord(
-        text: "Perfect espresso and cozy atmosphere ☕️",
-        createdAt: ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date()),
-        locations: [
-            .address(CommunityAddressLocation(name: "Blue Bottle Coffee"))
-        ],
-        categoryIcon: "☕️"
-    )
-)
-
-private let mockRestaurantPost = FeedPost(
-    id: "at://did:plc:preview2/app.bsky.feed.post/2",
-    author: FeedAuthor(
-        did: "did:plc:preview2",
-        handle: "foodie.adventures.bsky.social",
-        displayName: "Sarah Chen",
-        avatar: nil
-    ),
-    record: ATProtoRecord(
-        text: "Amazing dim sum brunch! 🥟",
-        createdAt: Calendar.current.date(byAdding: .hour, value: -3, to: Date()) ?? Date()
-    ),
-    checkinRecord: AnchorPDSCheckinRecord(
-        text: "Amazing dim sum brunch! 🥟",
-        createdAt: ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .hour, value: -3, to: Date()) ?? Date()),
-        locations: [
-            .address(CommunityAddressLocation(name: "Golden Dragon Restaurant"))
-        ],
-        categoryIcon: "🍽️"
-    )
-)
-
-private let mockClimbingPost = FeedPost(
-    id: "at://did:plc:preview3/app.bsky.feed.post/3",
-    author: FeedAuthor(
-        did: "did:plc:preview3",
-        handle: "mountain.goat.bsky.social",
-        displayName: "Alex Rodriguez",
-        avatar: nil
-    ),
-    record: ATProtoRecord(
-        text: "Sent my project! 🧗‍♂️",
-        createdAt: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
-    ),
-    checkinRecord: AnchorPDSCheckinRecord(
-        text: "Sent my project! 🧗‍♂️",
-        createdAt: ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()),
-        locations: [
-            .address(CommunityAddressLocation(name: "Yosemite Valley"))
-        ],
-        categoryIcon: "🧗‍♂️"
-    )
-)

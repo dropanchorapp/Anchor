@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import AnchorKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -19,28 +18,7 @@ struct AnchorMenubarApp: App {
     @State private var checkInStore: CheckInStore
     @State private var nearbyPlacesService: NearbyPlacesService
 
-    // Shared model container
-    let container: ModelContainer
-
     init() {
-        // Create shared model container first
-        do {
-            let schema = Schema([
-                AuthCredentials.self
-            ])
-            let modelConfiguration = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1",
-                cloudKitDatabase: .none
-            )
-            container = try ModelContainer(
-                for: schema,
-                configurations: [modelConfiguration]
-            )
-        } catch {
-            fatalError("Failed to initialize model container: \(error)")
-        }
-
         // Initialize services that depend on other services
         let locationService = LocationService()
         let authStore = AuthStore()
@@ -89,7 +67,6 @@ struct AnchorMenubarApp: App {
             }
         }
         .menuBarExtraStyle(.window)
-        .modelContainer(container)
 
         Window("Settings", id: "settings") {
             SettingsWindow()
@@ -101,7 +78,6 @@ struct AnchorMenubarApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .defaultPosition(.center)
-        .modelContainer(container)
     }
 
     // MARK: - Menu Bar Icon

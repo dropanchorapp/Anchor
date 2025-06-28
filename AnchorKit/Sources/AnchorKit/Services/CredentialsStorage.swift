@@ -1,11 +1,10 @@
 import Foundation
-import SwiftData
 import Security
 
 //
 // MARK: - Credentials Storage
 //
-// This module provides multiple storage implementations for authentication credentials:
+// This module provides storage implementations for authentication credentials:
 //
 // 1. **KeychainCredentialsStorage** (RECOMMENDED)
 //    - Uses iOS/macOS Keychain for secure, persistent storage
@@ -13,16 +12,11 @@ import Security
 //    - Platform standard for authentication tokens
 //    - Simple single source of truth
 //
-// 2. **SwiftDataCredentialsStorage** (Legacy)
-//    - Hybrid approach using SwiftData + Keychain fallback
-//    - More complex but provides fast access via SwiftData
-//    - Maintained for backward compatibility
-//
-// 3. **InMemoryCredentialsStorage** (Testing)
+// 2. **InMemoryCredentialsStorage** (Testing)
 //    - Memory-only storage for unit tests
 //    - No persistence across app restarts
 //
-// For new implementations, use KeychainCredentialsStorage directly.
+// For production use, KeychainCredentialsStorage is the recommended approach.
 //
 
 // MARK: - Credentials Storage Protocol
@@ -118,14 +112,9 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
 
             print("🔐 Loaded credentials from keychain for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
 
-            // Check if credentials are still valid
-            if credentials.isValid {
-                return credentials
-            } else {
-                print("🔐 Keychain credentials expired, cleaning up")
-                try? await clear()
-                return nil
-            }
+            // Return credentials regardless of expiration status
+            // Let higher-level services (AuthService) decide whether to refresh or clear
+            return credentials
         } catch {
             print("🔐 Error decoding keychain credentials: \(error)")
             try? await clear()
@@ -144,83 +133,6 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
         if status == errSecSuccess {
             print("🔐 Cleared credentials from keychain")
         }
-    }
-}
-
-// MARK: - SwiftData Implementation (Legacy)
-
-/// Legacy implementation using SwiftData only - kept for backward compatibility
-/// Note: Data will be lost on app rebuilds. Use KeychainCredentialsStorage for persistent storage.
-@MainActor
-public final class SwiftDataCredentialsStorage: CredentialsStorageProtocol {
-    private let context: ModelContext
-
-    public init(context: ModelContext) {
-        self.context = context
-    }
-
-    public func save(_ credentials: AuthCredentialsProtocol) async throws {
-        // Clear any existing credentials first
-        try await clear()
-
-        // Convert protocol to concrete SwiftData model for persistence
-        let authCredentials = AuthCredentials(
-            handle: credentials.handle,
-            accessToken: credentials.accessToken,
-            refreshToken: credentials.refreshToken,
-            did: credentials.did,
-            pdsURL: credentials.pdsURL,
-            expiresAt: credentials.expiresAt
-        )
-
-        // Insert into SwiftData
-        context.insert(authCredentials)
-        try context.save()
-
-        print("💾 Saved credentials to SwiftData (warning: will be lost on rebuild)")
-    }
-
-    public func load() async -> AuthCredentials? {
-        let descriptor = FetchDescriptor<AuthCredentials>(
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
-
-        do {
-            let allCredentials = try context.fetch(descriptor)
-            print("🔍 Found \(allCredentials.count) stored credentials in SwiftData")
-
-            guard let credentials = allCredentials.first else {
-                print("🔍 No credentials found in SwiftData")
-                return nil
-            }
-
-            print("🔍 Checking SwiftData credentials for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
-
-            // Check if credentials are still valid
-            if credentials.isValid {
-                return credentials
-            } else {
-                print("🔍 SwiftData credentials expired, cleaning up")
-                // Clean up invalid credentials
-                try? await clear()
-                return nil
-            }
-        } catch {
-            print("🔍 Error fetching credentials from SwiftData: \(error)")
-            return nil
-        }
-    }
-
-    public func clear() async throws {
-        let descriptor = FetchDescriptor<AuthCredentials>()
-        let credentials = try context.fetch(descriptor)
-
-        for credential in credentials {
-            context.delete(credential)
-        }
-
-        try context.save()
-        print("💾 Cleared credentials from SwiftData")
     }
 }
 

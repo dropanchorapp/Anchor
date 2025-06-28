@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import CoreLocation
 import AnchorKit
 
@@ -8,7 +7,6 @@ struct ContentView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(NearbyPlacesService.self) private var nearbyPlacesService
-    @Environment(\.modelContext) private var modelContext
     @State private var selectedTab: AppTab = .feed
     @State private var selectedPlace: Place?
     @State private var showingCheckIn = false

@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import AnchorKit
 
 struct CheckInView: View {
@@ -18,7 +17,6 @@ struct CheckInView: View {
     // MARK: - Services
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
-    @Environment(\.modelContext) private var modelContext
     
     // MARK: - Initialization
     init(place: Place, onCancel: @escaping () -> Void, onComplete: @escaping () -> Void) {

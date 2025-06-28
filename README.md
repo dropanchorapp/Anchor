@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A native macOS menubar app for location-based check-ins using the AT Protocol</strong>
+  <strong>Native macOS and iOS apps for location-based check-ins using the AT Protocol</strong>
 </p>
 
 <p align="center">
@@ -24,11 +24,12 @@
 ## ✨ Features
 
 - **🖥️ Native macOS Menubar App** - Always accessible from your menubar with a single click
+- **📱 Native iOS App** - Full-featured mobile experience using shared business logic
 - **🔐 Dual PDS Architecture** - Store check-ins on AnchorPDS with optional Bluesky posting
-- **📍 Automatic Location** - CoreLocation integration with proper macOS permissions
+- **📍 Automatic Location** - CoreLocation integration with proper platform permissions
 - **🗺️ Place Discovery** - Find nearby climbing gyms, cafes, and points of interest via OpenStreetMap
 - **💬 Custom Messages** - Add personal notes to your check-ins
-- **🏗️ Modular Architecture** - Shared AnchorKit framework ready for iOS and watchOS expansion
+- **🏗️ Modular Architecture** - Shared AnchorKit framework across macOS and iOS
 - **🎯 Privacy-First** - Local storage only, no tracking or analytics
 - **🌐 AT Protocol Native** - Uses community lexicon standards for structured location data
 
@@ -47,7 +48,8 @@
 
 ### System Requirements
 
-- macOS 14.0 or later
+- **macOS**: macOS 14 or later
+- **iOS**: iOS 26 or later  
 - Location Services enabled
 
 ### Installation
@@ -63,19 +65,31 @@
    git clone https://github.com/tijs/Anchor.git
    cd Anchor
    
-   # Open in Xcode and build
+   # Open in Xcode and build both targets
    open Anchor/Anchor.xcodeproj
    
    # Or build from command line
+   # macOS app:
    xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
+   # iOS app:
+   xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile build
    ```
 
 ### First Launch
+
+#### macOS App
 
 1. **Launch Anchor** - Look for the anchor (⚓) icon in your menubar
 2. **Enable Location Services** - Click "Enable Location" when prompted
 3. **Sign in to Bluesky** - Click "Sign In" and enter your Bluesky credentials
 4. **Drop Your First Anchor** - Click "Nearby" to check in at your current location
+
+#### iOS App
+
+1. **Launch Anchor** - Tap the Anchor app icon
+2. **Enable Location Services** - Allow location access when prompted
+3. **Sign in to Bluesky** - Enter your Bluesky credentials in Settings
+4. **Drop Your First Anchor** - Tap "Nearby" to discover and check in at places
 
 ## 🎯 How to Use
 
@@ -169,7 +183,8 @@ Anchor is built with a modular architecture designed for cross-platform expansio
 ### Core Components
 
 - **Anchor (macOS App)** - Native SwiftUI menubar application
-- **AnchorKit** - Shared business logic framework for future iOS/watchOS apps
+- **AnchorMobile (iOS App)** - Native iOS app using shared AnchorKit
+- **AnchorKit** - Shared business logic framework across all platforms
 - **AnchorPDS** - Dedicated Personal Data Server for structured check-in storage
 
 ### Technology Stack
@@ -183,10 +198,10 @@ Anchor is built with a modular architecture designed for cross-platform expansio
 
 ### Project Structure
 
-```
+```text
 Anchor/
 ├── Anchor/                    # macOS MenuBar App
-│   ├── Anchor.xcodeproj      # Xcode project
+│   ├── Anchor.xcodeproj      # Xcode project (includes both targets)
 │   ├── Assets.xcassets/      # App icons and assets
 │   └── Features/             # SwiftUI views organized by feature
 │       ├── CheckIn/Views/    # Drop anchor interface
@@ -194,13 +209,20 @@ Anchor/
 │       ├── Feed/Views/       # Future: check-in history
 │       ├── Nearby/Views/     # Place discovery
 │       └── Settings/Views/   # App configuration
+├── AnchorMobile/             # iOS App
+│   ├── Assets.xcassets/      # iOS-specific assets
+│   ├── Features/             # iOS SwiftUI views
+│   │   ├── CheckIn/         # Mobile check-in interface
+│   │   ├── Feed/            # Mobile feed views
+│   │   └── Settings/        # iOS settings views
+│   └── AnchorMobileApp.swift # iOS app entry point
 ├── AnchorKit/                # Shared Business Logic
 │   ├── Sources/AnchorKit/
 │   │   ├── Models/          # Place, AuthCredentials, Settings
 │   │   ├── Services/        # AnchorPDS, Bluesky, Overpass, Location
 │   │   ├── ATProtocol/      # AT Protocol client implementations
 │   │   └── Utils/           # Shared utilities
-│   └── Tests/               # Unit tests (55 tests)
+│   └── Tests/               # Unit tests (42+ tests)
 └── Static/                  # Assets and documentation
 ```
 
@@ -218,14 +240,17 @@ swift build
 swift test  # Runs 55 tests including AnchorPDS integration
 ```
 
-### Building the macOS App
+### Building the Apps
 
 ```bash
-# Using Xcode (recommended)
+# Using Xcode (recommended for both macOS and iOS)
 open Anchor/Anchor.xcodeproj
 
 # Using xcodebuild
+# macOS app:
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
+# iOS app:  
+xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile build
 ```
 
 ### Running Tests
@@ -234,8 +259,11 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
 # Test AnchorKit (includes AnchorPDS client tests)
 cd AnchorKit && swift test
 
-# Test the full app
+# Test the apps
+# macOS app tests:
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
+# iOS app tests:
+xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile test
 ```
 
 ### AnchorPDS
@@ -263,15 +291,15 @@ AnchorPDS is a separate project hosted on Val Town. You can experiment with it a
 
 ### 🔄 In Progress (v1.1)
 
-- [ ] App Store distribution
+- [ ] App Store distribution (both macOS and iOS)
 - [ ] Check-in history view (from AnchorPDS)
 - [ ] Default message preferences
-- [ ] Launch at login option
+- [ ] Launch at login option (macOS)
 - [ ] Global feed discovery
 
 ### 🚀 Future (v2.0+)
 
-- [ ] **iOS Companion App** - Full iOS app using shared AnchorKit
+- [x] **iOS App** - Full iOS app using shared AnchorKit ✅
 - [ ] **Apple Watch App** - Quick drops from your wrist
 - [ ] **Rich Analytics** - Personal insights from AnchorPDS data
 - [ ] **Shortcuts Integration** - Automate check-ins
@@ -283,7 +311,8 @@ AnchorPDS is a separate project hosted on Val Town. You can experiment with it a
 We welcome contributions! The modular architecture makes it easy to contribute to specific areas:
 
 - **AnchorKit** - Business logic, models, and services
-- **macOS App** - SwiftUI interface and platform-specific features
+- **macOS App** - SwiftUI interface and platform-specific features  
+- **iOS App** - Mobile interface and iOS-specific features
 - **Documentation** - Help improve guides and API docs
 
 Please check our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.

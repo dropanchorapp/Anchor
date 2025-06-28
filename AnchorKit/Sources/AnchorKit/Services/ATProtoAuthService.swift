@@ -8,7 +8,7 @@ public protocol ATProtoAuthServiceProtocol {
     var isAuthenticated: Bool { get async }
     var credentials: AuthCredentials? { get }
     func authenticate(handle: String, appPassword: String) async throws -> AuthCredentials
-    func refreshCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials
+    func refreshCredentials(_ credentials: AuthCredentialsProtocol) async throws -> AuthCredentials
     func loadStoredCredentials() async -> AuthCredentials?
     func clearCredentials() async
 }
@@ -56,7 +56,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
             // Use actual token expiration time from AT Protocol response
             // Default to 1 hour (3600 seconds) if not provided
             let expirationInterval = TimeInterval(response.expiresIn ?? 3600)
-            
+
             let newCredentials = AuthCredentials(
                 handle: response.handle,
                 accessToken: response.accessJwt,
@@ -82,7 +82,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         }
     }
 
-    public func refreshCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials {
+    public func refreshCredentials(_ credentials: AuthCredentialsProtocol) async throws -> AuthCredentials {
         let request = ATProtoRefreshRequest(refreshJwt: credentials.refreshToken)
 
         do {

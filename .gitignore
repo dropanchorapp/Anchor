@@ -73,3 +73,6 @@ Carthage/Build/
 
 # Profiling
 *.trace
+
+# Ignore SDK & External API docs
+LLMDocs

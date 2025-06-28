@@ -36,7 +36,7 @@ struct ATProtoRecordTests {
         let text = "Visit https://example.com and https://test.org today"
         let facets = [
             ATProtoFacet(index: 6 ... 24, feature: .link("https://example.com")), // "https://example.com"
-            ATProtoFacet(index: 30 ... 45, feature: .link("https://test.org")), // "https://test.org"
+            ATProtoFacet(index: 30 ... 45, feature: .link("https://test.org")) // "https://test.org"
         ]
         let record = ATProtoRecord(text: text, facets: facets)
 
@@ -81,7 +81,7 @@ struct ATProtoRecordTests {
         let text = "Visit https://first.com then https://second.org today"
         let facets = [
             ATProtoFacet(index: 29 ... 46, feature: .link("https://second.org")), // Second link first
-            ATProtoFacet(index: 6 ... 22, feature: .link("https://first.com")), // First link second
+            ATProtoFacet(index: 6 ... 22, feature: .link("https://first.com")) // First link second
         ]
         let record = ATProtoRecord(text: text, facets: facets)
 
@@ -113,15 +113,15 @@ struct ATProtoRecordTests {
                 TimelineFacet(
                     index: FacetIndex(byteStart: 10, byteEnd: 29),
                     features: [
-                        FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
+                        FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
                     ]
                 ),
                 TimelineFacet(
                     index: FacetIndex(byteStart: 30, byteEnd: 35),
                     features: [
-                        FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test"),
+                        FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test")
                     ]
-                ),
+                )
             ]
         )
 
@@ -190,7 +190,7 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 0, byteEnd: 16),
             features: [
-                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice123", tag: nil),
+                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice123", tag: nil)
             ]
         )
 
@@ -208,7 +208,7 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 0, byteEnd: 9),
             features: [
-                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "climbing"),
+                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "climbing")
             ]
         )
 
@@ -226,7 +226,7 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 0, byteEnd: 10),
             features: [
-                FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil),
+                FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil)
             ]
         )
 
@@ -240,7 +240,7 @@ struct ATProtoRecordTests {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 10, byteEnd: 5), // End before start
             features: [
-                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
+                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
             ]
         )
 
@@ -256,7 +256,7 @@ struct ATProtoRecordTests {
             features: [
                 FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil),
                 FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
-                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test"),
+                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test")
             ]
         )
 

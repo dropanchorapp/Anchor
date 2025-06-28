@@ -184,7 +184,7 @@ struct ATProtoModelsTests {
             text: "Unified model test",
             createdAt: "2025-01-15T12:00:00Z",
             locations: [
-                .geo(CommunityGeoLocation(latitude: 40.7128, longitude: -74.0060)),
+                .geo(CommunityGeoLocation(latitude: 40.7128, longitude: -74.0060))
             ],
             category: "museum",
             categoryGroup: "Culture",
@@ -205,8 +205,7 @@ struct ATProtoModelsTests {
 
         // Verify the location data is preserved
         if case let .geo(originalGeo) = originalRecord.locations?.first,
-           case let .geo(decodedGeo) = decodedRecord.locations?.first
-        {
+           case let .geo(decodedGeo) = decodedRecord.locations?.first {
             #expect(decodedGeo.latitude == originalGeo.latitude)
             #expect(decodedGeo.longitude == originalGeo.longitude)
         } else {

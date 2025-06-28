@@ -4,9 +4,9 @@ import Foundation
 
 @MainActor
 public protocol AnchorPDSServiceProtocol {
-    func createCheckin(place: Place, customMessage: String?, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse
-    func listUserCheckins(limit: Int, cursor: String?, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse
-    func getGlobalFeed(limit: Int, cursor: String?, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse
+    func createCheckin(place: Place, customMessage: String?, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse
+    func listUserCheckins(limit: Int, cursor: String?, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse
+    func getGlobalFeed(limit: Int, cursor: String?, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse
 }
 
 // MARK: - AnchorPDS Service Implementation
@@ -30,7 +30,7 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
 
     // MARK: - Check-in Creation
 
-    public func createCheckin(place: Place, customMessage: String?, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse {
+    public func createCheckin(place: Place, customMessage: String?, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse {
         // Create check-in text
         let checkinText = buildCheckinText(for: place, customMessage: customMessage)
 
@@ -72,7 +72,7 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
 
     // MARK: - Feed Operations
 
-    public func listUserCheckins(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func listUserCheckins(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse {
         do {
             let response = try await client.listCheckins(
                 user: nil, // nil means current user's check-ins
@@ -88,7 +88,7 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
         }
     }
 
-    public func getGlobalFeed(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func getGlobalFeed(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse {
         do {
             let response = try await client.getGlobalFeed(
                 limit: limit,
@@ -160,7 +160,7 @@ public final class AnchorPDSService: AnchorPDSServiceProtocol {
         if let customMessage, !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return customMessage
         }
-        
+
         // If no custom message, store empty string
         // Location context is preserved in structured location fields
         return ""

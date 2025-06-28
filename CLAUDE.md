@@ -24,19 +24,6 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorTests test
 ```
 
-### Code Quality Checks
-
-```bash
-# Run SwiftLint (should show 0 violations)
-swiftlint
-
-# Run SwiftLint in strict mode (CI/CD compatible)
-swiftlint --strict
-
-# Auto-fix violations where possible
-swiftlint --fix --format
-```
-
 ### Building the AnchorKit Package
 
 ```bash
@@ -92,22 +79,51 @@ Anchor is a macOS menubar app for location-based check-ins to Bluesky using the 
 2. **MenuBarExtra Pattern**: Uses SwiftUI's MenuBarExtra for native macOS menubar integration
 3. **Observable Pattern**: LocationService uses @Observable for reactive UI updates
 4. **Async/Await**: Modern Swift concurrency throughout location and networking code
+5. **Protocol-First Architecture**: Services accept protocol types for maximum testability without SwiftData dependencies
+6. **Dependency Injection**: Protocol-based storage and service abstractions enable comprehensive testing
 
 ### Core Models
 
 - **Place**: Represents OpenStreetMap POIs with element type/ID, coordinates, and tags
 - **AnchorSettings**: User preferences stored in UserDefaults with immutable update methods
-- **AuthCredentials**: Bluesky authentication data with automatic storage and validation
+- **AuthCredentials**: SwiftData model for authentication data with automatic storage and validation
+- **AuthCredentialsProtocol**: Protocol abstraction enabling testing without SwiftData ModelContainer dependencies
 
 ### Services Architecture
 
 - **LocationService**: CoreLocation wrapper with proper permission handling for menubar apps
 - **OverpassService**: OpenStreetMap POI discovery via Overpass API
-- **CheckInStore**: Check-in creation and management with dual posting architecture
+- **CheckInStore**: Check-in creation and management with dual posting architecture (AnchorPDS + Bluesky)
+- **ATProtoAuthService**: Authentication service using `AuthCredentialsProtocol` for testability
+- **CredentialsStorage**: Multiple storage implementations (Keychain, SwiftData, InMemory) with unified protocol interface
+- **AnchorPDSClient**: Specialized client for AnchorPDS check-in records with lexicon compliance
 
 ### Location Permission Strategy
 
 The menubar app architecture solves critical location permission issues that CLI apps face on macOS. The LocationService is designed specifically for MenuBarExtra apps where permission dialogs work properly.
+
+### Protocol-First Architecture Implementation
+
+The codebase implements a comprehensive protocol-first architecture that solves key SwiftData testing challenges:
+
+#### Challenge Solved
+
+- **Problem**: SwiftData `@Model` classes require ModelContainer setup, making unit tests complex and fragile
+- **Solution**: Services accept `AuthCredentialsProtocol` instead of concrete `AuthCredentials` SwiftData models
+
+#### Key Benefits
+
+1. **Testing Independence**: Tests run without SwiftData ModelContainer dependencies
+2. **Mock-Friendly**: `TestAuthCredentials` and `MockCredentialsStorage` enable comprehensive testing
+3. **Production Flexibility**: Multiple storage implementations (Keychain, SwiftData, InMemory) with unified interface
+4. **Clean Separation**: SwiftData models remain in storage layer, services use protocol abstractions
+
+#### Implementation Details
+
+- All services (`CheckInStore`, `ATProtoAuthService`, `AnchorPDSClient`) accept `AuthCredentialsProtocol`
+- Storage implementations handle protocol→concrete conversion internally
+- Tests use `TestAuthCredentials` struct that implements the protocol without SwiftData dependencies
+- Production code continues using `AuthCredentials` SwiftData models for persistence
 
 ## Development Notes
 
@@ -132,7 +148,9 @@ The menubar app architecture solves critical location permission issues that CLI
 - **Unit tests**: Comprehensive business logic testing in AnchorKit package
 - **Integration tests**: Network-dependent tests for external APIs (Overpass, Bluesky)
 - **UI tests**: Menubar app functionality testing in AnchorUITests
-- **Dependency injection**: Protocol-based testing with URLSession mocking for network services
+- **Protocol-based testing**: Services accept `AuthCredentialsProtocol` enabling testing without SwiftData ModelContainer
+- **Dependency injection**: URLSession mocking and in-memory storage for isolated unit tests
+- **Mock implementations**: `TestAuthCredentials`, `MockCredentialsStorage`, `MockURLSession` for comprehensive testing
 
 #### Test Organization & Tags
 
@@ -153,7 +171,7 @@ Tests are organized with semantic tags for filtering and categorization:
 #### Running Tests
 
 ```bash
-# Run all tests (47 tests total)
+# Run all tests (42+ tests total)
 swift test
 
 # Run specific test categories
@@ -178,9 +196,10 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 
 - **Parameterized testing**: Using Swift Testing's arguments for comprehensive edge case coverage
 - **Async/await support**: Proper handling of async service methods with MainActor isolation
-- **Mocking**: Protocol-based dependency injection for URLSession and external services
+- **Protocol-first mocking**: `AuthCredentialsProtocol` and storage protocols enable testing without production dependencies
 - **Error handling**: Comprehensive error scenario testing for network failures and invalid data
 - **Unicode support**: Proper UTF-8 byte counting for AT Protocol facet range calculations
+- **Isolation**: Tests run independently without requiring external services or SwiftData containers
 
 ### Menubar App Specifics
 
@@ -273,12 +292,14 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 - Bluesky authentication status
 - Future: Default message preferences, app preferences
 
-### Bluesky Integration
+### Bluesky Integration & AnchorPDS
 
-- Posts as `app.bsky.feed.post` record type via AT Protocol
+- **Dual posting architecture**: Clean AnchorPDS records + enhanced Bluesky posts
+- **AnchorPDS records**: Lexicon-compliant `app.dropanchor.checkin` records with location data
+- **Bluesky posts**: Traditional `app.bsky.feed.post` with markdown formatting and rich facets
 - Message format: `Dropped anchor at [Place Name] 🧭 "[Custom Message]" [Category Emoji]`
 - Automatic token refresh and session management
-- Secure credential storage in UserDefaults
+- **Secure credential storage**: Multiple options (Keychain recommended, SwiftData legacy, InMemory for testing)
 
 ### Future Expansion
 

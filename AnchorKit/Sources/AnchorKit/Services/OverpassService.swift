@@ -180,19 +180,19 @@ public final class OverpassService: @unchecked Sendable {
         clearAllCache()
         print("📍 Cleared all cached places")
     }
-    
+
     /// Get all available place categories
     /// - Returns: Array of all OpenStreetMap categories supported for place discovery
     public func getAllAvailableCategories() -> [String] {
         PlaceCategorization.getAllCategories()
     }
-    
+
     /// Get prioritized categories (most commonly visited places)
     /// - Returns: Array of high-priority categories for efficient searching
     public func getPrioritizedCategories() -> [String] {
         PlaceCategorization.getPrioritizedCategories()
     }
-    
+
     /// Find places by category group (e.g., all "Food & Drink" places)
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
@@ -212,7 +212,7 @@ public final class OverpassService: @unchecked Sendable {
             let value = String(parts[1])
             return PlaceCategorization.getCategoryGroup(for: tag, value: value) == categoryGroup
         }
-        
+
         return try await findPlacesByCategories(
             near: coordinate,
             radiusMeters: radiusMeters,

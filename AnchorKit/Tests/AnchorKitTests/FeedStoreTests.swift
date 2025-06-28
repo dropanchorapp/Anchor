@@ -11,11 +11,11 @@ private struct MockAuthCredentials: AuthCredentialsProtocol {
     let refreshToken: String
     let did: String
     let expiresAt: Date
-    
+
     var isExpired: Bool {
         expiresAt.timeIntervalSinceNow < 300 // 5 minutes buffer
     }
-    
+
     var isValid: Bool {
         !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !isExpired
     }
@@ -238,7 +238,7 @@ struct FeedStoreTests {
                     statusCode: 200,
                     httpVersion: nil,
                     headerFields: nil
-                )!),
+                )!)
             ]
         }
 
@@ -304,13 +304,13 @@ struct FeedStoreTests {
 
         // The method should complete successfully but set an error
         let result = try await feedStore.fetchFollowingFeed(credentials: credentials)
-        
+
         // Should return false indicating failure
         #expect(result == false)
-        
+
         // Should have an error set
         await #expect(feedStore.error != nil)
-        
+
         // Should be an authentication error
         if let error = await feedStore.error {
             #expect(error is FeedError)
@@ -401,9 +401,9 @@ struct FeedStoreTests {
                         TimelineFacet(
                             index: FacetIndex(byteStart: 10, byteEnd: 29),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
+                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
                             ]
-                        ),
+                        )
                     ]
                 ),
                 embed: nil,
@@ -473,21 +473,21 @@ struct FeedStoreTests {
                         TimelineFacet(
                             index: FacetIndex(byteStart: 4, byteEnd: 20),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice", tag: nil),
+                                FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice", tag: nil)
                             ]
                         ),
                         TimelineFacet(
                             index: FacetIndex(byteStart: 27, byteEnd: 46),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),
+                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
                             ]
                         ),
                         TimelineFacet(
                             index: FacetIndex(byteStart: 47, byteEnd: 55),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "awesome"),
+                                FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "awesome")
                             ]
-                        ),
+                        )
                     ]
                 ),
                 embed: nil,
@@ -519,9 +519,9 @@ struct FeedStoreTests {
                         TimelineFacet(
                             index: FacetIndex(byteStart: 19, byteEnd: 41),
                             features: [
-                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://café.example.com", did: nil, tag: nil),
+                                FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://café.example.com", did: nil, tag: nil)
                             ]
-                        ),
+                        )
                     ]
                 ),
                 embed: nil,
@@ -538,7 +538,7 @@ struct FeedStoreTests {
         TimelineResponse(
             feed: [
                 createMockTimelineFeedItemWithCheckin(),
-                createMockTimelineFeedItemWithCheckin(),
+                createMockTimelineFeedItemWithCheckin()
             ],
             cursor: "next-page-cursor"
         )

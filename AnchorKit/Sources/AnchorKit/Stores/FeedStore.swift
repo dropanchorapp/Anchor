@@ -1,13 +1,13 @@
 import Foundation
 
 /// Observable store for managing check-in feeds from AnchorPDS with Bluesky profile enrichment
-/// 
+///
 /// Manages feed state and coordinates with AnchorPDS services.
 /// Provides observable feed state for UI binding.
-/// 
+///
 /// Responsibilities:
 /// - Observable feed state for UI (posts, loading, errors)
-/// - Coordinate feed fetching operations  
+/// - Coordinate feed fetching operations
 /// - Manage profile enrichment from Bluesky
 /// - Handle feed-related business logic
 @MainActor
@@ -64,25 +64,11 @@ public final class FeedStore {
         defer { isLoading = false }
 
         do {
-            // Convert credentials to AuthCredentials if needed
-            let authCredentials: AuthCredentials = if let creds = credentials as? AuthCredentials {
-                creds
-            } else {
-                // Create AuthCredentials from protocol
-                AuthCredentials(
-                    handle: credentials.handle,
-                    accessToken: credentials.accessToken,
-                    refreshToken: credentials.refreshToken,
-                    did: credentials.did,
-                    expiresAt: credentials.expiresAt
-                )
-            }
-
             // Fetch global feed from AnchorPDS
             let feedResponse = try await anchorPDSService.getGlobalFeed(
                 limit: AnchorConfig.shared.maxNearbyPlaces,
                 cursor: nil,
-                credentials: authCredentials
+                credentials: credentials
             )
 
             // Convert AnchorPDS responses to FeedPost format with profile enrichment
@@ -103,11 +89,11 @@ public final class FeedStore {
             // Handle AnchorPDS authentication specifically
             self.error = FeedError.authenticationError(
                 "AnchorPDS authentication is currently unavailable. This is an experimental feature - " +
-                "check-ins are still being saved to AnchorPDS, but the global feed cannot be displayed right now."
+                    "check-ins are still being saved to AnchorPDS, but the global feed cannot be displayed right now."
             )
             posts = [] // Clear any existing posts
             return false
-            
+
         } catch {
             self.error = FeedError.decodingError(error)
             throw error
@@ -372,4 +358,4 @@ public enum FeedError: LocalizedError, Sendable {
             message
         }
     }
-} 
+}

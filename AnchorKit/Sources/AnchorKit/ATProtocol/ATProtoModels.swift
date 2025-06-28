@@ -13,7 +13,7 @@ public struct ATProtoLoginResponse: Codable, Sendable {
     let handle: String
     let did: String
     let expiresIn: Int? // Token expiration time in seconds
-    
+
     private enum CodingKeys: String, CodingKey {
         case accessJwt, refreshJwt, handle, did
         case expiresIn = "expires_in"
@@ -28,7 +28,7 @@ public struct ATProtoRefreshResponse: Codable, Sendable {
     let accessJwt: String
     let refreshJwt: String
     let expiresIn: Int? // Token expiration time in seconds
-    
+
     private enum CodingKeys: String, CodingKey {
         case accessJwt, refreshJwt
         case expiresIn = "expires_in"
@@ -57,95 +57,6 @@ public struct ATProtoPostRecord: Codable {
     private enum CodingKeys: String, CodingKey {
         case text, createdAt, facets, embed
         case type = "$type"
-    }
-}
-
-// MARK: - Check-in Models
-
-public struct ATProtoCreateCheckinRequest: Codable {
-    let collection: String = "app.dropanchor.checkin"
-    let repo: String
-    let record: ATProtoCheckinRecord
-
-    private enum CodingKeys: String, CodingKey {
-        case repo, record
-    }
-}
-
-public struct ATProtoCheckinRecord: Codable {
-    let type: String = "app.dropanchor.checkin"
-    let text: String
-    let createdAt: String
-    let location: CheckinLocation
-
-    private enum CodingKeys: String, CodingKey {
-        case text, createdAt, location
-        case type = "$type"
-    }
-}
-
-public enum CheckinLocation: Codable {
-    case place(CheckinPlaceLocation)
-    case geo(CheckinGeoLocation)
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case let .place(place):
-            try container.encode(place)
-        case let .geo(geo):
-            try container.encode(geo)
-        }
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let place = try? container.decode(CheckinPlaceLocation.self) {
-            self = .place(place)
-        } else {
-            let geo = try container.decode(CheckinGeoLocation.self)
-            self = .geo(geo)
-        }
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case type = "$type"
-    }
-}
-
-public struct CheckinPlaceLocation: Codable {
-    let type: String = "app.dropanchor.place"
-    let name: String
-    let geo: CheckinGeoLocation
-    let address: CheckinAddress?
-    let uri: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case name, geo, address, uri
-        case type = "$type"
-    }
-}
-
-public struct CheckinGeoLocation: Codable {
-    let type: String = "app.dropanchor.geo"
-    let lat: Double
-    let lng: Double
-
-    private enum CodingKeys: String, CodingKey {
-        case lat, lng
-        case type = "$type"
-    }
-}
-
-public struct CheckinAddress: Codable {
-    let streetAddress: String?
-    let locality: String?
-    let region: String?
-    let country: String?
-    let postalCode: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case streetAddress, locality, region, country, postalCode
     }
 }
 

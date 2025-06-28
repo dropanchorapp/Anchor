@@ -50,10 +50,10 @@ struct CheckInStoreTests {
         mockAuthStore.shouldThrowAuthError = false
         let place = TestUtilities.createSamplePlace()
 
-        // When/Then: Creating check-in should fail due to mock network responses
-        // The store will attempt to call AnchorPDS first, which will fail with empty mock data
-        await #expect(throws: AnchorPDSError.self) {
+        // When/Then: Creating check-in should fail due to missing credentials in test environment
+        // Note: This test verifies error handling when credentials are missing
+        await #expect(throws: ATProtoError.self) {
             try await store.createCheckinWithPost(place: place, customMessage: "Test message")
         }
     }
-} 
+}

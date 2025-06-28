@@ -30,7 +30,7 @@ import Security
 /// Protocol for abstracting credential storage, enabling dependency injection and testing
 @MainActor
 public protocol CredentialsStorageProtocol {
-    func save(_ credentials: AuthCredentials) async throws
+    func save(_ credentials: AuthCredentialsProtocol) async throws
     func load() async -> AuthCredentials?
     func clear() async throws
 }
@@ -42,13 +42,13 @@ public protocol CredentialsStorageProtocol {
 public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
     private let service: String
     private let account: String
-    
+
     public init(service: String = "com.anchor.app.credentials", account: String = "bluesky-auth") {
         self.service = service
         self.account = account
     }
-    
-    public func save(_ credentials: AuthCredentials) async throws {
+
+    public func save(_ credentials: AuthCredentialsProtocol) async throws {
         // Encode credentials to JSON
         let credentialsData = CredentialsData(
             handle: credentials.handle,
@@ -56,11 +56,11 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             refreshToken: credentials.refreshToken,
             did: credentials.did,
             expiresAt: credentials.expiresAt,
-            createdAt: credentials.createdAt
+            createdAt: Date() // Use current time for created timestamp
         )
-        
+
         let data = try JSONEncoder().encode(credentialsData)
-        
+
         // Delete any existing keychain item
         let deleteQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -68,7 +68,7 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             kSecAttrAccount as String: account
         ]
         SecItemDelete(deleteQuery as CFDictionary)
-        
+
         // Add new keychain item
         let addQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -77,15 +77,15 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
-        
+
         let status = SecItemAdd(addQuery as CFDictionary, nil)
         guard status == errSecSuccess else {
             throw CredentialsStorageError.keychainError(status)
         }
-        
+
         print("🔐 Saved credentials to keychain for @\(credentials.handle)")
     }
-    
+
     public func load() async -> AuthCredentials? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -94,16 +94,16 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
-        
+
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
+
         guard status == errSecSuccess,
               let data = result as? Data else {
             print("🔐 No credentials found in keychain")
             return nil
         }
-        
+
         do {
             let credentialsData = try JSONDecoder().decode(CredentialsData.self, from: data)
             let credentials = AuthCredentials(
@@ -113,9 +113,9 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
                 did: credentialsData.did,
                 expiresAt: credentialsData.expiresAt
             )
-            
+
             print("🔐 Loaded credentials from keychain for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
-            
+
             // Check if credentials are still valid
             if credentials.isValid {
                 return credentials
@@ -130,14 +130,14 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             return nil
         }
     }
-    
+
     public func clear() async throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
-        
+
         let status = SecItemDelete(query as CFDictionary)
         if status == errSecSuccess {
             print("🔐 Cleared credentials from keychain")
@@ -157,14 +157,23 @@ public final class SwiftDataCredentialsStorage: CredentialsStorageProtocol {
         self.context = context
     }
 
-    public func save(_ credentials: AuthCredentials) async throws {
+    public func save(_ credentials: AuthCredentialsProtocol) async throws {
         // Clear any existing credentials first
         try await clear()
-        
+
+        // Convert protocol to concrete SwiftData model for persistence
+        let authCredentials = AuthCredentials(
+            handle: credentials.handle,
+            accessToken: credentials.accessToken,
+            refreshToken: credentials.refreshToken,
+            did: credentials.did,
+            expiresAt: credentials.expiresAt
+        )
+
         // Insert into SwiftData
-        context.insert(credentials)
+        context.insert(authCredentials)
         try context.save()
-        
+
         print("💾 Saved credentials to SwiftData (warning: will be lost on rebuild)")
     }
 
@@ -221,8 +230,15 @@ public final class InMemoryCredentialsStorage: CredentialsStorageProtocol {
 
     public init() {}
 
-    public func save(_ credentials: AuthCredentials) async throws {
-        self.credentials = credentials
+    public func save(_ credentials: AuthCredentialsProtocol) async throws {
+        // Store as concrete AuthCredentials for simplicity in tests
+        self.credentials = AuthCredentials(
+            handle: credentials.handle,
+            accessToken: credentials.accessToken,
+            refreshToken: credentials.refreshToken,
+            did: credentials.did,
+            expiresAt: credentials.expiresAt
+        )
     }
 
     public func load() async -> AuthCredentials? {
@@ -249,7 +265,7 @@ private struct CredentialsData: Codable {
 /// Errors that can occur during credentials storage operations
 public enum CredentialsStorageError: Error, LocalizedError {
     case keychainError(OSStatus)
-    
+
     public var errorDescription: String? {
         switch self {
         case .keychainError(let status):

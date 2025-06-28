@@ -7,13 +7,13 @@ let package = Package(
     name: "AnchorKit",
     platforms: [
         .macOS(.v14),
-        .iOS(.v18),
+        .iOS(.v18)
     ],
     products: [
         .library(
             name: "AnchorKit",
             targets: ["AnchorKit"]
-        ),
+        )
     ],
     dependencies: [
         // No external dependencies - using built-in frameworks
@@ -31,6 +31,6 @@ let package = Package(
             name: "AnchorKitTests",
             dependencies: ["AnchorKit"],
             path: "Tests/AnchorKitTests"
-        ),
+        )
     ]
 )

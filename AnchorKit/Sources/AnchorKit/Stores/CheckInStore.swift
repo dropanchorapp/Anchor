@@ -107,4 +107,4 @@ public final class CheckInStore: CheckInStoreProtocol {
     public func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet]) {
         richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
     }
-} 
+}

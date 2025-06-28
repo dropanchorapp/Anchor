@@ -6,8 +6,7 @@ import Foundation
 public protocol ATProtoClientProtocol: Sendable {
     func login(request: ATProtoLoginRequest) async throws -> ATProtoLoginResponse
     func refresh(request: ATProtoRefreshRequest) async throws -> ATProtoRefreshResponse
-    func createPost(request: ATProtoCreatePostRequest, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse
-    func createCheckin(request: ATProtoCreateCheckinRequest, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse
+    func createPost(request: ATProtoCreatePostRequest, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse
 }
 
 // MARK: - AT Protocol Client Implementation
@@ -64,7 +63,7 @@ public final class ATProtoClient: ATProtoClientProtocol {
 
     // MARK: - Record Creation
 
-    public func createPost(request: ATProtoCreatePostRequest, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse {
+    public func createPost(request: ATProtoCreatePostRequest, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse {
         let httpRequest = try buildAuthenticatedRequest(
             endpoint: "/xrpc/com.atproto.repo.createRecord",
             method: "POST",
@@ -77,24 +76,6 @@ public final class ATProtoClient: ATProtoClientProtocol {
         // Debug response
         if response is HTTPURLResponse {}
 
-        try validateResponse(response)
-
-        do {
-            return try JSONDecoder().decode(ATProtoCreateRecordResponse.self, from: data)
-        } catch {
-            throw ATProtoError.decodingError(error)
-        }
-    }
-
-    public func createCheckin(request: ATProtoCreateCheckinRequest, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse {
-        let httpRequest = try buildAuthenticatedRequest(
-            endpoint: "/xrpc/com.atproto.repo.createRecord",
-            method: "POST",
-            body: request,
-            accessToken: credentials.accessToken
-        )
-
-        let (data, response) = try await session.data(for: httpRequest)
         try validateResponse(response)
 
         do {

@@ -4,7 +4,7 @@ import Foundation
 
 @MainActor
 public protocol BlueskyPostServiceProtocol {
-    func createPost(text: String, credentials: AuthCredentials, embedRecord: ATProtoCreateRecordResponse?) async throws -> ATProtoCreateRecordResponse
+    func createPost(text: String, credentials: AuthCredentialsProtocol, embedRecord: ATProtoCreateRecordResponse?) async throws -> ATProtoCreateRecordResponse
 }
 
 // MARK: - Bluesky Post Service
@@ -25,7 +25,7 @@ public final class BlueskyPostService: BlueskyPostServiceProtocol {
 
     // MARK: - Post Creation
 
-    public func createPost(text: String, credentials: AuthCredentials, embedRecord: ATProtoCreateRecordResponse? = nil) async throws -> ATProtoCreateRecordResponse {
+    public func createPost(text: String, credentials: AuthCredentialsProtocol, embedRecord: ATProtoCreateRecordResponse? = nil) async throws -> ATProtoCreateRecordResponse {
         // Detect facets in the text
         let facets = richTextProcessor.detectFacets(in: text)
 

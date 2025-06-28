@@ -58,7 +58,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
         } else {
             AnchorConfig.shared.defaultCheckInMessage
         }
-        
+
         text = messageToUse + "\n\n"
 
         // Detect facets in the message
@@ -270,7 +270,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
 
         return true
     }
-    
+
     /// Converts regular text to Unicode italic characters
     private func convertToItalic(_ text: String) -> String {
         let italicMap: [Character: Character] = [
@@ -279,21 +279,21 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
             "i": "𝑖", "j": "𝑗", "k": "𝑘", "l": "𝑙", "m": "𝑚", "n": "𝑛", "o": "𝑜", "p": "𝑝",
             "q": "𝑞", "r": "𝑟", "s": "𝑠", "t": "𝑡", "u": "𝑢", "v": "𝑣", "w": "𝑤", "x": "𝑥",
             "y": "𝑦", "z": "𝑧",
-            
+
             // Uppercase letters
             "A": "𝐴", "B": "𝐵", "C": "𝐶", "D": "𝐷", "E": "𝐸", "F": "𝐹", "G": "𝐺", "H": "𝐻",
             "I": "𝐼", "J": "𝐽", "K": "𝐾", "L": "𝐿", "M": "𝑀", "N": "𝑁", "O": "𝑂", "P": "𝑃",
             "Q": "𝑄", "R": "𝑅", "S": "𝑆", "T": "𝑇", "U": "𝑈", "V": "𝑉", "W": "𝑊", "X": "𝑋",
             "Y": "𝑌", "Z": "𝑍",
-            
+
             // Numbers
             "0": "𝟢", "1": "𝟣", "2": "𝟤", "3": "𝟥", "4": "𝟦", "5": "𝟧", "6": "𝟨", "7": "𝟩",
             "8": "𝟪", "9": "𝟫"
         ]
-        
+
         return String(text.map { italicMap[$0] ?? $0 })
     }
-    
+
     /// Converts regular text to Unicode bold italic characters
     private func convertToBoldItalic(_ text: String) -> String {
         let boldItalicMap: [Character: Character] = [
@@ -302,18 +302,18 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
             "i": "𝒊", "j": "𝒋", "k": "𝒌", "l": "𝒍", "m": "𝒎", "n": "𝒏", "o": "𝒐", "p": "𝒑",
             "q": "𝒒", "r": "𝒓", "s": "𝒔", "t": "𝒕", "u": "𝒖", "v": "𝒗", "w": "𝒘", "x": "𝒙",
             "y": "𝒚", "z": "𝒛",
-            
+
             // Uppercase letters
             "A": "𝑨", "B": "𝑩", "C": "𝑪", "D": "𝑫", "E": "𝑬", "F": "𝑭", "G": "𝑮", "H": "𝑯",
             "I": "𝑰", "J": "𝑱", "K": "𝑲", "L": "𝑳", "M": "𝑴", "N": "𝑵", "O": "𝑶", "P": "𝑷",
             "Q": "𝑸", "R": "𝑹", "S": "𝑺", "T": "𝑻", "U": "𝑼", "V": "𝑽", "W": "𝑾", "X": "𝑿",
             "Y": "𝒀", "Z": "𝒁",
-            
+
             // Numbers
             "0": "𝟎", "1": "𝟏", "2": "𝟐", "3": "𝟑", "4": "𝟒", "5": "𝟓", "6": "𝟔", "7": "𝟕",
             "8": "𝟖", "9": "𝟗"
         ]
-        
+
         return String(text.map { boldItalicMap[$0] ?? $0 })
     }
 }

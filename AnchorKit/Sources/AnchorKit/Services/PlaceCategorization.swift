@@ -1,20 +1,20 @@
 import Foundation
 
 public struct PlaceCategorization {
-    
+
     // MARK: - OpenStreetMap Category Definitions
-    
+
     public static let amenityCategories: [String] = [
         // Food & Drink
         "restaurant",
-        "cafe", 
+        "cafe",
         "bar",
         "pub",
         "fast_food",
         "food_court",
         "ice_cream",
         "biergarten",
-        
+
         // Education
         "school",
         "university",
@@ -23,7 +23,7 @@ public struct PlaceCategorization {
         "driving_school",
         "language_school",
         "music_school",
-        
+
         // Healthcare
         "hospital",
         "clinic",
@@ -31,7 +31,7 @@ public struct PlaceCategorization {
         "dentist",
         "veterinary",
         "nursing_home",
-        
+
         // Entertainment & Culture
         "cinema",
         "theatre",
@@ -41,7 +41,7 @@ public struct PlaceCategorization {
         "community_centre",
         "exhibition_centre",
         "music_venue",
-        
+
         // Transportation
         "bus_station",
         "taxi",
@@ -51,7 +51,7 @@ public struct PlaceCategorization {
         "car_wash",
         "parking",
         "bicycle_parking",
-        
+
         // Public Services
         "townhall",
         "courthouse",
@@ -61,7 +61,7 @@ public struct PlaceCategorization {
         "bank",
         "bureau_de_change",
         "atm",
-        
+
         // Facilities
         "toilets",
         "drinking_water",
@@ -71,7 +71,7 @@ public struct PlaceCategorization {
         "waste_disposal",
         "recycling"
     ]
-    
+
     public static let leisureCategories: [String] = [
         // Sports & Fitness
         "fitness_centre",
@@ -86,7 +86,7 @@ public struct PlaceCategorization {
         "bowling_alley",
         "ice_rink",
         "stadium",
-        
+
         // Entertainment & Gaming
         "amusement_arcade",
         "escape_game",
@@ -95,7 +95,7 @@ public struct PlaceCategorization {
         "dance",
         "adult_gaming_centre",
         "miniature_golf",
-        
+
         // Relaxation & Nature
         "park",
         "beach_resort",
@@ -106,14 +106,14 @@ public struct PlaceCategorization {
         "sauna",
         "picnic_site",
         "playground",
-        
+
         // Marine & Adventure
         "marina",
         "slipway",
         "summer_camp",
         "high_ropes"
     ]
-    
+
     public static let shopCategories: [String] = [
         // Food & Beverage
         "supermarket",
@@ -129,7 +129,7 @@ public struct PlaceCategorization {
         "seafood",
         "spices",
         "tea",
-        
+
         // Clothing & Fashion
         "clothes",
         "shoes",
@@ -139,7 +139,7 @@ public struct PlaceCategorization {
         "fashion_accessories",
         "bag",
         "watches",
-        
+
         // Electronics & Technology
         "electronics",
         "computer",
@@ -147,7 +147,7 @@ public struct PlaceCategorization {
         "camera",
         "hifi",
         "video_games",
-        
+
         // Home & Lifestyle
         "furniture",
         "appliance",
@@ -160,7 +160,7 @@ public struct PlaceCategorization {
         "curtain",
         "florist",
         "garden_centre",
-        
+
         // Books & Media
         "books",
         "stationery",
@@ -168,7 +168,7 @@ public struct PlaceCategorization {
         "art",
         "music",
         "video",
-        
+
         // Health & Beauty
         "cosmetics",
         "hairdresser",
@@ -176,7 +176,7 @@ public struct PlaceCategorization {
         "massage",
         "optician",
         "medical_supply",
-        
+
         // Sports & Outdoor
         "sports",
         "outdoor",
@@ -184,13 +184,13 @@ public struct PlaceCategorization {
         "fishing",
         "hunting",
         "ski",
-        
+
         // Vehicles
         "car",
         "car_parts",
         "motorcycle",
         "tyres",
-        
+
         // Specialty & Services
         "gift",
         "lottery",
@@ -203,7 +203,7 @@ public struct PlaceCategorization {
         "dry_cleaning",
         "funeral_directors"
     ]
-    
+
     public static let tourismCategories: [String] = [
         // Accommodations
         "hotel",
@@ -216,7 +216,7 @@ public struct PlaceCategorization {
         "caravan_site",
         "alpine_hut",
         "wilderness_hut",
-        
+
         // Attractions
         "attraction",
         "museum",
@@ -226,15 +226,15 @@ public struct PlaceCategorization {
         "theme_park",
         "viewpoint",
         "artwork",
-        
+
         // Services
         "information",
         "picnic_site",
         "trail_riding_station"
     ]
-    
+
     // MARK: - Category Grouping for UI
-    
+
     public enum CategoryGroup: String, CaseIterable {
         case foodAndDrink = "Food & Drink"
         case entertainment = "Entertainment"
@@ -247,7 +247,7 @@ public struct PlaceCategorization {
         case culture = "Culture"
         case health = "Health"
         case education = "Education"
-        
+
         public var icon: String {
             switch self {
             case .foodAndDrink: return "🍽️"
@@ -264,11 +264,11 @@ public struct PlaceCategorization {
             }
         }
     }
-    
+
     // MARK: - Category to Group Mapping
-    
+
     public static func getCategoryGroup(for tag: String, value: String) -> CategoryGroup? {
-        
+
         switch tag {
         case "amenity":
             switch value {
@@ -287,7 +287,7 @@ public struct PlaceCategorization {
             default:
                 return .services
             }
-            
+
         case "leisure":
             switch value {
             case "fitness_centre", "sports_centre", "sports_hall", "swimming_pool", "pitch", "track", "golf_course", "climbing", "horse_riding", "bowling_alley", "ice_rink", "stadium":
@@ -299,7 +299,7 @@ public struct PlaceCategorization {
             default:
                 return .entertainment
             }
-            
+
         case "shop":
             switch value {
             case "supermarket", "convenience", "bakery", "butcher", "greengrocer", "wine", "coffee", "deli", "confectionery", "cheese", "seafood", "spices", "tea":
@@ -311,7 +311,7 @@ public struct PlaceCategorization {
             default:
                 return .shopping
             }
-            
+
         case "tourism":
             switch value {
             case "hotel", "motel", "guest_house", "hostel", "chalet", "apartment", "camp_site", "caravan_site", "alpine_hut", "wilderness_hut":
@@ -323,17 +323,17 @@ public struct PlaceCategorization {
             default:
                 return .services
             }
-            
+
         default:
             return nil
         }
     }
-    
+
     // MARK: - Icon Mapping
-    
+
     public static func getIcon(for tag: String, value: String) -> String {
         let fullTag = "\(tag)=\(value)"
-        
+
         switch fullTag {
         // Food & Drink
         case "amenity=restaurant", "amenity=fast_food": return "🍽️"
@@ -343,7 +343,7 @@ public struct PlaceCategorization {
         case "amenity=biergarten": return "🍻"
         case "shop=bakery": return "🥖"
         case "shop=wine": return "🍷"
-        
+
         // Entertainment
         case "amenity=cinema": return "🎬"
         case "amenity=theatre": return "🎭"
@@ -352,7 +352,7 @@ public struct PlaceCategorization {
         case "leisure=bowling_alley": return "🎳"
         case "leisure=amusement_arcade": return "🕹️"
         case "tourism=theme_park": return "🎢"
-        
+
         // Sports & Fitness
         case "leisure=fitness_centre", "leisure=sports_centre": return "🏋️‍♂️"
         case "leisure=swimming_pool": return "🏊‍♂️"
@@ -360,7 +360,7 @@ public struct PlaceCategorization {
         case "leisure=golf_course": return "⛳"
         case "leisure=stadium": return "🏟️"
         case "leisure=ice_rink": return "⛸️"
-        
+
         // Shopping
         case "shop=supermarket": return "🛒"
         case "shop=clothes": return "👕"
@@ -369,104 +369,104 @@ public struct PlaceCategorization {
         case "shop=electronics": return "📱"
         case "shop=jewelry": return "💍"
         case "shop=florist": return "💐"
-        
+
         // Accommodation
         case "tourism=hotel": return "🏨"
         case "tourism=hostel": return "🏠"
         case "tourism=camp_site": return "🏕️"
-        
+
         // Transportation
         case "amenity=bus_station": return "🚌"
         case "amenity=fuel": return "⛽"
         case "amenity=parking": return "🅿️"
         case "amenity=bicycle_parking": return "🚲"
-        
+
         // Culture & Education
         case "tourism=museum", "amenity=library": return "🏛️"
         case "tourism=gallery": return "🎨"
         case "amenity=school", "amenity=university": return "🎓"
-        
+
         // Health
         case "amenity=hospital": return "🏥"
         case "amenity=pharmacy": return "💊"
         case "amenity=dentist": return "🦷"
-        
+
         // Nature
         case "leisure=park": return "🌳"
         case "leisure=beach_resort": return "🏖️"
         case "tourism=viewpoint": return "🔭"
         case "leisure=playground": return "🛝"
-        
+
         // Services
         case "amenity=bank": return "🏦"
         case "amenity=post_office": return "📮"
         case "amenity=police": return "👮‍♂️"
         case "amenity=fire_station": return "🚒"
-        
+
         default: return "📍"
         }
     }
-    
+
     // MARK: - Complete Category List Generation
-    
+
     public static func getAllCategories() -> [String] {
         var allCategories: [String] = []
-        
+
         // Add all amenity categories
         allCategories.append(contentsOf: amenityCategories.map { "amenity=\($0)" })
-        
+
         // Add all leisure categories
         allCategories.append(contentsOf: leisureCategories.map { "leisure=\($0)" })
-        
-        // Add all shop categories  
+
+        // Add all shop categories
         allCategories.append(contentsOf: shopCategories.map { "shop=\($0)" })
-        
+
         // Add all tourism categories
         allCategories.append(contentsOf: tourismCategories.map { "tourism=\($0)" })
-        
+
         return allCategories.sorted()
     }
-    
+
     // MARK: - Priority Categories for Performance
-    
+
     public static func getPrioritizedCategories() -> [String] {
         // Most commonly visited places - prioritize these in queries
         [
             // Food & Drink (most common check-ins)
             "amenity=restaurant",
-            "amenity=cafe", 
+            "amenity=cafe",
             "amenity=bar",
             "amenity=pub",
             "amenity=fast_food",
             "shop=supermarket",
             "shop=convenience",
-            
+
             // Entertainment
             "amenity=cinema",
             "amenity=theatre",
             "leisure=bowling_alley",
-            
+
             // Sports & Fitness
             "leisure=fitness_centre",
             "leisure=sports_centre",
             "leisure=swimming_pool",
             "leisure=climbing",
-            
+
             // Shopping
             "shop=clothes",
             "shop=electronics",
             "shop=books",
-            
+
             // Tourism
             "tourism=attraction",
             "tourism=museum",
             "tourism=hotel",
             "tourism=viewpoint",
-            
+
             // Nature
             "leisure=park",
             "leisure=playground",
-            
+
             // Services
             "amenity=bank",
             "amenity=pharmacy",

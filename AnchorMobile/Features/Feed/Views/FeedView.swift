@@ -142,4 +142,115 @@ struct FeedView: View {
             // Error is now handled by FeedStore and displayed in UI
         }
     }
-} 
+}
+
+// MARK: - Previews
+#Preview("Empty State - Not Authenticated") {
+    let authStore = AuthStore(storage: InMemoryCredentialsStorage())
+    FeedView()
+        .environment(authStore)
+        .environment(CheckInStore(authStore: authStore))
+}
+
+#Preview("Empty State - No Posts") {
+    let authStore = AuthStore(storage: InMemoryCredentialsStorage())
+    // Simulate authenticated state with valid credentials
+    Task {
+        try? await authStore.authenticate(handle: "preview.user.bsky.social", appPassword: "preview-app-password")
+    }
+    
+    return FeedView()
+        .environment(authStore)
+        .environment(CheckInStore(authStore: authStore))
+}
+
+#Preview("Filled State") {
+    let authStore = AuthStore(storage: InMemoryCredentialsStorage())
+    
+    // Create a simple view that mimics FeedView but with hardcoded posts
+    return NavigationView {
+        ScrollView {
+            LazyVStack(spacing: 8) {
+                FeedPostView(post: mockCoffeeShopPost)
+                    .padding(.horizontal)
+                
+                FeedPostView(post: mockRestaurantPost)
+                    .padding(.horizontal)
+                
+                FeedPostView(post: mockClimbingPost)
+                    .padding(.horizontal)
+            }
+            .padding(.top)
+        }
+        .navigationTitle("Feed")
+    }
+    .environment(authStore)
+    .environment(CheckInStore(authStore: authStore))
+}
+
+// MARK: - Mock Data for FeedView Preview
+private let mockCoffeeShopPost = FeedPost(
+    id: "at://did:plc:preview1/app.bsky.feed.post/1",
+    author: FeedAuthor(
+        did: "did:plc:preview1",
+        handle: "coffee.lover.bsky.social",
+        displayName: "Coffee Enthusiast",
+        avatar: nil
+    ),
+    record: ATProtoRecord(
+        text: "Perfect espresso and cozy atmosphere ☕️",
+        createdAt: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date()
+    ),
+    checkinRecord: AnchorPDSCheckinRecord(
+        text: "Perfect espresso and cozy atmosphere ☕️",
+        createdAt: ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date()),
+        locations: [
+            .address(CommunityAddressLocation(name: "Blue Bottle Coffee"))
+        ],
+        categoryIcon: "☕️"
+    )
+)
+
+private let mockRestaurantPost = FeedPost(
+    id: "at://did:plc:preview2/app.bsky.feed.post/2",
+    author: FeedAuthor(
+        did: "did:plc:preview2",
+        handle: "foodie.adventures.bsky.social",
+        displayName: "Sarah Chen",
+        avatar: nil
+    ),
+    record: ATProtoRecord(
+        text: "Amazing dim sum brunch! 🥟",
+        createdAt: Calendar.current.date(byAdding: .hour, value: -3, to: Date()) ?? Date()
+    ),
+    checkinRecord: AnchorPDSCheckinRecord(
+        text: "Amazing dim sum brunch! 🥟",
+        createdAt: ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .hour, value: -3, to: Date()) ?? Date()),
+        locations: [
+            .address(CommunityAddressLocation(name: "Golden Dragon Restaurant"))
+        ],
+        categoryIcon: "🍽️"
+    )
+)
+
+private let mockClimbingPost = FeedPost(
+    id: "at://did:plc:preview3/app.bsky.feed.post/3",
+    author: FeedAuthor(
+        did: "did:plc:preview3",
+        handle: "mountain.goat.bsky.social",
+        displayName: "Alex Rodriguez",
+        avatar: nil
+    ),
+    record: ATProtoRecord(
+        text: "Sent my project! 🧗‍♂️",
+        createdAt: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+    ),
+    checkinRecord: AnchorPDSCheckinRecord(
+        text: "Sent my project! 🧗‍♂️",
+        createdAt: ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()),
+        locations: [
+            .address(CommunityAddressLocation(name: "Yosemite Valley"))
+        ],
+        categoryIcon: "🧗‍♂️"
+    )
+)

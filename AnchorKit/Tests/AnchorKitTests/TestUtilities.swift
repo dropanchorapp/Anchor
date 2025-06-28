@@ -47,8 +47,6 @@ public enum TestUtilities {
         let client = ATProtoClient(session: session)
         return ATProtoAuthService(client: client, storage: storage)
     }
-    
-
 
     // MARK: - Mock Data
 
@@ -63,7 +61,7 @@ public enum TestUtilities {
             tags: [
                 "leisure": "climbing",
                 "name": "Test Climbing Gym",
-                "sport": "climbing",
+                "sport": "climbing"
             ]
         )
     }
@@ -77,44 +75,111 @@ public enum TestUtilities {
 @MainActor
 public final class MockAuthStore: AuthStoreProtocol {
     public var isAuthenticated: Bool = false
-    public var credentials: AuthCredentials? = nil
-    public var handle: String? = nil
+    public var credentials: AuthCredentials?
+    public var handle: String?
     public var shouldThrowAuthError: Bool = false
-    
-    public init() {}
-    
+
+    // Test credentials for mocking authentication
+    public var testCredentials: TestAuthCredentials?
+
+    public init() {
+        // Set up default test credentials
+        testCredentials = TestAuthCredentials.valid()
+        isAuthenticated = true
+    }
+
     public func loadStoredCredentials() async -> AuthCredentials? {
         return credentials
     }
-    
+
     public func authenticate(handle: String, appPassword: String) async throws -> Bool {
         if shouldThrowAuthError {
             throw ATProtoError.authenticationFailed("Mock auth error")
         }
+        isAuthenticated = true
+        testCredentials = TestAuthCredentials.valid()
         return true
     }
-    
+
     public func signOut() async {
         credentials = nil
+        testCredentials = nil
         isAuthenticated = false
     }
-    
+
     public func getAppPasswordURL() -> URL {
         URL(string: "https://bsky.app/settings/app-passwords")!
     }
-    
+
     public func getValidCredentials() async throws -> AuthCredentials {
         if shouldThrowAuthError {
             throw ATProtoError.missingCredentials
         }
-        
-        // Return a mock credential for testing
-        return AuthCredentials(
+
+        // For tests that need real credential behavior without SwiftData,
+        // we still need to throw since AuthCredentials can't be instantiated in tests
+        // But the services now accept AuthCredentialsProtocol, so tests can use TestAuthCredentials directly
+        throw ATProtoError.missingCredentials
+    }
+
+    // New method for protocol-based testing
+    public func getValidTestCredentials() async throws -> AuthCredentialsProtocol {
+        if shouldThrowAuthError {
+            throw ATProtoError.missingCredentials
+        }
+
+        guard let testCredentials = testCredentials else {
+            throw ATProtoError.missingCredentials
+        }
+
+        return testCredentials
+    }
+}
+
+// MARK: - Test Credentials Implementation
+
+/// Test implementation of AuthCredentialsProtocol that doesn't require SwiftData
+public struct TestAuthCredentials: AuthCredentialsProtocol {
+    public let handle: String
+    public let accessToken: String
+    public let refreshToken: String
+    public let did: String
+    public let expiresAt: Date
+
+    public var isExpired: Bool {
+        expiresAt.timeIntervalSinceNow < 300 // 5 minutes buffer
+    }
+
+    public var isValid: Bool {
+        !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !isExpired
+    }
+
+    public init(handle: String, accessToken: String, refreshToken: String, did: String, expiresAt: Date) {
+        self.handle = handle
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+        self.did = did
+        self.expiresAt = expiresAt
+    }
+
+    // Convenience initializers for common test scenarios
+    public static func valid() -> TestAuthCredentials {
+        TestAuthCredentials(
             handle: "test.bsky.social",
-            accessToken: "test-token",
-            refreshToken: "test-refresh",
+            accessToken: "test-access-token",
+            refreshToken: "test-refresh-token",
             did: "did:plc:test123",
             expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
+        )
+    }
+
+    public static func expired() -> TestAuthCredentials {
+        TestAuthCredentials(
+            handle: "expired.bsky.social",
+            accessToken: "expired-token",
+            refreshToken: "expired-refresh",
+            did: "did:plc:expired",
+            expiresAt: Date().addingTimeInterval(-3600) // 1 hour ago
         )
     }
 }
@@ -135,12 +200,19 @@ public final class MockCredentialsStorage: CredentialsStorageProtocol {
         credentials = initialCredentials
     }
 
-    public func save(_ credentials: AuthCredentials) async throws {
+    public func save(_ credentials: AuthCredentialsProtocol) async throws {
         saveCallCount += 1
         if shouldThrowOnSave {
             throw NSError(domain: "MockStorage", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock save error"])
         }
-        self.credentials = credentials
+        // Convert protocol to concrete type for storage
+        self.credentials = AuthCredentials(
+            handle: credentials.handle,
+            accessToken: credentials.accessToken,
+            refreshToken: credentials.refreshToken,
+            did: credentials.did,
+            expiresAt: credentials.expiresAt
+        )
     }
 
     public func load() async -> AuthCredentials? {

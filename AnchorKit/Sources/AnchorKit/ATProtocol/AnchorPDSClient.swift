@@ -90,8 +90,8 @@ public struct AnchorPDSCheckinRecord: Codable, Sendable {
     }
 
     public init(
-        text: String, 
-        createdAt: String, 
+        text: String,
+        createdAt: String,
         locations: [LocationItem]? = nil,
         category: String? = nil,
         categoryGroup: String? = nil,
@@ -189,9 +189,9 @@ public enum AnchorPDSError: LocalizedError, Sendable {
 
 @MainActor
 public protocol AnchorPDSClientProtocol: Sendable {
-    func createRecord(request: AnchorPDSCreateRecordRequest, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse
-    func listCheckins(user: String?, limit: Int, cursor: String?, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse
-    func getGlobalFeed(limit: Int, cursor: String?, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse
+    func createRecord(request: AnchorPDSCreateRecordRequest, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse
+    func listCheckins(user: String?, limit: Int, cursor: String?, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse
+    func getGlobalFeed(limit: Int, cursor: String?, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse
 }
 
 // MARK: - AnchorPDS Client Implementation
@@ -212,7 +212,7 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
 
     // MARK: - Record Creation
 
-    public func createRecord(request: AnchorPDSCreateRecordRequest, credentials: AuthCredentials) async throws -> ATProtoCreateRecordResponse {
+    public func createRecord(request: AnchorPDSCreateRecordRequest, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse {
         print("🔍 AnchorPDS Request: \(request)")
 
         let httpRequest = try buildAuthenticatedRequest(
@@ -240,7 +240,7 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
 
     // MARK: - Feed Operations
 
-    public func listCheckins(user: String? = nil, limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func listCheckins(user: String? = nil, limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse {
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(min(limit, 100)))
         ]
@@ -271,7 +271,7 @@ public final class AnchorPDSClient: AnchorPDSClientProtocol {
         }
     }
 
-    public func getGlobalFeed(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentials) async throws -> AnchorPDSFeedResponse {
+    public func getGlobalFeed(limit: Int = AnchorConfig.shared.maxNearbyPlaces, cursor: String? = nil, credentials: AuthCredentialsProtocol) async throws -> AnchorPDSFeedResponse {
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(min(limit, 100)))
         ]

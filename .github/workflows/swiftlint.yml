@@ -19,11 +19,8 @@ jobs:
       run: |
         brew install swiftlint
         
-    - name: Run SwiftLint on Production Code
+    - name: Run SwiftLint on All Swift Code
       run: |
-        # Lint AnchorKit sources
-        cd AnchorKit
-        swiftlint lint Sources
-        # Lint main Anchor app
-        cd ../Anchor
-        swiftlint lint . --config ../.swiftlint.yml
+        # Lint all Swift files from project root using our configuration
+        # This will lint Anchor/, AnchorKit/Sources/, and AnchorMobile/ as specified in .swiftlint.yml
+        swiftlint lint --config .swiftlint.yml

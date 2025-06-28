@@ -5,6 +5,7 @@
 included:
   - Anchor
   - AnchorKit/Sources
+  - AnchorMobile
 
 # Paths to ignore during linting.
 excluded:
@@ -27,6 +28,7 @@ excluded:
   - "**/DerivedSources"
   - "**/*Tests*"
   - "**/*Test*"
+  - "**/PlaceCategorization.swift"  # Complex domain logic with acceptable complexity
 
 # Rules to disable
 disabled_rules:
@@ -49,7 +51,7 @@ opt_in_rules:
 
 # Customized rules
 line_length:
-  warning: 140
+  warning: 120  # Match CI expectations
   error: 160
   ignores_urls: true
   ignores_function_declarations: true

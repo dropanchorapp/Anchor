@@ -11,10 +11,13 @@ struct SettingsWindow: View {
 
     @State private var handle = ""
     @State private var appPassword = ""
+    @State private var customPDS = ""
+    @State private var useCustomPDS = false
     @State private var isAuthenticating = false
     @State private var authError: String?
     @State private var showingAuthError = false
     @State private var showingAppPasswordInfo = false
+    @State private var showAdvancedOptions = false
 
     var body: some View {
         NavigationStack {
@@ -157,6 +160,60 @@ struct SettingsWindow: View {
                     .textFieldStyle(.roundedBorder)
             }
 
+            // Advanced Options (collapsible)
+            DisclosureGroup("Advanced Options", isExpanded: $showAdvancedOptions) {
+                VStack(spacing: 6) {
+                    // Auto-detect option (default)
+                    Button(action: { useCustomPDS = false }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: useCustomPDS ? "circle" : "checkmark.circle.fill")
+                                .foregroundStyle(useCustomPDS ? .secondary : Color.blue)
+                            
+                            Text("Auto-detect server")
+                                .font(.caption)
+                                .foregroundStyle(.primary)
+                            
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // Custom PDS option
+                    Button(action: { useCustomPDS = true }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: useCustomPDS ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(useCustomPDS ? Color.blue : .secondary)
+                            
+                            Text("Custom server")
+                                .font(.caption)
+                                .foregroundStyle(.primary)
+                            
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // Custom PDS URL field (shown when custom is selected)
+                    if useCustomPDS {
+                        TextField("https://your-pds.example.com", text: $customPDS)
+                            .textFieldStyle(.roundedBorder)
+                            .autocorrectionDisabled()
+                            .textCase(.lowercase)
+                            .font(.caption)
+                    }
+                }
+                .padding(.top, 4)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .onChange(of: useCustomPDS) { _, newValue in
+                if newValue {
+                    showAdvancedOptions = true
+                }
+            }
+
             Button(action: authenticateWithBluesky) {
                 HStack {
                     if isAuthenticating {
@@ -168,7 +225,7 @@ struct SettingsWindow: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(isAuthenticating || handle.isEmpty || appPassword.isEmpty)
+            .disabled(isAuthenticating || handle.isEmpty || appPassword.isEmpty || (useCustomPDS && customPDS.isEmpty))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("💡 Don't have an app password?")
@@ -229,9 +286,13 @@ struct SettingsWindow: View {
 
         Task {
             do {
+                // Determine PDS URL to use
+                let pdsURL = useCustomPDS ? customPDS.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+                
                 let success = try await authStore.authenticate(
                     handle: handle,
-                    appPassword: appPassword
+                    appPassword: appPassword,
+                    pdsURL: pdsURL
                 )
 
                 await MainActor.run {
@@ -264,6 +325,8 @@ struct SettingsWindow: View {
     private func clearForm() {
         handle = ""
         appPassword = ""
+        customPDS = ""
+        useCustomPDS = false
     }
 }
 

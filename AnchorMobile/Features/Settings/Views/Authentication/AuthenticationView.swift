@@ -12,10 +12,13 @@ struct AuthenticationView: View {
     @Environment(AuthStore.self) private var authStore
     @State private var handle = ""
     @State private var appPassword = ""
+    @State private var customPDS = ""
+    @State private var useCustomPDS = false
     @State private var showingAppPasswordInfo = false
     @State private var showingError = false
     @State private var isLoading = false
     @State private var lastError: String?
+    @State private var showAdvancedOptions = false
     
     var body: some View {
         NavigationView {
@@ -42,7 +45,8 @@ struct AuthenticationView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("App passwords are secure tokens that let Anchor post to your Bluesky account. You can create and manage them in your Bluesky settings.")
+            Text("App passwords are secure tokens that let Anchor post to your Bluesky account. " +
+                 "You can create and manage them in your Bluesky settings.")
         }
         .alert("Authentication Error", isPresented: $showingError) {
             Button("OK") {
@@ -159,6 +163,72 @@ struct AuthenticationView: View {
                     .textFieldStyle(.roundedBorder)
             }
             
+            // Advanced Options (collapsible)
+            DisclosureGroup("Advanced Options", isExpanded: $showAdvancedOptions) {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(spacing: 8) {
+                        // Auto-detect option (default)
+                        Button(action: { useCustomPDS = false }) {
+                            HStack {
+                                Image(systemName: useCustomPDS ? "circle" : "checkmark.circle.fill")
+                                    .foregroundStyle(useCustomPDS ? .secondary : Color.blue)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Auto-detect server")
+                                        .font(.body)
+                                        .foregroundStyle(.primary)
+                                    Text("Discover your home server automatically")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                
+                                Spacer()
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Custom PDS option
+                        Button(action: { useCustomPDS = true }) {
+                            HStack {
+                                Image(systemName: useCustomPDS ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(useCustomPDS ? .blue : .secondary)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Custom server")
+                                        .font(.body)
+                                        .foregroundStyle(.primary)
+                                    Text("Specify your PDS server manually")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                
+                                Spacer()
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Custom PDS URL field (shown when custom is selected)
+                        if useCustomPDS {
+                            TextField("https://your-pds.example.com", text: $customPDS)
+                                .textFieldStyle(.roundedBorder)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .keyboardType(.URL)
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+            }
+            .font(.headline)
+            .foregroundStyle(.primary)
+            .onChange(of: useCustomPDS) { _, newValue in
+                if newValue {
+                    showAdvancedOptions = true
+                }
+            }
+            
             // Sign in button
             Button(action: signIn) {
                 HStack {
@@ -172,14 +242,26 @@ struct AuthenticationView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(isLoading || handle.isEmpty || appPassword.isEmpty)
+            .disabled(isLoading || handle.isEmpty || appPassword.isEmpty || 
+                     (useCustomPDS && customPDS.isEmpty))
             
             // Info text
-            Text("Anchor uses the AT Protocol to securely connect to your Bluesky account. Your credentials are stored locally on your device.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.top)
+            VStack(spacing: 8) {
+                Text("Anchor uses the AT Protocol to securely connect to your account. " +
+                     "Your credentials are stored locally on your device.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                
+                if useCustomPDS {
+                    Text("💡 Custom servers are advanced AT Protocol hosting providers. " +
+                         "Most users should use auto-detect.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(.top)
         }
     }
     
@@ -193,9 +275,13 @@ struct AuthenticationView: View {
         
         Task {
             do {
+                // Determine PDS URL to use
+                let pdsURL = useCustomPDS ? customPDS.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+                
                 let success = try await authStore.authenticate(
                     handle: handle.trimmingCharacters(in: .whitespacesAndNewlines),
-                    appPassword: appPassword
+                    appPassword: appPassword,
+                    pdsURL: pdsURL
                 )
                 
                 if success {

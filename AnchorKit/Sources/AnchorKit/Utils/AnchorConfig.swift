@@ -52,6 +52,25 @@ public final class AnchorConfig: @unchecked Sendable {
     public var pdsTimeoutSeconds: Double {
         5.0
     }
+    
+    // MARK: - DNS Configuration
+    
+    /// Primary DNS-over-HTTPS provider for AT Protocol DNS resolution
+    /// Cloudflare's public DNS service (free for public use)
+    public var primaryDNSOverHTTPSURL: String {
+        "https://cloudflare-dns.com/dns-query"
+    }
+    
+    /// Fallback DNS-over-HTTPS provider
+    /// Google's public DNS service as backup
+    public var fallbackDNSOverHTTPSURL: String {
+        "https://dns.google/dns-query"
+    }
+    
+    /// DNS query timeout in seconds
+    public var dnsTimeoutSeconds: Double {
+        10.0
+    }
 }
 
 // MARK: - PDS Server Model

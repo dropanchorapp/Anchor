@@ -22,10 +22,7 @@ let package = Package(
         .target(
             name: "AnchorKit",
             dependencies: [],
-            path: "Sources/AnchorKit",
-            resources: [
-                .process("Resources")
-            ]
+            path: "Sources/AnchorKit"
         ),
         .testTarget(
             name: "AnchorKitTests",

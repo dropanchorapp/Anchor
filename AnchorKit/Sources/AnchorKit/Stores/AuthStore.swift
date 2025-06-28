@@ -10,6 +10,7 @@ public protocol AuthStoreProtocol {
     var handle: String? { get }
     func loadStoredCredentials() async -> AuthCredentials?
     func authenticate(handle: String, appPassword: String) async throws -> Bool
+    func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool
     func signOut() async
     func getAppPasswordURL() -> URL
     func getValidCredentials() async throws -> AuthCredentials
@@ -77,7 +78,11 @@ public final class AuthStore: AuthStoreProtocol {
     }
 
     public func authenticate(handle: String, appPassword: String) async throws -> Bool {
-        _ = try await authService.authenticate(handle: handle, appPassword: appPassword)
+        return try await authenticate(handle: handle, appPassword: appPassword, pdsURL: nil)
+    }
+
+    public func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool {
+        _ = try await authService.authenticate(handle: handle, appPassword: appPassword, pdsURL: pdsURL)
         await updateAuthenticationState()
         return true
     }

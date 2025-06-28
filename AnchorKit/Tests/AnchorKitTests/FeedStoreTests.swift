@@ -10,6 +10,7 @@ private struct MockAuthCredentials: AuthCredentialsProtocol {
     let accessToken: String
     let refreshToken: String
     let did: String
+    let pdsURL: String
     let expiresAt: Date
 
     var isExpired: Bool {
@@ -17,7 +18,7 @@ private struct MockAuthCredentials: AuthCredentialsProtocol {
     }
 
     var isValid: Bool {
-        !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !isExpired
+        !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !pdsURL.isEmpty && !isExpired
     }
 }
 
@@ -378,6 +379,7 @@ struct FeedStoreTests {
             accessToken: "test-access-token",
             refreshToken: "test-refresh-token",
             did: "did:plc:test123",
+            pdsURL: "https://bsky.social",
             expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
         )
     }

@@ -55,6 +55,7 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             accessToken: credentials.accessToken,
             refreshToken: credentials.refreshToken,
             did: credentials.did,
+            pdsURL: credentials.pdsURL,
             expiresAt: credentials.expiresAt,
             createdAt: Date() // Use current time for created timestamp
         )
@@ -111,6 +112,7 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
                 accessToken: credentialsData.accessToken,
                 refreshToken: credentialsData.refreshToken,
                 did: credentialsData.did,
+                pdsURL: credentialsData.pdsURL,
                 expiresAt: credentialsData.expiresAt
             )
 
@@ -167,6 +169,7 @@ public final class SwiftDataCredentialsStorage: CredentialsStorageProtocol {
             accessToken: credentials.accessToken,
             refreshToken: credentials.refreshToken,
             did: credentials.did,
+            pdsURL: credentials.pdsURL,
             expiresAt: credentials.expiresAt
         )
 
@@ -237,6 +240,7 @@ public final class InMemoryCredentialsStorage: CredentialsStorageProtocol {
             accessToken: credentials.accessToken,
             refreshToken: credentials.refreshToken,
             did: credentials.did,
+            pdsURL: credentials.pdsURL,
             expiresAt: credentials.expiresAt
         )
     }
@@ -258,6 +262,7 @@ private struct CredentialsData: Codable {
     let accessToken: String
     let refreshToken: String
     let did: String
+    let pdsURL: String
     let expiresAt: Date
     let createdAt: Date
 }

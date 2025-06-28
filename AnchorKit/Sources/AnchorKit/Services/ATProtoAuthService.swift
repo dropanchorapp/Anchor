@@ -8,6 +8,7 @@ public protocol ATProtoAuthServiceProtocol {
     var isAuthenticated: Bool { get async }
     var credentials: AuthCredentials? { get }
     func authenticate(handle: String, appPassword: String) async throws -> AuthCredentials
+    func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> AuthCredentials
     func refreshCredentials(_ credentials: AuthCredentialsProtocol) async throws -> AuthCredentials
     func loadStoredCredentials() async -> AuthCredentials?
     func clearCredentials() async
@@ -47,11 +48,29 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
 
     // MARK: - Authentication Methods
 
+    /// Authenticate with automatic PDS discovery
     public func authenticate(handle: String, appPassword: String) async throws -> AuthCredentials {
+        return try await authenticate(handle: handle, appPassword: appPassword, pdsURL: nil)
+    }
+
+    /// Authenticate with specific PDS or auto-discovery
+    /// - Parameters:
+    ///   - handle: User handle (e.g., "user.bsky.social")
+    ///   - appPassword: Application password
+    ///   - pdsURL: Optional specific PDS URL. If nil, will auto-discover from handle
+    public func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> AuthCredentials {
+        // Determine PDS URL: use provided, discover from handle, or fallback to Bluesky
+        let targetPDS = await determinePDS(for: handle, preferredPDS: pdsURL)
+        
+        print("🔐 Attempting authentication on PDS: \(targetPDS)")
+        
+        // Create a client for the target PDS
+        let pdsClient = ATProtoClient(baseURL: targetPDS)
+        
         let request = ATProtoLoginRequest(identifier: handle, password: appPassword)
 
         do {
-            let response = try await client.login(request: request)
+            let response = try await pdsClient.login(request: request)
 
             // Use actual token expiration time from AT Protocol response
             // Default to 1 hour (3600 seconds) if not provided
@@ -62,6 +81,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
                 accessToken: response.accessJwt,
                 refreshToken: response.refreshJwt,
                 did: response.did,
+                pdsURL: targetPDS, // Store the PDS that was used for authentication
                 expiresAt: Date().addingTimeInterval(expirationInterval)
             )
 
@@ -69,11 +89,18 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
             _credentials = newCredentials
             try await storage.save(newCredentials)
 
-            print("✅ Successfully authenticated as @\(newCredentials.handle) (expires in \(expirationInterval / 60) minutes)")
+            print("✅ Successfully authenticated as @\(newCredentials.handle) on \(targetPDS) (expires in \(expirationInterval / 60) minutes)")
             return newCredentials
 
         } catch {
-            print("❌ Authentication failed: \(error)")
+            print("❌ Authentication failed on \(targetPDS): \(error)")
+            
+            // If we tried a custom PDS and it failed, try Bluesky as fallback
+            if targetPDS != AnchorConfig.shared.blueskyPDSURL {
+                print("🔄 Attempting fallback authentication on Bluesky PDS...")
+                return try await authenticateWithFallback(handle: handle, appPassword: appPassword)
+            }
+            
             if let atProtoError = error as? ATProtoError {
                 throw atProtoError
             } else {
@@ -83,10 +110,12 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
     }
 
     public func refreshCredentials(_ credentials: AuthCredentialsProtocol) async throws -> AuthCredentials {
+        // Use the same PDS that was used for original authentication
+        let pdsClient = ATProtoClient(baseURL: credentials.pdsURL)
         let request = ATProtoRefreshRequest(refreshJwt: credentials.refreshToken)
 
         do {
-            let response = try await client.refresh(request: request)
+            let response = try await pdsClient.refresh(request: request)
 
             // Use actual token expiration time from AT Protocol response
             // Default to 1 hour (3600 seconds) if not provided
@@ -97,6 +126,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
                 accessToken: response.accessJwt,
                 refreshToken: response.refreshJwt,
                 did: credentials.did,
+                pdsURL: credentials.pdsURL, // Keep the same PDS
                 expiresAt: Date().addingTimeInterval(expirationInterval)
             )
 
@@ -104,11 +134,11 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
             _credentials = newCredentials
             try await storage.save(newCredentials)
 
-            print("✅ Successfully refreshed credentials for @\(newCredentials.handle) (expires in \(expirationInterval / 60) minutes)")
+            print("✅ Successfully refreshed credentials for @\(newCredentials.handle) on \(credentials.pdsURL) (expires in \(expirationInterval / 60) minutes)")
             return newCredentials
 
         } catch {
-            print("❌ Failed to refresh credentials: \(error)")
+            print("❌ Failed to refresh credentials on \(credentials.pdsURL): \(error)")
             if let atProtoError = error as? ATProtoError {
                 throw atProtoError
             } else {
@@ -122,7 +152,7 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         _credentials = loadedCredentials
 
         if let credentials = loadedCredentials {
-            print("🔑 Loaded stored credentials for @\(credentials.handle)")
+            print("🔑 Loaded stored credentials for @\(credentials.handle) (PDS: \(credentials.pdsURL))")
         } else {
             print("🔑 No stored credentials found")
         }
@@ -136,5 +166,62 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         }
         _credentials = nil
         print("🗑️ Cleared stored credentials")
+    }
+    
+    // MARK: - Private Methods
+    
+    /// Determine which PDS to use for authentication
+    private func determinePDS(for handle: String, preferredPDS: String?) async -> String {
+        // 1. Use provided PDS if specified
+        if let pds = preferredPDS, !pds.isEmpty {
+            return pds
+        }
+        
+        // 2. Try to discover from handle
+        if let discoveredPDS = await PDSDiscovery.discoverPDS(for: handle) {
+            return discoveredPDS
+        }
+        
+        // 3. Guess from handle domain
+        if let guessedPDS = PDSDiscovery.guessPDSFromHandle(handle) {
+            return guessedPDS
+        }
+        
+        // 4. Fallback to Bluesky
+        return AnchorConfig.shared.blueskyPDSURL
+    }
+    
+    /// Fallback authentication using Bluesky PDS
+    private func authenticateWithFallback(handle: String, appPassword: String) async throws -> AuthCredentials {
+        let blueskyClient = ATProtoClient(baseURL: AnchorConfig.shared.blueskyPDSURL)
+        let request = ATProtoLoginRequest(identifier: handle, password: appPassword)
+
+        do {
+            let response = try await blueskyClient.login(request: request)
+            let expirationInterval = TimeInterval(response.expiresIn ?? 3600)
+
+            let newCredentials = AuthCredentials(
+                handle: response.handle,
+                accessToken: response.accessJwt,
+                refreshToken: response.refreshJwt,
+                did: response.did,
+                pdsURL: AnchorConfig.shared.blueskyPDSURL,
+                expiresAt: Date().addingTimeInterval(expirationInterval)
+            )
+
+            _credentials = newCredentials
+            try await storage.save(newCredentials)
+
+            print("✅ Fallback authentication successful on Bluesky PDS")
+            return newCredentials
+
+        } catch {
+            print("❌ Fallback authentication also failed: \(error)")
+            if let atProtoError = error as? ATProtoError {
+                throw atProtoError
+            } else {
+                throw ATProtoError.authenticationFailed(error.localizedDescription)
+            }
+        }
     }
 }

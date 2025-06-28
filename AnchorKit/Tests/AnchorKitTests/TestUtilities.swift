@@ -93,6 +93,10 @@ public final class MockAuthStore: AuthStoreProtocol {
     }
 
     public func authenticate(handle: String, appPassword: String) async throws -> Bool {
+        return try await authenticate(handle: handle, appPassword: appPassword, pdsURL: nil)
+    }
+
+    public func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool {
         if shouldThrowAuthError {
             throw ATProtoError.authenticationFailed("Mock auth error")
         }
@@ -144,6 +148,7 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
     public let accessToken: String
     public let refreshToken: String
     public let did: String
+    public let pdsURL: String
     public let expiresAt: Date
 
     public var isExpired: Bool {
@@ -151,14 +156,15 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
     }
 
     public var isValid: Bool {
-        !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !isExpired
+        !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !pdsURL.isEmpty && !isExpired
     }
 
-    public init(handle: String, accessToken: String, refreshToken: String, did: String, expiresAt: Date) {
+    public init(handle: String, accessToken: String, refreshToken: String, did: String, pdsURL: String, expiresAt: Date) {
         self.handle = handle
         self.accessToken = accessToken
         self.refreshToken = refreshToken
         self.did = did
+        self.pdsURL = pdsURL
         self.expiresAt = expiresAt
     }
 
@@ -169,6 +175,7 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
             accessToken: "test-access-token",
             refreshToken: "test-refresh-token",
             did: "did:plc:test123",
+            pdsURL: "https://bsky.social",
             expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
         )
     }
@@ -179,6 +186,7 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
             accessToken: "expired-token",
             refreshToken: "expired-refresh",
             did: "did:plc:expired",
+            pdsURL: "https://bsky.social",
             expiresAt: Date().addingTimeInterval(-3600) // 1 hour ago
         )
     }
@@ -211,6 +219,7 @@ public final class MockCredentialsStorage: CredentialsStorageProtocol {
             accessToken: credentials.accessToken,
             refreshToken: credentials.refreshToken,
             did: credentials.did,
+            pdsURL: credentials.pdsURL,
             expiresAt: credentials.expiresAt
         )
     }

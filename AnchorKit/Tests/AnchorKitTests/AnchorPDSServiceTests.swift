@@ -86,6 +86,7 @@ private struct MockCredentialsForTests: AuthCredentialsProtocol {
     let accessToken: String
     let refreshToken: String
     let did: String
+    let pdsURL: String
     let expiresAt: Date
 
     var isExpired: Bool {

@@ -137,6 +137,7 @@ struct FeedTabView: View {
                     accessToken: "fake-jwt",
                     refreshToken: "fake-refresh",
                     did: "did:plc:test",
+                    pdsURL: "https://bsky.social",
                     expiresAt: Date().addingTimeInterval(3600)
                 )
                 try? await storage.save(testCredentials)
@@ -172,6 +173,7 @@ struct FeedTabView: View {
                     accessToken: "fake-jwt",
                     refreshToken: "fake-refresh",
                     did: "did:plc:test",
+                    pdsURL: "https://bsky.social",
                     expiresAt: Date().addingTimeInterval(3600)
                 )
                 try? await storage.save(testCredentials)

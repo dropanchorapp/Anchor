@@ -7,6 +7,7 @@ public protocol AuthCredentialsProtocol {
     var accessToken: String { get }
     var refreshToken: String { get }
     var did: String { get }
+    var pdsURL: String { get }
     var expiresAt: Date { get }
     var isExpired: Bool { get }
     var isValid: Bool { get }
@@ -27,6 +28,9 @@ public final class AuthCredentials: AuthCredentialsProtocol {
     /// DID (Decentralized Identifier) for the user
     public var did: String
 
+    /// PDS URL where the user is authenticated
+    public var pdsURL: String
+
     /// Token expiration date
     public var expiresAt: Date
 
@@ -38,12 +42,14 @@ public final class AuthCredentials: AuthCredentialsProtocol {
         accessToken: String,
         refreshToken: String,
         did: String,
+        pdsURL: String,
         expiresAt: Date
     ) {
         self.handle = handle
         self.accessToken = accessToken
         self.refreshToken = refreshToken
         self.did = did
+        self.pdsURL = pdsURL
         self.expiresAt = expiresAt
         createdAt = Date()
     }
@@ -63,6 +69,7 @@ public extension AuthCredentials {
         !handle.isEmpty &&
             !accessToken.isEmpty &&
             !did.isEmpty &&
+            !pdsURL.isEmpty &&
             !isExpired
     }
 }

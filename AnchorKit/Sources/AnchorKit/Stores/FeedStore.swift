@@ -17,6 +17,7 @@ public final class FeedStore {
 
     private let anchorPDSService: AnchorPDSService
     private let session: URLSessionProtocol
+    private let multiPDSClient: MultiPDSClient
     private let baseURL = AnchorConfig.shared.blueskyPDSURL
 
     /// Current feed posts
@@ -35,6 +36,7 @@ public final class FeedStore {
 
     public init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
+        self.multiPDSClient = MultiPDSClient(session: session)
         anchorPDSService = AnchorPDSService(session: session)
     }
 
@@ -75,8 +77,8 @@ public final class FeedStore {
             var enrichedPosts: [FeedPost] = []
 
             for checkinResponse in feedResponse.checkins {
-                // Get profile info from Bluesky for this DID
-                let profileInfo = await getProfileInfo(for: checkinResponse.author.did)
+                // Get profile info from Bluesky for this DID using authentication
+                let profileInfo = await getProfileInfo(for: checkinResponse.author.did, credentials: credentials)
 
                 let feedPost = FeedPost(from: checkinResponse, profileInfo: profileInfo)
                 enrichedPosts.append(feedPost)
@@ -102,42 +104,14 @@ public final class FeedStore {
 
     // MARK: - Private Methods
 
-    /// Get profile information from Bluesky for a given DID
-    /// - Parameter did: The DID to look up
+    /// Get profile information using multi-PDS discovery with fallback
+    /// - Parameters:
+    ///   - did: The DID to look up
+    ///   - credentials: Authentication credentials for making authenticated requests
     /// - Returns: Profile information or nil if not found
-    private func getProfileInfo(for did: String) async -> BlueskyProfileInfo? {
-        do {
-            // Build request to Bluesky's public API
-            guard let url = URL(string: "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=\(did)") else {
-                return nil
-            }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.setValue("application/json", forHTTPHeaderField: "Accept")
-            request.setValue("Anchor/1.0 (macOS)", forHTTPHeaderField: "User-Agent")
-
-            let (data, response) = try await session.data(for: request)
-
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200
-            else {
-                return nil
-            }
-
-            let profileResponse = try JSONDecoder().decode(BlueskyProfileResponse.self, from: data)
-
-            return BlueskyProfileInfo(
-                did: profileResponse.did,
-                handle: profileResponse.handle,
-                displayName: profileResponse.displayName,
-                avatar: profileResponse.avatar
-            )
-
-        } catch {
-            print("Failed to fetch profile for DID \(did): \(error)")
-            return nil
-        }
+    private func getProfileInfo(for did: String, credentials: AuthCredentialsProtocol) async -> BlueskyProfileInfo? {
+        // Use MultiPDSClient to try user's home PDS first, then fallback to Bluesky with authentication
+        return await multiPDSClient.getProfileInfo(for: did, accessToken: credentials.accessToken)
     }
 
     private func buildAuthenticatedRequest(
@@ -228,13 +202,6 @@ public struct FeedAuthor: Sendable {
     }
 }
 
-public struct BlueskyProfileInfo: Sendable {
-    public let did: String
-    public let handle: String
-    public let displayName: String?
-    public let avatar: String?
-}
-
 public struct CheckinEmbedRecord: Sendable {
     public let uri: String
     public let cid: String
@@ -253,23 +220,6 @@ public struct CheckinEmbedRecord: Sendable {
 }
 
 // MARK: - API Response Models
-
-struct BlueskyProfileResponse: Codable {
-    let did: String
-    let handle: String
-    let displayName: String?
-    let avatar: String?
-    let description: String?
-    let followersCount: Int?
-    let followsCount: Int?
-    let postsCount: Int?
-
-    // We only need the basic fields for our use case
-    private enum CodingKeys: String, CodingKey {
-        case did, handle, displayName, avatar, description
-        case followersCount, followsCount, postsCount
-    }
-}
 
 struct TimelineResponse: Codable {
     let feed: [TimelineFeedItem]

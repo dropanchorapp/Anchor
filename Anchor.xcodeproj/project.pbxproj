@@ -31,15 +31,11 @@
 		3F77C4F32E0EC17000CC0D38 /* AnchorMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AnchorMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F77C5012E0EC17200CC0D38 /* AnchorMobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F77C50B2E0EC17200CC0D38 /* AnchorMobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F7AB96A2E180B25005806FB /* AnchorMobile.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = AnchorMobile.xctestplan; sourceTree = "<group>"; };
 		3F9C6F422DECDC11009A1F50 /* AnchorKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AnchorKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		3F697D792DECDAFA00AC7ACC /* AnchorTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AnchorTests;
-			sourceTree = "<group>";
-		};
 		3F77C4F42E0EC17000CC0D38 /* AnchorMobile */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AnchorMobile;
@@ -93,7 +89,7 @@
 		3F697D5D2DECDAF900AC7ACC = {
 			isa = PBXGroup;
 			children = (
-				3F697D792DECDAFA00AC7ACC /* AnchorTests */,
+				3F7AB96A2E180B25005806FB /* AnchorMobile.xctestplan */,
 				3F77C4F42E0EC17000CC0D38 /* AnchorMobile */,
 				3F77C5042E0EC17200CC0D38 /* AnchorMobileTests */,
 				3F77C50E2E0EC17200CC0D38 /* AnchorMobileUITests */,

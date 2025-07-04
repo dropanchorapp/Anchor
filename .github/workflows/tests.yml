@@ -32,8 +32,8 @@ jobs:
       run: |
         xcodebuild test \
           -project Anchor.xcodeproj \
-          -scheme Anchor \
-          -destination "platform=macOS" \
+          -scheme AnchorMobile \
+          -destination "platform=iOS Simulator,name=iPhone 15 Pro" \
           -enableCodeCoverage YES \
           -derivedDataPath DerivedData \
           -only-testing AnchorTests \

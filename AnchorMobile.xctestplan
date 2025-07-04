@@ -1,0 +1,45 @@
+{
+  "configurations" : [
+    {
+      "id" : "8BB34AFF-4263-4A2A-A239-99D8A5588095",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Anchor.xcodeproj",
+      "identifier" : "3F77C4F22E0EC17000CC0D38",
+      "name" : "AnchorMobile"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Anchor.xcodeproj",
+        "identifier" : "3F77C5002E0EC17200CC0D38",
+        "name" : "AnchorMobileTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:AnchorKit",
+        "identifier" : "AnchorKitTests",
+        "name" : "AnchorKitTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Anchor.xcodeproj",
+        "identifier" : "3F77C50A2E0EC17200CC0D38",
+        "name" : "AnchorMobileUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

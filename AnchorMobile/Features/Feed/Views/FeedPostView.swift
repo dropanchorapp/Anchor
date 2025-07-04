@@ -13,7 +13,9 @@ struct FeedPostView: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button {
+            onTap()
+        } label: {
             VStack(alignment: .leading, spacing: 16) {
                 // Header: Author info and timestamp
                 HStack(spacing: 12) {
@@ -58,17 +60,14 @@ struct FeedPostView: View {
                 .padding(.horizontal, 16)
 
                 // Main content: Location/Place
-                if let checkinRecord = post.checkinRecord,
-                   let locations = checkinRecord.locations,
-                   !locations.isEmpty {
-                    
+                if let coords = post.coordinates {
                     VStack(alignment: .leading, spacing: 8) {
                         // Place name - primary content
                         HStack(alignment: .center, spacing: 10) {
-                            Text(checkinRecord.categoryIcon ?? FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
+                            Text(FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
                                 .font(.title3)
                             
-                            Text(LocationFormatter.shared.getLocationName(locations))
+                            Text(post.address?.name ?? "Location")
                                 .font(.title3)
                                 .fontWeight(.bold)
                                 .foregroundStyle(.primary)
@@ -76,12 +75,22 @@ struct FeedPostView: View {
                         }
                         
                         // Address - secondary location info
-                        let address = LocationFormatter.shared.getLocationAddress(locations)
-                        if !address.isEmpty {
-                            Text(address)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
+                        if let addressObj = post.address {
+                            let locItem = LocationItem.address(.init(
+                                street: addressObj.street,
+                                locality: addressObj.locality,
+                                region: addressObj.region,
+                                country: addressObj.country,
+                                postalCode: addressObj.postalCode,
+                                name: addressObj.name
+                            ))
+                            let address = LocationFormatter.shared.getLocationAddress([locItem])
+                            if !address.isEmpty {
+                                Text(address)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.leading)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -89,7 +98,7 @@ struct FeedPostView: View {
                 }
                 
                 // User's personal message (if different from just location)
-                if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(from: post.record.text, locations: post.checkinRecord?.locations) {
+                if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(from: post.record.text, locations: nil) {
                     Text(personalMessage)
                         .font(.body)
                         .foregroundStyle(.primary)

@@ -66,9 +66,9 @@ struct FeedView: View {
                 CheckInDetailView(post: post)
             }
             .task {
-                // Initialize feedStore with authStore (always initialize, regardless of auth state)
+                // Initialize feedStore (always initialize, regardless of auth state)
                 if feedStore == nil {
-                    feedStore = FeedStore(authStore: authStore)
+                    feedStore = FeedStore()
                 }
                 
                 // Only load feed if authenticated

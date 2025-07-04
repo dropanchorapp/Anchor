@@ -16,14 +16,11 @@ struct CheckInDetailView: View {
     
     init(post: FeedPost) {
         self.post = post
-        
-        // Initialize map position based on location data
-        if let checkinRecord = post.checkinRecord,
-           let locations = checkinRecord.locations,
-           let coordinate = LocationFormatter.shared.extractCoordinate(from: locations) {
+        // Initialize map position based on coordinates
+        if let coords = post.coordinates {
             self._cameraPosition = State(initialValue: .region(
                 MKCoordinateRegion(
-                    center: coordinate,
+                    center: CLLocationCoordinate2D(latitude: coords.latitude, longitude: coords.longitude),
                     span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
                 )
             ))
@@ -42,17 +39,14 @@ struct CheckInDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // Interactive map that extends behind status bar and scrolls with content
-                if let checkinRecord = post.checkinRecord,
-                   let locations = checkinRecord.locations,
-                   let coordinate = LocationFormatter.shared.extractCoordinate(from: locations) {
-                    
+                if let coords = post.coordinates {
                     Map(position: $cameraPosition) {
                         Annotation(
-                            LocationFormatter.shared.getLocationName(locations),
-                            coordinate: coordinate
+                            post.address?.name ?? "Location",
+                            coordinate: CLLocationCoordinate2D(latitude: coords.latitude, longitude: coords.longitude)
                         ) {
                             VStack {
-                                Text(checkinRecord.categoryIcon ?? FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
+                                Text(FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
                                     .font(.title2)
                                     .padding(8)
                                     .background(.regularMaterial, in: Circle())
@@ -105,22 +99,32 @@ struct CheckInDetailView: View {
                     }
                     
                     // Location details
-                    if let checkinRecord = post.checkinRecord,
-                       let locations = checkinRecord.locations,
-                       !locations.isEmpty {
-                        
+                    if let coords = post.coordinates {
                         VStack(alignment: .leading, spacing: 12) {
                             // Place name with icon
                             HStack(spacing: 12) {
-                                Text(checkinRecord.categoryIcon ?? FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
+                                Text(FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
                                     .font(.largeTitle)
                                 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(LocationFormatter.shared.getLocationName(locations))
+                                    Text(post.address?.name ?? "Location")
                                         .font(.title)
                                         .fontWeight(.bold)
                                     
-                                    let address = LocationFormatter.shared.getLocationAddress(locations)
+                                    let address: String = {
+                                        if let addressObj = post.address {
+                                            let locItem = LocationItem.address(.init(
+                                                street: addressObj.street,
+                                                locality: addressObj.locality,
+                                                region: addressObj.region,
+                                                country: addressObj.country,
+                                                postalCode: addressObj.postalCode,
+                                                name: addressObj.name
+                                            ))
+                                            return LocationFormatter.shared.getLocationAddress([locItem])
+                                        }
+                                        return ""
+                                    }()
                                     if !address.isEmpty {
                                         Text(address)
                                             .font(.body)
@@ -128,33 +132,11 @@ struct CheckInDetailView: View {
                                     }
                                 }
                             }
-                            
-                            // Category info if available
-                            if let category = checkinRecord.category,
-                               let categoryGroup = checkinRecord.categoryGroup {
-                                HStack {
-                                    Text(categoryGroup)
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(.blue.opacity(0.1), in: Capsule())
-                                        .foregroundStyle(.blue)
-                                    
-                                    Text(category.capitalized)
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(.secondary.opacity(0.1), in: Capsule())
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
                         }
                     }
                     
                     // Personal message
-                    if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(from: post.record.text, locations: post.checkinRecord?.locations) {
+                    if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(from: post.record.text, locations: nil) {
                         Divider()
                         
                         VStack(alignment: .leading, spacing: 8) {
@@ -169,12 +151,9 @@ struct CheckInDetailView: View {
                     
                     // Action buttons
                     HStack(spacing: 16) {
-                        if let checkinRecord = post.checkinRecord,
-                           let locations = checkinRecord.locations,
-                           let coordinate = LocationFormatter.shared.extractCoordinate(from: locations) {
-                            
+                        if let coords = post.coordinates {
                             Button(action: {
-                                ExternalAppService.shared.openInMaps(coordinate: coordinate, locationName: LocationFormatter.shared.getLocationName(locations))
+                                ExternalAppService.shared.openInMaps(coordinate: CLLocationCoordinate2D(latitude: coords.latitude, longitude: coords.longitude), locationName: post.address?.name ?? "Location")
                             }) {
                                 Label("Open in Maps", systemImage: "map")
                                     .font(.callout)

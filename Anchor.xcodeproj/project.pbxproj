@@ -7,25 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3F510DFE2E10293E00B12466 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F510DFD2E10293E00B12466 /* AnchorKit */; };
 		3F510E002E10294A00B12466 /* AnchorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F510DFF2E10294A00B12466 /* AnchorKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		3F697D772DECDAFA00AC7ACC /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 3F697D5E2DECDAF900AC7ACC /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 3F697D652DECDAF900AC7ACC;
-			remoteInfo = Anchor;
-		};
-		3F697D812DECDAFA00AC7ACC /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 3F697D5E2DECDAF900AC7ACC /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 3F697D652DECDAF900AC7ACC;
-			remoteInfo = Anchor;
-		};
 		3F77C5022E0EC17200CC0D38 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3F697D5E2DECDAF900AC7ACC /* Project object */;
@@ -43,7 +28,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		3F697D662DECDAF900AC7ACC /* Anchor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Anchor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F697D762DECDAFA00AC7ACC /* AnchorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F697D802DECDAFA00AC7ACC /* AnchorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F77C4F32E0EC17000CC0D38 /* AnchorMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AnchorMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -53,11 +37,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		3F697D682DECDAF900AC7ACC /* Anchor */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Anchor;
-			sourceTree = "<group>";
-		};
 		3F697D792DECDAFA00AC7ACC /* AnchorTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AnchorTests;
@@ -81,14 +60,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		3F697D632DECDAF900AC7ACC /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				3F510DFE2E10293E00B12466 /* AnchorKit in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3F697D732DECDAFA00AC7ACC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -138,7 +109,6 @@
 		3F697D5D2DECDAF900AC7ACC = {
 			isa = PBXGroup;
 			children = (
-				3F697D682DECDAF900AC7ACC /* Anchor */,
 				3F697D792DECDAFA00AC7ACC /* AnchorTests */,
 				3F77C4F42E0EC17000CC0D38 /* AnchorMobile */,
 				3F77C5042E0EC17200CC0D38 /* AnchorMobileTests */,
@@ -152,7 +122,6 @@
 		3F697D672DECDAF900AC7ACC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3F697D662DECDAF900AC7ACC /* Anchor.app */,
 				3F697D762DECDAFA00AC7ACC /* AnchorTests.xctest */,
 				3F697D802DECDAFA00AC7ACC /* AnchorUITests.xctest */,
 				3F77C4F32E0EC17000CC0D38 /* AnchorMobile.app */,
@@ -165,29 +134,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3F697D652DECDAF900AC7ACC /* Anchor */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 3F697D8A2DECDAFA00AC7ACC /* Build configuration list for PBXNativeTarget "Anchor" */;
-			buildPhases = (
-				3F697D622DECDAF900AC7ACC /* Sources */,
-				3F697D632DECDAF900AC7ACC /* Frameworks */,
-				3F697D642DECDAF900AC7ACC /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				3F697D682DECDAF900AC7ACC /* Anchor */,
-			);
-			name = Anchor;
-			packageProductDependencies = (
-				3F510DFD2E10293E00B12466 /* AnchorKit */,
-			);
-			productName = Anchor;
-			productReference = 3F697D662DECDAF900AC7ACC /* Anchor.app */;
-			productType = "com.apple.product-type.application";
-		};
 		3F697D752DECDAFA00AC7ACC /* AnchorTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3F697D8D2DECDAFA00AC7ACC /* Build configuration list for PBXNativeTarget "AnchorTests" */;
@@ -199,7 +145,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				3F697D782DECDAFA00AC7ACC /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3F697D792DECDAFA00AC7ACC /* AnchorTests */,
@@ -222,7 +167,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				3F697D822DECDAFA00AC7ACC /* PBXTargetDependency */,
 			);
 			name = AnchorUITests;
 			packageProductDependencies = (
@@ -310,9 +254,6 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
-					3F697D652DECDAF900AC7ACC = {
-						CreatedOnToolsVersion = 16.4;
-					};
 					3F697D752DECDAFA00AC7ACC = {
 						CreatedOnToolsVersion = 16.4;
 						TestTargetID = 3F697D652DECDAF900AC7ACC;
@@ -351,7 +292,6 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3F697D652DECDAF900AC7ACC /* Anchor */,
 				3F697D752DECDAFA00AC7ACC /* AnchorTests */,
 				3F697D7F2DECDAFA00AC7ACC /* AnchorUITests */,
 				3F77C4F22E0EC17000CC0D38 /* AnchorMobile */,
@@ -362,13 +302,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		3F697D642DECDAF900AC7ACC /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3F697D742DECDAFA00AC7ACC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -407,13 +340,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		3F697D622DECDAF900AC7ACC /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3F697D722DECDAFA00AC7ACC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -452,16 +378,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		3F697D782DECDAFA00AC7ACC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 3F697D652DECDAF900AC7ACC /* Anchor */;
-			targetProxy = 3F697D772DECDAFA00AC7ACC /* PBXContainerItemProxy */;
-		};
-		3F697D822DECDAFA00AC7ACC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 3F697D652DECDAF900AC7ACC /* Anchor */;
-			targetProxy = 3F697D812DECDAFA00AC7ACC /* PBXContainerItemProxy */;
-		};
 		3F77C5032E0EC17200CC0D38 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3F77C4F22E0EC17000CC0D38 /* AnchorMobile */;
@@ -592,72 +508,6 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
-			};
-			name = Release;
-		};
-		3F697D8B2DECDAFA00AC7ACC /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Anchor/Anchor.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9Z77B473HX;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocationUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.Anchor;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		3F697D8C2DECDAFA00AC7ACC /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Anchor/Anchor.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9Z77B473HX;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocationUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.tijs.Anchor;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -898,15 +748,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3F697D8A2DECDAFA00AC7ACC /* Build configuration list for PBXNativeTarget "Anchor" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				3F697D8B2DECDAFA00AC7ACC /* Debug */,
-				3F697D8C2DECDAFA00AC7ACC /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		3F697D8D2DECDAFA00AC7ACC /* Build configuration list for PBXNativeTarget "AnchorTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -962,11 +803,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		3F510DFD2E10293E00B12466 /* AnchorKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3F510DF92E10291C00B12466 /* XCLocalSwiftPackageReference "AnchorKit" */;
-			productName = AnchorKit;
-		};
 		3F510DFF2E10294A00B12466 /* AnchorKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3F510DF92E10291C00B12466 /* XCLocalSwiftPackageReference "AnchorKit" */;

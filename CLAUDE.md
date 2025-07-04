@@ -93,10 +93,11 @@ Anchor is a macOS menubar app for location-based check-ins to Bluesky using the 
 
 - **LocationService**: CoreLocation wrapper with proper permission handling for menubar apps
 - **OverpassService**: OpenStreetMap POI discovery via Overpass API
-- **CheckInStore**: Check-in creation and management with dual posting architecture (AnchorPDS + Bluesky)
+- **CheckInStore**: Check-in creation and management for posting to Bluesky
+- **FeedStore**: Feed management using new Anchor AppView backend (no authentication required)
+- **AnchorAppViewService**: Client for the Anchor AppView API at `https://anchor-feed-generator.val.run`
 - **ATProtoAuthService**: Authentication service using `AuthCredentialsProtocol` for testability
 - **CredentialsStorage**: Multiple storage implementations (Keychain, SwiftData, InMemory) with unified protocol interface
-- **AnchorPDSClient**: Specialized client for AnchorPDS check-in records with lexicon compliance
 
 ### Location Permission Strategy
 
@@ -168,7 +169,7 @@ Tests are organized with semantic tags for filtering and categorization:
 - `.markdown` - Markdown formatting and rich text processing
 - `.facets` - AT Protocol facet and rich text feature tests
 
-#### Running Tests
+#### Test Execution
 
 ```bash
 # Run all tests (42+ tests total)
@@ -292,14 +293,15 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 - Bluesky authentication status
 - Future: Default message preferences, app preferences
 
-### Bluesky Integration & AnchorPDS
+### Bluesky Integration & Anchor AppView
 
-- **Dual posting architecture**: Clean AnchorPDS records + enhanced Bluesky posts
-- **AnchorPDS records**: Lexicon-compliant `app.dropanchor.checkin` records with location data
-- **Bluesky posts**: Traditional `app.bsky.feed.post` with markdown formatting and rich facets
+- **Posting**: Clean check-in records posted to Bluesky via AT Protocol
+- **Feed Reading**: Uses new Anchor AppView backend at `https://anchor-feed-generator.val.run`
+- **API Endpoints**: Global, nearby, user-specific, and following feeds via REST API
 - Message format: `Dropped anchor at [Place Name] 🧭 "[Custom Message]" [Category Emoji]`
 - Automatic token refresh and session management
 - **Secure credential storage**: Multiple options (Keychain recommended, SwiftData legacy, InMemory for testing)
+- **No authentication required** for feed reading - public API
 
 ### Future Expansion
 

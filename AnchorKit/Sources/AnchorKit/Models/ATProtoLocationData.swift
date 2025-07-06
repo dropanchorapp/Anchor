@@ -79,3 +79,19 @@ public struct ATProtoLocationRecord: Codable, Sendable {
         self.fsq = fsq
     }
 }
+
+extension ATProtoAddress: LocationRepresentable {
+    public var displayName: String? { streetAddress }
+    public var street: String? { streetAddress }
+    public var coordinate: (Double, Double)? { nil }
+}
+
+extension ATProtoGeoLocation: LocationRepresentable {
+    public var displayName: String? { name }
+    public var street: String? { nil }
+    public var locality: String? { nil }
+    public var region: String? { nil }
+    public var country: String? { nil }
+    public var postalCode: String? { nil }
+    public var coordinate: (Double, Double)? { (lat, lon) }
+}

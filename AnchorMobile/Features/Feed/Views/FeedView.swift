@@ -64,7 +64,7 @@ struct FeedView: View {
             }
             .navigationTitle("Feed")
             .navigationDestination(item: $selectedPost) { post in
-                CheckInDetailView(post: post)
+                FeedPostDetailView(post: post)
             }
             .task {
                 // Initialize feedStore (always initialize, regardless of auth state)
@@ -178,7 +178,7 @@ struct FeedView: View {
         }
         .navigationTitle("Feed")
         .navigationDestination(for: FeedPost.self) { post in
-            CheckInDetailView(post: post)
+            FeedPostDetailView(post: post)
         }
     }
     .environment(authStore)

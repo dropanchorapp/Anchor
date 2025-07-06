@@ -35,8 +35,8 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
     /// This method creates marketing-friendly posts with location taglines, hashtags,
     /// and rich text formatting for social media engagement on Bluesky.
     ///
-    /// This is different from check-in records stored on AnchorPDS, which contain
-    /// only the user's original message (see `AnchorPDSService.buildCheckinText()`).
+    /// This is different from check-in records stored on the user's PDS using strongref
+    /// architecture, which contain only the user's original message and structured location data.
     ///
     /// The enhanced format includes:
     /// - User's message (or default if empty)

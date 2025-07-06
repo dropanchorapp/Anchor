@@ -14,6 +14,7 @@ struct AnchorMobileApp: App {
     @State private var authStore = AuthStore()
     @State private var checkInStore: CheckInStore
     @State private var appStateStore = AppStateStore()
+    @State private var locationService = LocationService()
 
     init() {
         // Initialize services with proper dependencies
@@ -30,6 +31,7 @@ struct AnchorMobileApp: App {
                 .environment(authStore)
                 .environment(checkInStore)
                 .environment(appStateStore)
+                .environment(locationService)
                 .task {
                     // Load credentials immediately when ContentView appears (backup)
                     print("📱 AnchorMobileApp: Loading stored credentials in .task")

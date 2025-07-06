@@ -125,15 +125,20 @@ public final class LocationService: NSObject, @unchecked Sendable {
                     continuation.resume(returning: granted)
                 }
 
-                // For menubar apps, this WILL trigger the system dialog
-                #if os(macOS)
-                locationManager.requestWhenInUseAuthorization()
-                #else
-                locationManager.requestWhenInUseAuthorization()
-                #endif
+                // Dispatch authorization request to background queue to prevent UI blocking
+                // This fixes the "This method can cause UI unresponsiveness" warning
+                Task.detached {
+                    // For menubar apps, this WILL trigger the system dialog
+                    #if os(macOS)
+                    self.locationManager.requestWhenInUseAuthorization()
+                    #else
+                    self.locationManager.requestWhenInUseAuthorization()
+                    #endif
+                }
             }
 
         @unknown default:
+            print("❌ Unknown location authorization status: \(authorizationStatus.rawValue)")
             return false
         }
     }

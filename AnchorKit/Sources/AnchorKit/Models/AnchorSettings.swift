@@ -14,7 +14,7 @@ public struct AnchorSettings: Codable, Sendable {
     /// Preferred place categories to prioritize in searches
     public let preferredCategories: [String]
 
-    /// Whether to create Bluesky posts when checking in (in addition to AnchorPDS records)
+    /// Whether to create Bluesky posts when checking in (in addition to strongref records on user's PDS)
     public let createBlueskyPosts: Bool
 
     public init(

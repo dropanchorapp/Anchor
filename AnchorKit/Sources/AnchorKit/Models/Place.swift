@@ -114,3 +114,13 @@ extension Place: Hashable {
         lhs.id == rhs.id
     }
 }
+
+extension Place: LocationRepresentable {
+    public var displayName: String? { self.name }
+    public var street: String? { nil }
+    public var locality: String? { nil }
+    public var region: String? { nil }
+    public var country: String? { nil }
+    public var postalCode: String? { nil }
+    public var coordinate: (Double, Double)? { (latitude, longitude) }
+}

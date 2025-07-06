@@ -13,7 +13,7 @@ struct SettingsView: View {
     @Environment(CheckInStore.self) private var checkInStore
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 // Account Section
                 Section {

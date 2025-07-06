@@ -84,19 +84,35 @@ Anchor is a macOS menubar app for location-based check-ins to Bluesky using the 
 
 ### Core Models
 
+#### Location & Places
 - **Place**: Represents OpenStreetMap POIs with element type/ID, coordinates, and tags
-- **AnchorSettings**: User preferences stored in UserDefaults with immutable update methods
+- **GeoCoordinates**: Geographic coordinates using community lexicon format (`community.lexicon.location.geo`)
+
+#### StrongRef Records
+- **StrongRef**: AT Protocol reference with URI + CID for content integrity verification
+- **CommunityAddressRecord**: Structured address data following community lexicon (`community.lexicon.location.address`)
+- **CheckinRecord**: Modern checkin format with strongref to address (`app.dropanchor.checkin`)
+- **ResolvedCheckin**: Complete checkin with verified address data and integrity status
+
+#### Authentication & Settings
 - **AuthCredentials**: SwiftData model for authentication data with automatic storage and validation
 - **AuthCredentialsProtocol**: Protocol abstraction enabling testing without SwiftData ModelContainer dependencies
+- **AnchorSettings**: User preferences stored in UserDefaults with immutable update methods
+
+#### AT Protocol Models
+- **ATProtoCreateRecordResponse**: Standard AT Protocol record creation response with URI and CID
+- **ATProtoGetRecordResponse**: Record retrieval response with content integrity data
 
 ### Services Architecture
 
 - **LocationService**: CoreLocation wrapper with proper permission handling for menubar apps
 - **OverpassService**: OpenStreetMap POI discovery via Overpass API
-- **CheckInStore**: Check-in creation and management for posting to Bluesky
+- **CheckInStore**: StrongRef-based check-in creation with atomic address + checkin record operations
 - **FeedStore**: Feed management using new Anchor AppView backend (no authentication required)
 - **AnchorAppViewService**: Client for the Anchor AppView API at `https://anchor-feed-generator.val.run`
+- **ATProtoClient**: Full AT Protocol client with StrongRef support, CID verification, and atomic record creation
 - **ATProtoAuthService**: Authentication service using `AuthCredentialsProtocol` for testability
+- **BlueskyPostService**: Enhanced social posting for Bluesky with rich text formatting
 - **CredentialsStorage**: Multiple storage implementations (Keychain, SwiftData, InMemory) with unified protocol interface
 
 ### Location Permission Strategy
@@ -121,10 +137,51 @@ The codebase implements a comprehensive protocol-first architecture that solves 
 
 #### Implementation Details
 
-- All services (`CheckInStore`, `ATProtoAuthService`, `AnchorPDSClient`) accept `AuthCredentialsProtocol`
+- All services (`CheckInStore`, `ATProtoAuthService`, `ATProtoClient`) accept `AuthCredentialsProtocol`
 - Storage implementations handle protocol→concrete conversion internally
 - Tests use `TestAuthCredentials` struct that implements the protocol without SwiftData dependencies
 - Production code continues using `AuthCredentials` SwiftData models for persistence
+
+### StrongRef Architecture Implementation
+
+The codebase implements a **StrongRef-based record architecture** following AT Protocol standards for content integrity and data normalization:
+
+#### Core Concept
+
+When creating a check-in, the system creates **two separate records** on the user's PDS:
+
+1. **Address Record** (`community.lexicon.location.address`): Reusable venue information
+   - Contains structured address data following community lexicon standards
+   - Can be referenced by multiple check-ins at the same location
+   - Enables proper venue normalization and deduplication
+
+2. **Check-in Record** (`app.dropanchor.checkin`): User message with StrongRef to address
+   - References the address record via StrongRef (URI + CID)
+   - Contains user's message, coordinates, and metadata
+   - Enables content integrity verification through CID matching
+
+#### StrongRef Benefits
+
+- **Self-contained**: All data stored on user's PDS (no external dependencies)
+- **Content integrity**: CID verification prevents tampering and detects modifications
+- **Reusable addresses**: Same venue can be referenced efficiently by multiple check-ins
+- **Standards compliant**: Uses community lexicon properly for interoperability
+- **Future-proof**: Supports address record evolution without breaking existing check-ins
+
+#### Technical Implementation
+
+- **Atomic Creation**: `ATProtoClient.createCheckinWithAddress()` creates both records atomically
+- **Automatic Cleanup**: Orphaned address records are deleted if checkin creation fails
+- **CID Verification**: `verifyStrongRef()` validates content integrity via CID comparison
+- **Record Resolution**: `resolveCheckin()` fetches and verifies complete checkin data
+- **Error Handling**: Comprehensive error handling for network failures and data integrity issues
+
+#### Key Models
+
+- **StrongRef**: AT Protocol compliant reference with URI + CID for content integrity
+- **CommunityAddressRecord**: Structured address data following community lexicon
+- **CheckinRecord**: Modern checkin format with strongref to address and coordinates
+- **ResolvedCheckin**: Complete checkin with verified address data and integrity status
 
 ## Development Notes
 
@@ -151,7 +208,8 @@ The codebase implements a comprehensive protocol-first architecture that solves 
 - **UI tests**: Menubar app functionality testing in AnchorUITests
 - **Protocol-based testing**: Services accept `AuthCredentialsProtocol` enabling testing without SwiftData ModelContainer
 - **Dependency injection**: URLSession mocking and in-memory storage for isolated unit tests
-- **Mock implementations**: `TestAuthCredentials`, `MockCredentialsStorage`, `MockURLSession` for comprehensive testing
+- **Mock implementations**: `TestAuthCredentials`, `MockCredentialsStorage`, `MockURLSession`, `MockATProtoClient`, `MockBlueskyPostService` for comprehensive testing
+- **StrongRef testing**: Complete testing of atomic record creation, CID verification, and error handling scenarios
 
 #### Test Organization & Tags
 
@@ -172,7 +230,7 @@ Tests are organized with semantic tags for filtering and categorization:
 #### Test Execution
 
 ```bash
-# Run all tests (42+ tests total)
+# Run all tests (46+ tests total)
 swift test
 
 # Run specific test categories
@@ -189,7 +247,9 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 
 - **ATProtoRecord**: Markdown formatting, facet processing, timeline data conversion
 - **FeedService**: Feed fetching, filtering, error handling with URLSession mocking
-- **CheckInStore**: Rich text facet generation, check-in text formatting, dual posting coordination
+- **CheckInStore**: StrongRef-based checkin creation, atomic address + checkin operations, error handling
+- **ATProtoClient**: StrongRef creation, CID verification, record resolution, cleanup on failure
+- **StrongRef Models**: Record integrity, content verification, resolution workflows
 - **OverpassService**: POI discovery, query building, API integration
 - **Core Models**: Place creation, ID parsing, settings management, credential validation
 
@@ -295,13 +355,24 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 
 ### Bluesky Integration & Anchor AppView
 
-- **Posting**: Clean check-in records posted to Bluesky via AT Protocol
+#### StrongRef-Based Record Storage
+- **Address Records**: Structured venue data stored as `community.lexicon.location.address` records on user's PDS
+- **Check-in Records**: User messages with StrongRef to address stored as `app.dropanchor.checkin` records on user's PDS
+- **Content Integrity**: CID verification ensures address records haven't been tampered with since checkin creation
+- **Atomic Creation**: Both address and checkin records created atomically with automatic cleanup on failure
+
+#### Dual Posting Architecture
+- **PDS Storage**: Clean, structured check-in data with StrongRef address references
+- **Social Posting**: Enhanced marketing-friendly posts on Bluesky with rich text formatting
 - **Feed Reading**: Uses new Anchor AppView backend at `https://anchor-feed-generator.val.run`
 - **API Endpoints**: Global, nearby, user-specific, and following feeds via REST API
+
+#### Technical Details
 - Message format: `Dropped anchor at [Place Name] 🧭 "[Custom Message]" [Category Emoji]`
 - Automatic token refresh and session management
 - **Secure credential storage**: Multiple options (Keychain recommended, SwiftData legacy, InMemory for testing)
 - **No authentication required** for feed reading - public API
+- **Standards Compliance**: Uses community lexicon for location data interoperability
 
 ### Future Expansion
 

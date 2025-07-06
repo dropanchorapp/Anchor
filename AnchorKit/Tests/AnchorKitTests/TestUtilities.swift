@@ -115,15 +115,16 @@ public final class MockAuthStore: AuthStoreProtocol {
         URL(string: "https://bsky.app/settings/app-passwords")!
     }
 
-    public func getValidCredentials() async throws -> AuthCredentials {
+    public func getValidCredentials() async throws -> AuthCredentialsProtocol {
         if shouldThrowAuthError {
             throw ATProtoError.missingCredentials
         }
 
-        // For tests that need real credential behavior without SwiftData,
-        // we still need to throw since AuthCredentials can't be instantiated in tests
-        // But the services now accept AuthCredentialsProtocol, so tests can use TestAuthCredentials directly
-        throw ATProtoError.missingCredentials
+        guard let testCredentials = testCredentials else {
+            throw ATProtoError.missingCredentials
+        }
+
+        return testCredentials
     }
 
     // New method for protocol-based testing
@@ -140,6 +141,76 @@ public final class MockAuthStore: AuthStoreProtocol {
     }
 }
 
+// MARK: - Mock AT Protocol Client
+
+public class MockATProtoClient: ATProtoClientProtocol {
+    public var shouldThrowError = false
+    public var createRecordResponse = ATProtoCreateRecordResponse(uri: "at://test.did/app.dropanchor.checkin/test123", cid: "test-cid")
+
+    public func login(request: ATProtoLoginRequest) async throws -> ATProtoLoginResponse {
+        if shouldThrowError { throw ATProtoError.authenticationFailed("Mock error") }
+        return ATProtoLoginResponse(accessJwt: "test", refreshJwt: "test", handle: "test.bsky.social", did: "test.did", expiresIn: nil)
+    }
+
+    public func refresh(request: ATProtoRefreshRequest) async throws -> ATProtoRefreshResponse {
+        if shouldThrowError { throw ATProtoError.authenticationFailed("Mock error") }
+        return ATProtoRefreshResponse(accessJwt: "test", refreshJwt: "test", expiresIn: nil)
+    }
+
+    public func createPost(request: ATProtoCreatePostRequest, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse {
+        if shouldThrowError { throw ATProtoError.httpError(500) }
+        return createRecordResponse
+    }
+
+    public func createRecord(request: ATProtoCreateAddressRequest, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse {
+        if shouldThrowError { throw ATProtoError.httpError(500) }
+        return createRecordResponse
+    }
+
+    public func createRecord(request: ATProtoCreateCheckinRequest, credentials: AuthCredentialsProtocol) async throws -> ATProtoCreateRecordResponse {
+        if shouldThrowError { throw ATProtoError.httpError(500) }
+        return createRecordResponse
+    }
+
+    public func createCheckinWithAddress(text: String, address: CommunityAddressRecord, coordinates: GeoCoordinates, category: String?, categoryGroup: String?, categoryIcon: String?, credentials: AuthCredentialsProtocol) async throws -> String {
+        if shouldThrowError { throw ATProtoError.httpError(500) }
+        return createRecordResponse.uri
+    }
+
+    public func deleteRecord(repo: String, collection: String, rkey: String, credentials: AuthCredentialsProtocol) async throws {
+        if shouldThrowError { throw ATProtoError.httpError(500) }
+    }
+
+    public func getRecord(uri: String, credentials: AuthCredentialsProtocol) async throws -> ATProtoGetRecordResponse {
+        if shouldThrowError { throw ATProtoError.httpError(404) }
+        return ATProtoGetRecordResponse(uri: uri, cid: "test-cid", value: Data())
+    }
+
+    public func verifyStrongRef(_ strongRef: StrongRef, credentials: AuthCredentialsProtocol) async throws -> Bool {
+        if shouldThrowError { throw ATProtoError.httpError(500) }
+        return true
+    }
+
+    public func resolveCheckin(uri: String, credentials: AuthCredentialsProtocol) async throws -> ResolvedCheckin {
+        if shouldThrowError { throw ATProtoError.httpError(404) }
+        let checkin = CheckinRecord(text: "Test", createdAt: "2024-01-01T00:00:00Z", addressRef: StrongRef(uri: "test", cid: "test"), coordinates: GeoCoordinates(latitude: 0, longitude: 0))
+        let address = CommunityAddressRecord(name: "Test")
+        return ResolvedCheckin(checkin: checkin, address: address)
+    }
+}
+
+// MARK: - Mock Post Service
+
+public class MockBlueskyPostService: BlueskyPostServiceProtocol {
+    public var shouldThrowError = false
+    public var createPostResponse = ATProtoCreateRecordResponse(uri: "at://test.did/app.bsky.feed.post/test123", cid: "test-cid")
+
+    public func createPost(text: String, credentials: AuthCredentialsProtocol, embedRecord: ATProtoCreateRecordResponse?) async throws -> ATProtoCreateRecordResponse {
+        if shouldThrowError { throw ATProtoError.httpError(500) }
+        return createPostResponse
+    }
+}
+
 // MARK: - Test Credentials Implementation
 
 /// Test implementation of AuthCredentialsProtocol that doesn't require SwiftData
@@ -150,6 +221,7 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
     public let did: String
     public let pdsURL: String
     public let expiresAt: Date
+    public let appPassword: String?
 
     public var isExpired: Bool {
         expiresAt.timeIntervalSinceNow < 300 // 5 minutes buffer
@@ -159,13 +231,14 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
         !handle.isEmpty && !accessToken.isEmpty && !did.isEmpty && !pdsURL.isEmpty && !isExpired
     }
 
-    public init(handle: String, accessToken: String, refreshToken: String, did: String, pdsURL: String, expiresAt: Date) {
+    public init(handle: String, accessToken: String, refreshToken: String, did: String, pdsURL: String, expiresAt: Date, appPassword: String? = nil) {
         self.handle = handle
         self.accessToken = accessToken
         self.refreshToken = refreshToken
         self.did = did
         self.pdsURL = pdsURL
         self.expiresAt = expiresAt
+        self.appPassword = appPassword
     }
 
     // Convenience initializers for common test scenarios
@@ -176,7 +249,8 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
             refreshToken: "test-refresh-token",
             did: "did:plc:test123",
             pdsURL: "https://bsky.social",
-            expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
+            expiresAt: Date().addingTimeInterval(3600), // 1 hour from now
+            appPassword: "test-app-password"
         )
     }
 
@@ -187,7 +261,8 @@ public struct TestAuthCredentials: AuthCredentialsProtocol {
             refreshToken: "expired-refresh",
             did: "did:plc:expired",
             pdsURL: "https://bsky.social",
-            expiresAt: Date().addingTimeInterval(-3600) // 1 hour ago
+            expiresAt: Date().addingTimeInterval(-3600), // 1 hour ago
+            appPassword: "expired-app-password"
         )
     }
 }
@@ -220,7 +295,8 @@ public final class MockCredentialsStorage: CredentialsStorageProtocol {
             refreshToken: credentials.refreshToken,
             did: credentials.did,
             pdsURL: credentials.pdsURL,
-            expiresAt: credentials.expiresAt
+            expiresAt: credentials.expiresAt,
+            appPassword: credentials.appPassword
         )
     }
 

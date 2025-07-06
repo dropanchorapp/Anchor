@@ -12,7 +12,7 @@ public protocol AuthStoreProtocol {
     func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool
     func signOut() async
     func getAppPasswordURL() -> URL
-    func getValidCredentials() async throws -> AuthCredentials
+    func getValidCredentials() async throws -> AuthCredentialsProtocol
 }
 
 // MARK: - Authentication Store
@@ -102,7 +102,7 @@ public final class AuthStore: AuthStoreProtocol {
     // MARK: - Internal Methods
 
     /// Get current credentials, refreshing if expired (for other services to use)
-    public func getValidCredentials() async throws -> AuthCredentials {
+    public func getValidCredentials() async throws -> AuthCredentialsProtocol {
         guard let credentials = authService.credentials else {
             throw ATProtoError.missingCredentials
         }

@@ -16,7 +16,7 @@ public final class FeedStore {
 
     private let appViewService: AnchorAppViewServiceProtocol
     private let session: URLSessionProtocol
-    
+
     /// Current loading task for cancellation
     @MainActor
     private var loadingTask: Task<Bool, Error>?
@@ -41,7 +41,7 @@ public final class FeedStore {
     }
 
     // MARK: - Feed Fetching
-    
+
     /// Cancel any ongoing feed loading operation
     @MainActor
     public func cancelLoading() {
@@ -54,25 +54,25 @@ public final class FeedStore {
     @MainActor
     public func fetchGlobalFeed() async throws -> Bool {
         print("🔄 FeedStore: Starting fetchGlobalFeed...")
-        
+
         // Cancel any existing loading task
         loadingTask?.cancel()
-        
+
         // Create a new task for this operation
         let task = Task<Bool, Error> {
             isLoading = true
             error = nil
             print("🔄 FeedStore: Set loading state to true")
 
-            defer { 
-                isLoading = false 
+            defer {
+                isLoading = false
                 print("🔄 FeedStore: Set loading state to false")
             }
 
             do {
                 // Check for cancellation before starting network operations
                 try Task.checkCancellation()
-                
+
                 // Fetch global feed from AppView (no authentication required)
                 print("📡 FeedStore: Fetching global feed from AppView...")
                 let feedResponse = try await appViewService.getGlobalFeed(
@@ -90,10 +90,10 @@ public final class FeedStore {
                 for (index, checkin) in feedResponse.checkins.enumerated() {
                     // Check for cancellation during processing
                     try Task.checkCancellation()
-                    
+
                     print("📝 FeedStore: Processing check-in \(index + 1)/\(feedResponse.checkins.count) " +
                           "from \(checkin.author.handle)")
-                    
+
                     let feedPost = FeedPost(from: checkin)
                     feedPosts.append(feedPost)
                     print("✅ FeedStore: Added post for \(checkin.author.handle)")
@@ -101,7 +101,7 @@ public final class FeedStore {
 
                 // Final cancellation check before updating UI
                 try Task.checkCancellation()
-                
+
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) items")
                 return true
@@ -110,17 +110,17 @@ public final class FeedStore {
                 // Handle cancellation gracefully - don't update error state
                 print("⏹️ FeedStore: Feed loading was cancelled")
                 return false
-                
+
             } catch {
                 print("❌ FeedStore: Feed loading failed with error: \(error)")
                 self.error = FeedError.networkError(error)
                 throw error
             }
         }
-        
+
         // Store the task for potential cancellation
         loadingTask = task
-        
+
         // Wait for the task to complete
         let result = try await task.value
         print("🏁 FeedStore: fetchGlobalFeed completed with result: \(result)")
@@ -133,25 +133,25 @@ public final class FeedStore {
     @MainActor
     public func fetchFollowingFeed(for userDid: String) async throws -> Bool {
         print("🔄 FeedStore: Starting fetchFollowingFeed for \(userDid)...")
-        
+
         // Cancel any existing loading task
         loadingTask?.cancel()
-        
+
         // Create a new task for this operation
         let task = Task<Bool, Error> {
             isLoading = true
             error = nil
             print("🔄 FeedStore: Set loading state to true")
 
-            defer { 
-                isLoading = false 
+            defer {
+                isLoading = false
                 print("🔄 FeedStore: Set loading state to false")
             }
 
             do {
                 // Check for cancellation before starting network operations
                 try Task.checkCancellation()
-                
+
                 // Fetch following feed from AppView
                 print("📡 FeedStore: Fetching following feed from AppView...")
                 let feedResponse = try await appViewService.getFollowingFeed(
@@ -170,10 +170,10 @@ public final class FeedStore {
                 for (index, checkin) in feedResponse.checkins.enumerated() {
                     // Check for cancellation during processing
                     try Task.checkCancellation()
-                    
+
                     print("📝 FeedStore: Processing following check-in \(index + 1)/\(feedResponse.checkins.count) " +
                           "from \(checkin.author.handle)")
-                    
+
                     let feedPost = FeedPost(from: checkin)
                     feedPosts.append(feedPost)
                     print("✅ FeedStore: Added following post for \(checkin.author.handle)")
@@ -181,7 +181,7 @@ public final class FeedStore {
 
                 // Final cancellation check before updating UI
                 try Task.checkCancellation()
-                
+
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) following items")
                 return true
@@ -190,17 +190,17 @@ public final class FeedStore {
                 // Handle cancellation gracefully - don't update error state
                 print("⏹️ FeedStore: Following feed loading was cancelled")
                 return false
-                
+
             } catch {
                 print("❌ FeedStore: Following feed loading failed with error: \(error)")
                 self.error = FeedError.networkError(error)
                 throw error
             }
         }
-        
+
         // Store the task for potential cancellation
         loadingTask = task
-        
+
         // Wait for the task to complete
         let result = try await task.value
         print("🏁 FeedStore: fetchFollowingFeed completed with result: \(result)")
@@ -216,25 +216,25 @@ public final class FeedStore {
     @MainActor
     public func fetchNearbyFeed(latitude: Double, longitude: Double, radius: Double = 5.0) async throws -> Bool {
         print("🔄 FeedStore: Starting fetchNearbyFeed for \(latitude), \(longitude) with radius \(radius)km...")
-        
+
         // Cancel any existing loading task
         loadingTask?.cancel()
-        
+
         // Create a new task for this operation
         let task = Task<Bool, Error> {
             isLoading = true
             error = nil
             print("🔄 FeedStore: Set loading state to true")
 
-            defer { 
-                isLoading = false 
+            defer {
+                isLoading = false
                 print("🔄 FeedStore: Set loading state to false")
             }
 
             do {
                 // Check for cancellation before starting network operations
                 try Task.checkCancellation()
-                
+
                 // Fetch nearby feed from AppView
                 print("📡 FeedStore: Fetching nearby feed from AppView...")
                 let nearbyResponse = try await appViewService.getNearbyCheckins(
@@ -254,11 +254,11 @@ public final class FeedStore {
                 for (index, checkin) in nearbyResponse.checkins.enumerated() {
                     // Check for cancellation during processing
                     try Task.checkCancellation()
-                    
+
                     let distanceStr = checkin.distance.map { String(format: "%.1fkm", $0) } ?? "unknown"
                     print("📝 FeedStore: Processing nearby check-in \(index + 1)/\(nearbyResponse.checkins.count) " +
                           "from \(checkin.author.handle) (\(distanceStr))")
-                    
+
                     let feedPost = FeedPost(from: checkin)
                     feedPosts.append(feedPost)
                     print("✅ FeedStore: Added nearby post for \(checkin.author.handle)")
@@ -266,7 +266,7 @@ public final class FeedStore {
 
                 // Final cancellation check before updating UI
                 try Task.checkCancellation()
-                
+
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) nearby items")
                 return true
@@ -275,17 +275,17 @@ public final class FeedStore {
                 // Handle cancellation gracefully - don't update error state
                 print("⏹️ FeedStore: Nearby feed loading was cancelled")
                 return false
-                
+
             } catch {
                 print("❌ FeedStore: Nearby feed loading failed with error: \(error)")
                 self.error = FeedError.networkError(error)
                 throw error
             }
         }
-        
+
         // Store the task for potential cancellation
         loadingTask = task
-        
+
         // Wait for the task to complete
         let result = try await task.value
         print("🏁 FeedStore: fetchNearbyFeed completed with result: \(result)")
@@ -323,16 +323,16 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
             displayName: nil, // AppView doesn't provide display names yet
             avatar: nil // AppView doesn't provide avatars yet
         )
-        
+
         // Parse the createdAt string to Date
         let dateFormatter = ISO8601DateFormatter()
         let createdAt = dateFormatter.date(from: checkin.createdAt) ?? Date()
-        
+
         record = ATProtoRecord(
             text: checkin.text,
             createdAt: createdAt
         )
-        
+
         coordinates = checkin.coordinates
         address = checkin.address
         distance = checkin.distance

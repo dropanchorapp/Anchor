@@ -25,7 +25,7 @@
 
 - **🖥️ Native macOS Menubar App** - Always accessible from your menubar with a single click
 - **📱 Native iOS App** - Full-featured mobile experience using shared business logic
-- **🔐 Dual PDS Architecture** - Store check-ins on AnchorPDS with optional Bluesky posting
+- **🔐 StrongRef Architecture** - Store address records and check-ins with content integrity on user's PDS, plus optional Bluesky posting
 - **📍 Automatic Location** - CoreLocation integration with proper platform permissions
 - **🗺️ Place Discovery** - Find nearby climbing gyms, cafes, and points of interest via OpenStreetMap
 - **💬 Custom Messages** - Add personal notes to your check-ins
@@ -102,41 +102,50 @@ The fastest way to check in:
 3. Select a place and drop anchor
 4. **Optional**: Toggle "Also post to Bluesky" to control social sharing
 
-**Note**: All check-ins are stored on AnchorPDS regardless of your Bluesky posting preference.
+**Note**: All check-ins are stored on your PDS using StrongRef architecture regardless of your Bluesky posting preference.
 
-### How Anchor Works: Dual PDS Architecture
+### How Anchor Works: StrongRef Architecture
 
-Anchor uses a **dual Personal Data Server (PDS) architecture** that stores your check-ins on AnchorPDS while optionally posting to Bluesky:
+Anchor uses a **StrongRef-based architecture** that stores structured address and check-in records on your Personal Data Server (PDS) with content integrity verification:
 
-#### 1. **AnchorPDS** - Your Check-in Data Store
+#### 1. **Address Records** - Reusable Venue Data
 
-All check-ins are stored on **AnchorPDS** (our dedicated Personal Data Server) using the official AT Protocol lexicon:
+Venue information is stored separately as reusable address records using community lexicon standards:
+
+```json
+{
+  "$type": "community.lexicon.location.address",
+  "name": "Klimmuur Centraal",
+  "street": "Stationsplein 45",
+  "locality": "Utrecht",
+  "region": "UT",
+  "country": "NL",
+  "postalCode": "3511ED"
+}
+```
+
+#### 2. **Check-in Records** - StrongRef to Address
+
+Check-ins reference address records via StrongRef with content integrity verification:
 
 ```json
 {
   "$type": "app.dropanchor.checkin",
-  "text": "Klimmuur Centraal (climbing)",
+  "text": "Great lunch session with the team!",
   "createdAt": "2024-12-29T14:30:00Z",
-  "locations": [
-    {
-      "$type": "community.lexicon.location.geo",
-      "latitude": "52.0705",
-      "longitude": "4.3007"
-    },
-    {
-      "$type": "community.lexicon.location.address",
-      "name": "Klimmuur Centraal",
-      "street": "Stationsplein 45",
-      "locality": "Utrecht",
-      "region": "UT",
-      "country": "NL",
-      "postalCode": "3511ED"
-    }
-  ]
+  "addressRef": {
+    "uri": "at://did:plc:user123/community.lexicon.location.address/abc123",
+    "cid": "bafyreigh2akiscaildc..."
+  },
+  "coordinates": {
+    "$type": "community.lexicon.location.geo",
+    "latitude": "52.0705",
+    "longitude": "4.3007"
+  }
 }
 ```
 
-#### 2. **Optional Bluesky Posts** - Share with Your Network
+#### 3. **Optional Bluesky Posts** - Share with Your Network
 
 When you enable "Also post to Bluesky" (enabled by default), Anchor creates rich posts on your Bluesky feed:
 
@@ -168,13 +177,16 @@ Dropped anchor at Klimmuur Centraal 🧭
 
 #### Why This Architecture?
 
-This dual-PDS approach provides the best of both worlds:
+This StrongRef-based approach provides powerful benefits:
 
-- **🏠 Dedicated Storage** - Your check-ins live on AnchorPDS with rich location data
+- **🔗 Content Integrity** - CID verification ensures address records haven't been tampered with
+- **♻️ Data Efficiency** - Reusable address records reduce storage duplication
+- **🏠 Self-Contained** - All data stored on your PDS with no external dependencies
 - **🌐 Social Sharing** - Optional Bluesky posts for your social network
-- **📊 Future Features** - Rich querying and analytics from structured AnchorPDS data
+- **📊 Future Features** - Rich querying and analytics from structured data
 - **🔐 Privacy Control** - Choose what to share publicly vs. keep private
 - **🌍 AT Protocol Native** - Uses community lexicon standards for interoperability
+- **🛡️ Standards Compliant** - Follows AT Protocol best practices for record linking
 
 ## 🏗️ Architecture
 
@@ -191,8 +203,8 @@ Anchor is built with a modular architecture designed for cross-platform expansio
 
 - **Swift 6** - Modern async/await concurrency with strict concurrency checking
 - **SwiftUI** - Native macOS user interface with MenuBarExtra
-- **AT Protocol** - Dual PDS integration (AnchorPDS + optional Bluesky)
-- **Community Lexicon** - Uses `community.lexicon.location.*` standards
+- **AT Protocol** - StrongRef-based record architecture with content integrity verification
+- **Community Lexicon** - Uses `community.lexicon.location.*` standards for structured address data
 - **CoreLocation** - Native location services with proper permission handling
 - **Overpass API** - Rich OpenStreetMap place data via `overpass.private.coffee`
 
@@ -222,7 +234,7 @@ Anchor/
 │   │   ├── Services/        # AnchorPDS, Bluesky, Overpass, Location
 │   │   ├── ATProtocol/      # AT Protocol client implementations
 │   │   └── Utils/           # Shared utilities
-│   └── Tests/               # Unit tests (42+ tests)
+│   └── Tests/               # Unit tests (46+ tests)
 └── Static/                  # Assets and documentation
 ```
 
@@ -237,7 +249,7 @@ The shared framework can be built and tested independently:
 ```bash
 cd AnchorKit
 swift build
-swift test  # Runs 55 tests including AnchorPDS integration
+swift test  # Runs 46+ tests including StrongRef integration
 ```
 
 ### Building the Apps
@@ -256,7 +268,7 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile build
 ### Running Tests
 
 ```bash
-# Test AnchorKit (includes AnchorPDS client tests)
+# Test AnchorKit (includes StrongRef and AT Protocol client tests)
 cd AnchorKit && swift test
 
 # Test the apps
@@ -283,8 +295,9 @@ AnchorPDS is a separate project hosted on Val Town. You can experiment with it a
 ### ✅ Completed (v1.0)
 
 - [x] Native macOS menubar app
-- [x] **Dual PDS Architecture** - AnchorPDS + optional Bluesky posting
-- [x] **Community Lexicon Integration** - Uses AT Protocol standards
+- [x] **StrongRef Architecture** - Atomic address + checkin records with content integrity
+- [x] **Community Lexicon Integration** - Uses AT Protocol standards for structured location data
+- [x] **Content Integrity** - CID verification prevents tampering and detects modifications
 - [x] Location services integration
 - [x] Nearby place discovery
 - [x] Modular AnchorKit architecture
@@ -301,7 +314,7 @@ AnchorPDS is a separate project hosted on Val Town. You can experiment with it a
 
 - [x] **iOS App** - Full iOS app using shared AnchorKit ✅
 - [ ] **Apple Watch App** - Quick drops from your wrist
-- [ ] **Rich Analytics** - Personal insights from AnchorPDS data
+- [ ] **Rich Analytics** - Personal insights from StrongRef-structured check-in data
 - [ ] **Shortcuts Integration** - Automate check-ins
 - [ ] **Federation** - Connect with other Anchor instances
 - [ ] **Social Features** - Follow friends' check-ins across the AT Protocol network

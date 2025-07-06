@@ -7,11 +7,21 @@ import Testing
 struct CheckInStoreTests {
     let store: CheckInStore
     let mockAuthStore: MockAuthStore
+    let mockATProtoClient: MockATProtoClient
+    let mockPostService: MockBlueskyPostService
 
     init() {
-        let mockSession = MockURLSession()
         mockAuthStore = MockAuthStore()
-        store = CheckInStore(authStore: mockAuthStore, session: mockSession)
+        mockATProtoClient = MockATProtoClient()
+        mockPostService = MockBlueskyPostService()
+        let richTextProcessor = RichTextProcessor()
+
+        store = CheckInStore(
+            authStore: mockAuthStore,
+            postService: mockPostService,
+            richTextProcessor: richTextProcessor,
+            atprotoClient: mockATProtoClient
+        )
     }
 
     // MARK: - Check-in Tests
@@ -44,16 +54,47 @@ struct CheckInStoreTests {
         #expect(!facets.isEmpty)
     }
 
-    @Test("Create checkin with post calls both AnchorPDS and Bluesky posting")
-    func createCheckinWithPostCallsBothServices() async {
+    @Test("Create checkin with post calls both AT Protocol services")
+    func createCheckinWithPostCallsBothServices() async throws {
         // Given: Valid authentication and a place
         mockAuthStore.shouldThrowAuthError = false
+        mockATProtoClient.shouldThrowError = false
+        mockPostService.shouldThrowError = false
         let place = TestUtilities.createSamplePlace()
 
-        // When/Then: Creating check-in should fail due to missing credentials in test environment
-        // Note: This test verifies error handling when credentials are missing
+        // When: Creating check-in with post
+        let result = try await store.createCheckinWithPost(place: place, customMessage: "Test message")
+
+        // Then: Should succeed and call both services
+        #expect(result == true)
+        // Note: In a more sophisticated test, we could verify that both 
+        // createCheckinWithAddress and createPost were called
+    }
+
+    @Test("Create checkin with strongref handles AT Protocol errors")
+    func createCheckinHandlesATProtoErrors() async {
+        // Given: AT Protocol service that will throw errors
+        mockAuthStore.shouldThrowAuthError = false
+        mockATProtoClient.shouldThrowError = true
+        let place = TestUtilities.createSamplePlace()
+
+        // When/Then: Creating check-in should fail with AT Protocol error
         await #expect(throws: ATProtoError.self) {
             try await store.createCheckinWithPost(place: place, customMessage: "Test message")
         }
+    }
+
+    @Test("Create checkin without post succeeds")
+    func createCheckinWithoutPostSucceeds() async throws {
+        // Given: Valid authentication and a place
+        mockAuthStore.shouldThrowAuthError = false
+        mockATProtoClient.shouldThrowError = false
+        let place = TestUtilities.createSamplePlace()
+
+        // When: Creating check-in without post
+        let result = try await store.createCheckinWithOptionalPost(place: place, customMessage: "Test message", shouldCreatePost: false)
+
+        // Then: Should succeed without calling post service
+        #expect(result == true)
     }
 }

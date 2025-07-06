@@ -8,11 +8,6 @@ public final class AnchorConfig: @unchecked Sendable {
 
     // MARK: - Network Configuration
 
-    /// The custom Anchor PDS URL for check-in records
-    public var anchorPDSURL: String {
-        "https://anchorpds.val.run"
-    }
-
     /// The default/fallback Bluesky PDS URL for AT Protocol communication
     public var blueskyPDSURL: String {
         "https://bsky.social"
@@ -40,7 +35,7 @@ public final class AnchorConfig: @unchecked Sendable {
 
     /// Location search radius in meters
     public var locationSearchRadius: Int {
-        1000
+        300
     }
 
     /// Overpass API timeout in seconds
@@ -52,21 +47,21 @@ public final class AnchorConfig: @unchecked Sendable {
     public var pdsTimeoutSeconds: Double {
         5.0
     }
-    
+
     // MARK: - DNS Configuration
-    
+
     /// Primary DNS-over-HTTPS provider for AT Protocol DNS resolution
     /// Cloudflare's public DNS service (free for public use)
     public var primaryDNSOverHTTPSURL: String {
         "https://cloudflare-dns.com/dns-query"
     }
-    
+
     /// Fallback DNS-over-HTTPS provider
     /// Google's public DNS service as backup
     public var fallbackDNSOverHTTPSURL: String {
         "https://dns.google/dns-query"
     }
-    
+
     /// DNS query timeout in seconds
     public var dnsTimeoutSeconds: Double {
         10.0

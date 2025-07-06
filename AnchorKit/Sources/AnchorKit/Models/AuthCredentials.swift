@@ -8,6 +8,7 @@ public protocol AuthCredentialsProtocol: Sendable {
     var did: String { get }
     var pdsURL: String { get }
     var expiresAt: Date { get }
+    var appPassword: String? { get }
     var isExpired: Bool { get }
     var isValid: Bool { get }
 }
@@ -32,6 +33,9 @@ public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
     /// Token expiration date
     public var expiresAt: Date
 
+    /// App password for automatic re-authentication (stored securely in keychain)
+    public var appPassword: String?
+
     /// Creation date for record tracking
     public var createdAt: Date
 
@@ -41,7 +45,8 @@ public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
         refreshToken: String,
         did: String,
         pdsURL: String,
-        expiresAt: Date
+        expiresAt: Date,
+        appPassword: String? = nil
     ) {
         self.handle = handle
         self.accessToken = accessToken
@@ -49,6 +54,7 @@ public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
         self.did = did
         self.pdsURL = pdsURL
         self.expiresAt = expiresAt
+        self.appPassword = appPassword
         createdAt = Date()
     }
 }

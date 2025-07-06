@@ -19,9 +19,14 @@ struct AuthenticationView: View {
     @State private var isLoading = false
     @State private var lastError: String?
     @State private var showAdvancedOptions = false
+    @FocusState private var focusedField: Field?
+    
+    enum Field: CaseIterable {
+        case handle, appPassword, customPDS
+    }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     // Header
@@ -38,6 +43,10 @@ struct AuthenticationView: View {
             }
             .navigationTitle("Account")
             .navigationBarTitleDisplayMode(.large)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                focusedField = nil
+            }
         }
         .alert("App Password Info", isPresented: $showingAppPasswordInfo) {
             Button("Open Bluesky Settings") {
@@ -136,11 +145,16 @@ struct AuthenticationView: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                 
-                TextField("your-handle.bsky.social", text: $handle)
+                TextField("username.bsky.social", text: $handle)
                     .textFieldStyle(.roundedBorder)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.emailAddress)
+                    .focused($focusedField, equals: .handle)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .appPassword
+                    }
             }
             
             // App password input
@@ -161,6 +175,16 @@ struct AuthenticationView: View {
                 
                 SecureField("App password", text: $appPassword)
                     .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .appPassword)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        if !useCustomPDS {
+                            focusedField = nil
+                            signIn()
+                        } else {
+                            focusedField = .customPDS
+                        }
+                    }
             }
             
             // Advanced Options (collapsible)
@@ -216,6 +240,12 @@ struct AuthenticationView: View {
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
                                 .keyboardType(.URL)
+                                .focused($focusedField, equals: .customPDS)
+                                .submitLabel(.done)
+                                .onSubmit {
+                                    focusedField = nil
+                                    signIn()
+                                }
                         }
                     }
                     .padding(.top, 8)

@@ -60,12 +60,12 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
     public func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> AuthCredentials {
         // Determine PDS URL: use provided, discover from handle, or fallback to Bluesky
         let targetPDS = await determinePDS(for: handle, preferredPDS: pdsURL)
-        
+
         print("🔐 Attempting authentication on PDS: \(targetPDS)")
-        
+
         // Create a client for the target PDS
         let pdsClient = ATProtoClient(baseURL: targetPDS)
-        
+
         let request = ATProtoLoginRequest(identifier: handle, password: appPassword)
 
         do {
@@ -81,7 +81,8 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
                 refreshToken: response.refreshJwt,
                 did: response.did,
                 pdsURL: targetPDS, // Store the PDS that was used for authentication
-                expiresAt: Date().addingTimeInterval(expirationInterval)
+                expiresAt: Date().addingTimeInterval(expirationInterval),
+                appPassword: appPassword // Store app password for automatic re-authentication
             )
 
             // Store credentials in memory and persistent storage
@@ -94,13 +95,13 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
 
         } catch {
             print("❌ Authentication failed on \(targetPDS): \(error)")
-            
+
             // If we tried a custom PDS and it failed, try Bluesky as fallback
             if targetPDS != AnchorConfig.shared.blueskyPDSURL {
                 print("🔄 Attempting fallback authentication on Bluesky PDS...")
                 return try await authenticateWithFallback(handle: handle, appPassword: appPassword)
             }
-            
+
             if let atProtoError = error as? ATProtoError {
                 throw atProtoError
             } else {
@@ -127,7 +128,8 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
                 refreshToken: response.refreshJwt,
                 did: credentials.did,
                 pdsURL: credentials.pdsURL, // Keep the same PDS
-                expiresAt: Date().addingTimeInterval(expirationInterval)
+                expiresAt: Date().addingTimeInterval(expirationInterval),
+                appPassword: credentials.appPassword // Preserve stored app password
             )
 
             // Update stored credentials in memory and persistent storage
@@ -140,6 +142,24 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
 
         } catch {
             print("❌ Failed to refresh credentials on \(credentials.pdsURL): \(error)")
+
+            // If refresh failed and we have the app password, try full re-authentication
+            if let appPassword = credentials.appPassword {
+                print("🔄 Refresh failed, attempting full re-authentication with stored app password...")
+                do {
+                    let newCredentials = try await authenticate(
+                        handle: credentials.handle,
+                        appPassword: appPassword,
+                        pdsURL: credentials.pdsURL
+                    )
+                    print("✅ Successfully re-authenticated after refresh failure")
+                    return newCredentials
+                } catch {
+                    print("❌ Full re-authentication also failed: \(error)")
+                    // Fall through to original error handling
+                }
+            }
+
             if let atProtoError = error as? ATProtoError {
                 throw atProtoError
             } else {
@@ -150,15 +170,15 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
 
     public func loadStoredCredentials() async -> AuthCredentials? {
         let loadedCredentials = await storage.load()
-        
+
         guard let credentials = loadedCredentials else {
             print("🔑 No stored credentials found")
             _credentials = nil
             return nil
         }
-        
+
         print("🔑 Loaded stored credentials for @\(credentials.handle) (PDS: \(credentials.pdsURL))")
-        
+
         // If credentials are expired, try to refresh them automatically
         if credentials.isExpired {
             print("🔄 Credentials are expired, attempting automatic refresh...")
@@ -188,30 +208,30 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
         _credentials = nil
         print("🗑️ Cleared stored credentials")
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Determine which PDS to use for authentication
     private func determinePDS(for handle: String, preferredPDS: String?) async -> String {
         // 1. Use provided PDS if specified
         if let pds = preferredPDS, !pds.isEmpty {
             return pds
         }
-        
+
         // 2. Try to discover from handle
         if let discoveredPDS = await PDSDiscovery.discoverPDS(for: handle) {
             return discoveredPDS
         }
-        
+
         // 3. Guess from handle domain
         if let guessedPDS = PDSDiscovery.guessPDSFromHandle(handle) {
             return guessedPDS
         }
-        
+
         // 4. Fallback to Bluesky
         return AnchorConfig.shared.blueskyPDSURL
     }
-    
+
     /// Fallback authentication using Bluesky PDS
     private func authenticateWithFallback(handle: String, appPassword: String) async throws -> AuthCredentials {
         let blueskyClient = ATProtoClient(baseURL: AnchorConfig.shared.blueskyPDSURL)
@@ -227,7 +247,8 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
                 refreshToken: response.refreshJwt,
                 did: response.did,
                 pdsURL: AnchorConfig.shared.blueskyPDSURL,
-                expiresAt: Date().addingTimeInterval(expirationInterval)
+                expiresAt: Date().addingTimeInterval(expirationInterval),
+                appPassword: appPassword // Store app password for automatic re-authentication
             )
 
             _credentials = newCredentials

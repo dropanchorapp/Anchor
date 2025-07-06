@@ -437,40 +437,21 @@ public struct PlaceCategorization {
             "amenity=cafe",
             "amenity=bar",
             "amenity=pub",
-            "amenity=fast_food",
-            "shop=supermarket",
-            "shop=convenience",
 
-            // Entertainment
+            // Entertainment & Culture
             "amenity=cinema",
-            "amenity=theatre",
-            "leisure=bowling_alley",
+            "tourism=attraction",
+            "tourism=museum",
 
             // Sports & Fitness
             "leisure=fitness_centre",
-            "leisure=sports_centre",
-            "leisure=swimming_pool",
             "leisure=climbing",
 
-            // Shopping
-            "shop=clothes",
-            "shop=electronics",
-            "shop=books",
-
-            // Tourism
-            "tourism=attraction",
-            "tourism=museum",
-            "tourism=hotel",
-            "tourism=viewpoint",
+            // Shopping (essentials only)
+            "shop=supermarket",
 
             // Nature
-            "leisure=park",
-            "leisure=playground",
-
-            // Services
-            "amenity=bank",
-            "amenity=pharmacy",
-            "amenity=hospital"
+            "leisure=park"
         ]
     }
 }

@@ -7,7 +7,7 @@ import Foundation
 @MainActor
 public protocol AnchorAppViewServiceProtocol {
     func getGlobalFeed(limit: Int, cursor: String?) async throws -> AnchorAppViewFeedResponse
-    func getNearbyCheckins(latitude: Double, longitude: Double, radius: Double, limit: Int) async throws -> AnchorAppViewNearbyResponse  
+    func getNearbyCheckins(latitude: Double, longitude: Double, radius: Double, limit: Int) async throws -> AnchorAppViewNearbyResponse
     func getUserCheckins(did: String, limit: Int, cursor: String?) async throws -> AnchorAppViewFeedResponse
     func getFollowingFeed(userDid: String, limit: Int, cursor: String?) async throws -> AnchorAppViewFeedResponse
     func getStats() async throws -> AnchorAppViewStats
@@ -20,18 +20,18 @@ public protocol AnchorAppViewServiceProtocol {
 @MainActor
 public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
     // MARK: - Properties
-    
+
     private let session: URLSessionProtocol
     private let baseURL = "https://anchor-feed-generator.val.run"
-    
+
     // MARK: - Initialization
-    
+
     public init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
     }
-    
+
     // MARK: - Feed Methods
-    
+
     /// Get recent check-ins from all users with pagination support
     /// - Parameters:
     ///   - limit: Number of check-ins to return (default: 50, max: 100)
@@ -45,11 +45,11 @@ public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
         if let cursor = cursor {
             components.queryItems?.append(URLQueryItem(name: "cursor", value: cursor))
         }
-        
+
         let request = URLRequest(url: components.url!)
         return try await performRequest(request, responseType: AnchorAppViewFeedResponse.self)
     }
-    
+
     /// Get check-ins within a specified radius of coordinates using spatial queries
     /// - Parameters:
     ///   - latitude: Latitude in decimal degrees
@@ -65,11 +65,11 @@ public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
             URLQueryItem(name: "radius", value: String(radius)),
             URLQueryItem(name: "limit", value: String(limit))
         ]
-        
+
         let request = URLRequest(url: components.url!)
         return try await performRequest(request, responseType: AnchorAppViewNearbyResponse.self)
     }
-    
+
     /// Get all check-ins from a specific user
     /// - Parameters:
     ///   - did: User's decentralized identifier
@@ -85,11 +85,11 @@ public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
         if let cursor = cursor {
             components.queryItems?.append(URLQueryItem(name: "cursor", value: cursor))
         }
-        
+
         let request = URLRequest(url: components.url!)
         return try await performRequest(request, responseType: AnchorAppViewFeedResponse.self)
     }
-    
+
     /// Get check-ins from users that the specified user follows on Bluesky
     /// - Parameters:
     ///   - userDid: User's DID to get following feed for
@@ -105,11 +105,11 @@ public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
         if let cursor = cursor {
             components.queryItems?.append(URLQueryItem(name: "cursor", value: cursor))
         }
-        
+
         let request = URLRequest(url: components.url!)
         return try await performRequest(request, responseType: AnchorAppViewFeedResponse.self)
     }
-    
+
     /// Get AppView health metrics and processing statistics
     /// - Returns: Statistics about the AppView system
     public func getStats() async throws -> AnchorAppViewStats {
@@ -117,9 +117,9 @@ public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
         let request = URLRequest(url: url)
         return try await performRequest(request, responseType: AnchorAppViewStats.self)
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Perform HTTP request and decode response
     /// - Parameters:
     ///   - request: URLRequest to perform
@@ -128,11 +128,11 @@ public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
     private func performRequest<T: Codable>(_ request: URLRequest, responseType: T.Type) async throws -> T {
         do {
             let (data, response) = try await session.data(for: request)
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw AnchorAppViewError.invalidResponse
             }
-            
+
             // Check for HTTP errors
             guard 200...299 ~= httpResponse.statusCode else {
                 // Try to decode error response
@@ -142,12 +142,12 @@ public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
                     throw AnchorAppViewError.httpError(httpResponse.statusCode)
                 }
             }
-            
+
             // Decode successful response
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             return try decoder.decode(responseType, from: data)
-            
+
         } catch let error as AnchorAppViewError {
             throw error
         } catch {
@@ -163,7 +163,7 @@ public struct AnchorAppViewFeedResponse: Codable, Sendable {
     public let checkins: [AnchorAppViewCheckin]
     public let cursor: String?
     public let user: AnchorAppViewUser?
-    
+
     public init(checkins: [AnchorAppViewCheckin], cursor: String? = nil, user: AnchorAppViewUser? = nil) {
         self.checkins = checkins
         self.cursor = cursor
@@ -176,7 +176,7 @@ public struct AnchorAppViewNearbyResponse: Codable, Sendable {
     public let checkins: [AnchorAppViewCheckin]
     public let center: AnchorAppViewCoordinates
     public let radius: Double
-    
+
     public init(checkins: [AnchorAppViewCheckin], center: AnchorAppViewCoordinates, radius: Double) {
         self.checkins = checkins
         self.center = center
@@ -194,7 +194,7 @@ public struct AnchorAppViewCheckin: Codable, Sendable, Identifiable {
     public let coordinates: AnchorAppViewCoordinates?
     public let address: AnchorAppViewAddress?
     public let distance: Double? // Only present in nearby responses
-    
+
     public init(id: String, uri: String, author: AnchorAppViewAuthor, text: String, createdAt: String, coordinates: AnchorAppViewCoordinates? = nil, address: AnchorAppViewAddress? = nil, distance: Double? = nil) {
         self.id = id
         self.uri = uri
@@ -211,7 +211,7 @@ public struct AnchorAppViewCheckin: Codable, Sendable, Identifiable {
 public struct AnchorAppViewAuthor: Codable, Sendable {
     public let did: String
     public let handle: String
-    
+
     public init(did: String, handle: String) {
         self.did = did
         self.handle = handle
@@ -222,7 +222,7 @@ public struct AnchorAppViewAuthor: Codable, Sendable {
 public struct AnchorAppViewCoordinates: Codable, Sendable, Hashable {
     public let latitude: Double
     public let longitude: Double
-    
+
     public init(latitude: Double, longitude: Double) {
         self.latitude = latitude
         self.longitude = longitude
@@ -237,7 +237,7 @@ public struct AnchorAppViewAddress: Codable, Sendable, Hashable {
     public let region: String?
     public let country: String?
     public let postalCode: String?
-    
+
     public init(name: String? = nil, street: String? = nil, locality: String? = nil, region: String? = nil, country: String? = nil, postalCode: String? = nil) {
         self.name = name
         self.street = street
@@ -251,7 +251,7 @@ public struct AnchorAppViewAddress: Codable, Sendable, Hashable {
 /// User information for feed responses
 public struct AnchorAppViewUser: Codable, Sendable {
     public let did: String
-    
+
     public init(did: String) {
         self.did = did
     }
@@ -264,7 +264,7 @@ public struct AnchorAppViewStats: Codable, Sendable {
     public let recentActivity: Int
     public let lastProcessingRun: String?
     public let timestamp: String
-    
+
     public init(totalCheckins: Int, totalUsers: Int, recentActivity: Int, lastProcessingRun: String? = nil, timestamp: String) {
         self.totalCheckins = totalCheckins
         self.totalUsers = totalUsers
@@ -274,10 +274,22 @@ public struct AnchorAppViewStats: Codable, Sendable {
     }
 }
 
+// MARK: - LocationRepresentable Conformance
+
+extension AnchorAppViewAddress: LocationRepresentable {
+    public var displayName: String? {
+        return name
+    }
+
+    public var coordinate: (Double, Double)? {
+        return nil
+    }
+}
+
 /// Error response format from the API
 public struct AnchorAppViewErrorResponse: Codable, Sendable {
     public let error: String
-    
+
     public init(error: String) {
         self.error = error
     }
@@ -293,7 +305,7 @@ public enum AnchorAppViewError: LocalizedError, Sendable {
     case apiError(Int, String)
     case networkError(Error)
     case decodingError(Error)
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidURL:

@@ -91,7 +91,8 @@ public final class FeedStore {
                     // Check for cancellation during processing
                     try Task.checkCancellation()
                     
-                    print("📝 FeedStore: Processing check-in \(index + 1)/\(feedResponse.checkins.count) from \(checkin.author.handle)")
+                    print("📝 FeedStore: Processing check-in \(index + 1)/\(feedResponse.checkins.count) " +
+                          "from \(checkin.author.handle)")
                     
                     let feedPost = FeedPost(from: checkin)
                     feedPosts.append(feedPost)
@@ -170,7 +171,8 @@ public final class FeedStore {
                     // Check for cancellation during processing
                     try Task.checkCancellation()
                     
-                    print("📝 FeedStore: Processing following check-in \(index + 1)/\(feedResponse.checkins.count) from \(checkin.author.handle)")
+                    print("📝 FeedStore: Processing following check-in \(index + 1)/\(feedResponse.checkins.count) " +
+                          "from \(checkin.author.handle)")
                     
                     let feedPost = FeedPost(from: checkin)
                     feedPosts.append(feedPost)
@@ -254,7 +256,8 @@ public final class FeedStore {
                     try Task.checkCancellation()
                     
                     let distanceStr = checkin.distance.map { String(format: "%.1fkm", $0) } ?? "unknown"
-                    print("📝 FeedStore: Processing nearby check-in \(index + 1)/\(nearbyResponse.checkins.count) from \(checkin.author.handle) (\(distanceStr))")
+                    print("📝 FeedStore: Processing nearby check-in \(index + 1)/\(nearbyResponse.checkins.count) " +
+                          "from \(checkin.author.handle) (\(distanceStr))")
                     
                     let feedPost = FeedPost(from: checkin)
                     feedPosts.append(feedPost)
@@ -351,7 +354,6 @@ public struct FeedAuthor: Sendable, Hashable {
     }
 
 }
-
 
 // MARK: - Error Types
 

@@ -146,7 +146,10 @@ public enum RichTextFeature: Codable {
             self = .tag(tag: tag)
         default:
             throw DecodingError.dataCorrupted(
-                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unknown rich text feature type: \(type)")
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unknown rich text feature type: \(type)"
+                )
             )
         }
     }

@@ -122,14 +122,14 @@ struct CheckinMapView: View {
         let latDirection = coordinate.latitude >= 0 ? "N" : "S"
         let lonDirection = coordinate.longitude >= 0 ? "E" : "W"
         
-        return String(format: "%.4f°%@ %.4f°%@", 
-                     abs(coordinate.latitude), latDirection,
-                     abs(coordinate.longitude), lonDirection)
+        return String(format: "%.4f°%@ %.4f°%@",
+                      abs(coordinate.latitude), latDirection,
+                      abs(coordinate.longitude), lonDirection)
     }
     
     private func openInMaps() {
-        let location = CLLocation(latitude: locationInfo.coordinate.latitude, 
-                                 longitude: locationInfo.coordinate.longitude)
+        let location = CLLocation(latitude: locationInfo.coordinate.latitude,
+                                  longitude: locationInfo.coordinate.longitude)
         let mapItem = MKMapItem(location: location, address: nil)
         mapItem.name = locationInfo.placeName ?? "Check-in Location"
         mapItem.openInMaps(launchOptions: [

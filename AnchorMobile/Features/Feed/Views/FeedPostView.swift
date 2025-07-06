@@ -98,7 +98,10 @@ struct FeedPostView: View {
                 }
                 
                 // User's personal message (if different from just location)
-                if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(from: post.record.text, locations: nil) {
+                if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(
+                    from: post.record.text,
+                    locations: nil
+                ) {
                     Text(personalMessage)
                         .font(.body)
                         .foregroundStyle(.primary)

@@ -1,6 +1,8 @@
 import CoreLocation
 import Foundation
 
+// swiftlint:disable file_length
+
 /// Service for querying OpenStreetMap data via Overpass API
 public final class OverpassService: @unchecked Sendable {
     // MARK: - Properties

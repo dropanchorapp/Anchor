@@ -136,7 +136,10 @@ struct CheckInDetailView: View {
                     }
                     
                     // Personal message
-                    if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(from: post.record.text, locations: nil) {
+                    if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(
+                        from: post.record.text,
+                        locations: nil
+                    ) {
                         Divider()
                         
                         VStack(alignment: .leading, spacing: 8) {
@@ -153,7 +156,13 @@ struct CheckInDetailView: View {
                     HStack(spacing: 16) {
                         if let coords = post.coordinates {
                             Button(action: {
-                                ExternalAppService.shared.openInMaps(coordinate: CLLocationCoordinate2D(latitude: coords.latitude, longitude: coords.longitude), locationName: post.address?.name ?? "Location")
+                                ExternalAppService.shared.openInMaps(
+                                    coordinate: CLLocationCoordinate2D(
+                                        latitude: coords.latitude,
+                                        longitude: coords.longitude
+                                    ),
+                                    locationName: post.address?.name ?? "Location"
+                                )
                             }) {
                                 Label("Open in Maps", systemImage: "map")
                                     .font(.callout)

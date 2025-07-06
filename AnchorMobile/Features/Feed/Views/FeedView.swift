@@ -18,8 +18,9 @@ struct FeedView: View {
     var body: some View {
         NavigationStack {
             Group {
-                // Use direct authentication check instead of computed property to avoid SwiftUI evaluation issues
-                if authStore.isAuthenticated && authStore.credentials != nil && authStore.credentials?.accessToken.isEmpty == false {
+                if authStore.isAuthenticated &&
+                   authStore.credentials != nil &&
+                   authStore.credentials?.accessToken.isEmpty == false {
                     // Feed content
                     Group {
                         if let feedStore = feedStore, feedStore.isLoading {

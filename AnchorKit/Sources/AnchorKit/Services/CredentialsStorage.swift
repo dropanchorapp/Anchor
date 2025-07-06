@@ -110,7 +110,8 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
                 expiresAt: credentialsData.expiresAt
             )
 
-            print("🔐 Loaded credentials from keychain for @\(credentials.handle), expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
+            print("🔐 Loaded credentials from keychain for @\(credentials.handle), " +
+                  "expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
 
             // Return credentials regardless of expiration status
             // Let higher-level services (AuthService) decide whether to refresh or clear

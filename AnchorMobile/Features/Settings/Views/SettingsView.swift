@@ -110,7 +110,8 @@ struct SettingsView: View {
                 } header: {
                     Text("App")
                 } footer: {
-                    Text("Anchor is a free, open-source app that respects your privacy. All data is stored locally on your device.")
+                    Text("Anchor is a free, open-source app that respects your privacy. " +
+                         "All data is stored locally on your device.")
                 }
                 
                 // Support Section

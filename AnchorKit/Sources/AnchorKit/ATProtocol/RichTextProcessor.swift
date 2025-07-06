@@ -53,7 +53,8 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
         var facets: [RichTextFacet] = []
 
         // Start with user's message, or use default marketing message if empty
-        let messageToUse = if let customMessage, !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let messageToUse = if let customMessage,
+                              !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             customMessage
         } else {
             AnchorConfig.shared.defaultCheckInMessage
@@ -91,7 +92,10 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
         let checkinHashtagEnd = checkinHashtagStart + "#checkin".utf8.count
 
         let checkinHashtagFacet = RichTextFacet(
-            index: ByteRange(byteStart: checkinHashtagStart + 1, byteEnd: checkinHashtagEnd + 1), // +1 to skip space, include #
+            index: ByteRange(
+                byteStart: checkinHashtagStart + 1,
+                byteEnd: checkinHashtagEnd + 1
+            ), // +1 to skip space, include #
             features: [.tag(tag: "checkin")]
         )
         facets.append(checkinHashtagFacet)
@@ -100,7 +104,10 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
         let dropanchorHashtagEnd = dropanchorHashtagStart + "#dropanchor".utf8.count
 
         let dropanchorHashtagFacet = RichTextFacet(
-            index: ByteRange(byteStart: dropanchorHashtagStart + 1, byteEnd: dropanchorHashtagEnd + 1), // +1 to skip space, include #
+            index: ByteRange(
+                byteStart: dropanchorHashtagStart + 1,
+                byteEnd: dropanchorHashtagEnd + 1
+            ), // +1 to skip space, include #
             features: [.tag(tag: "dropanchor")]
         )
         facets.append(dropanchorHashtagFacet)
@@ -159,7 +166,8 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
 
         do {
             // Pattern for @mentions - must not end with .invalid
-            let pattern = "@([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)"
+            let pattern = "@([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?" +
+                         "(?:\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)"
             let regex = try NSRegularExpression(pattern: pattern, options: [])
             let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 

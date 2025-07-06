@@ -55,10 +55,8 @@ public final class FeedTextProcessor: Sendable {
     /// - Returns: The first emoji found, or a default location icon
     public func extractCategoryIcon(from text: String) -> String {
         // Simple emoji detection - find first emoji-like character
-        for char in text {
-            if char.isEmoji {
-                return String(char)
-            }
+        for char in text where char.isEmoji {
+            return String(char)
         }
         return "📍" // Default location icon
     }

@@ -13,7 +13,8 @@ import AnchorKit
 // Helper: mock AnchorAppViewCheckin
 private func makeMockCheckin(id: String, authorDid: String, authorHandle: String, text: String, createdAt: Date, latitude: Double?, longitude: Double?, addressName: String?, distance: Double? = nil) -> AnchorAppViewCheckin {
     let isoDate = ISO8601DateFormatter().string(from: createdAt)
-    let coords = (latitude != nil && longitude != nil) ? AnchorAppViewCoordinates(latitude: latitude!, longitude: longitude!) : nil
+    let coords = (latitude != nil && longitude != nil) ?
+        AnchorAppViewCoordinates(latitude: latitude!, longitude: longitude!) : nil
     let address = addressName != nil ? AnchorAppViewAddress(name: addressName) : nil
     return AnchorAppViewCheckin(
         id: id,

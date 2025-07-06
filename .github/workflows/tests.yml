@@ -28,12 +28,15 @@ jobs:
         cd AnchorKit
         swift test --parallel
 
+    - name: List available simulators
+      run: xcrun simctl list devices available
+
     - name: Run Xcode Unit Tests (excluding UI tests that require signing)
       run: |
         xcodebuild test \
           -project Anchor.xcodeproj \
           -scheme AnchorMobile \
-          -destination "platform=iOS Simulator,name=iPhone 15 Pro" \
+          -destination "platform=iOS Simulator,name=Any iOS Simulator Device" \
           -enableCodeCoverage YES \
           -derivedDataPath DerivedData \
           -only-testing AnchorTests \

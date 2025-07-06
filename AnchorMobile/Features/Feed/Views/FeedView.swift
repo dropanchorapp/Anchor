@@ -72,6 +72,9 @@ struct FeedView: View {
                     feedStore = FeedStore()
                 }
                 
+                // Set credentials for profile resolution
+                feedStore?.setCredentials(authStore.credentials)
+                
                 // Only load feed if authenticated
                 if authStore.isAuthenticated && authStore.credentials != nil {
                     await loadFeedIfNeeded()
@@ -88,6 +91,9 @@ struct FeedView: View {
                 }
             }
             .onChange(of: authStore.credentials?.accessToken) { _, newToken in
+                // Update credentials in feedStore when they change
+                feedStore?.setCredentials(authStore.credentials)
+                
                 // When credentials change (e.g., token refresh), refetch if we have a new valid token
                 if let newToken = newToken, !newToken.isEmpty, authStore.isAuthenticated {
                     Task {

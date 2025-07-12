@@ -24,6 +24,17 @@ if [ -z "$IOS_DEVICE" ]; then
 fi
 
 if [ -z "$IOS_DEVICE" ]; then
+    echo "🔍 No real simulators found, trying placeholder iOS Simulator for CI..."
+    
+    # CI Fallback: Use placeholder simulator (for GitHub Actions)
+    IOS_DEVICE=$(xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile -showdestinations 2>/dev/null | \
+        grep "platform:iOS Simulator" | \
+        grep "placeholder" | \
+        head -1 | \
+        sed -n 's/.*id:\([^,]*\).*/\1/p')
+fi
+
+if [ -z "$IOS_DEVICE" ]; then
     echo "❌ No available iOS simulators found"
     echo "Available destinations:"
     xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile -showdestinations

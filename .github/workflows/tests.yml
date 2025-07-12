@@ -27,9 +27,3 @@ jobs:
       run: |
         cd AnchorKit
         swift test --parallel
-
-    - name: List available simulators
-      run: xcrun simctl list devices available
-
-    - name: Run Xcode Unit Tests (dynamically find iOS simulator)
-      run: ./Scripts/run-tests.sh

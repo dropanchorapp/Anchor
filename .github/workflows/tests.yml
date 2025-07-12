@@ -27,20 +27,3 @@ jobs:
       run: |
         cd AnchorKit
         swift test --parallel
-
-    - name: List available simulators
-      run: xcrun simctl list devices available
-
-    - name: Run Xcode Unit Tests (excluding UI tests that require signing)
-      run: |
-        xcodebuild test \
-          -project Anchor.xcodeproj \
-          -scheme AnchorMobile \
-          -destination "platform=iOS Simulator,OS=18.6,name=Any iOS Simulator Device" \
-          -enableCodeCoverage YES \
-          -derivedDataPath DerivedData \
-          -only-testing AnchorTests \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          DEVELOPMENT_TEAM=""

@@ -9,15 +9,6 @@ private final class FeedPostWrapper {
     }
 }
 
-/// Wrapper class for BlueskyProfileInfo to use with NSCache
-private final class ProfileWrapper {
-    let profile: BlueskyProfileInfo
-    
-    init(_ profile: BlueskyProfileInfo) {
-        self.profile = profile
-    }
-}
-
 /// Observable store for managing check-in feeds from the new Anchor AppView backend
 ///
 /// Manages feed state and coordinates with the Anchor AppView API.
@@ -34,11 +25,9 @@ public final class FeedStore {
 
     private let appViewService: AnchorAppViewServiceProtocol
     private let session: URLSessionProtocol
-    private let multiPDSClient: MultiPDSClient
-    private var credentials: AuthCredentialsProtocol?
+    private let profileResolver: FeedProfileResolver
     
-    // Caches
-    private let profileCache = NSCache<NSString, ProfileWrapper>()
+    // Cache
     private let feedPostCache = NSCache<NSString, FeedPostWrapper>()
 
     /// Current loading task for cancellation
@@ -62,10 +51,10 @@ public final class FeedStore {
     public init(appViewService: AnchorAppViewServiceProtocol? = nil, session: URLSessionProtocol = URLSession.shared) {
         self.session = session
         self.appViewService = appViewService ?? AnchorAppViewService(session: session)
-        self.multiPDSClient = MultiPDSClient(session: session)
+        let multiPDSClient = MultiPDSClient(session: session)
+        self.profileResolver = FeedProfileResolver(multiPDSClient: multiPDSClient)
         
-        // Configure caches
-        profileCache.countLimit = 500 // Reasonable limit for profiles
+        // Configure cache
         feedPostCache.countLimit = 1000 // Cache for recent posts
     }
 
@@ -136,7 +125,7 @@ public final class FeedStore {
                 
                 // Resolve user profiles asynchronously
                 Task {
-                    await resolveProfiles()
+                    posts = await profileResolver.resolveProfiles(for: posts)
                     print("✅ FeedStore: Resolved profiles for posts")
                 }
                 
@@ -223,7 +212,7 @@ public final class FeedStore {
                 
                 // Resolve user profiles asynchronously
                 Task {
-                    await resolveProfiles()
+                    posts = await profileResolver.resolveProfiles(for: posts)
                     print("✅ FeedStore: Resolved profiles for posts")
                 }
                 
@@ -315,7 +304,7 @@ public final class FeedStore {
                 
                 // Resolve user profiles asynchronously
                 Task {
-                    await resolveProfiles()
+                    posts = await profileResolver.resolveProfiles(for: posts)
                     print("✅ FeedStore: Resolved profiles for posts")
                 }
                 
@@ -347,13 +336,7 @@ public final class FeedStore {
     /// Set authentication credentials for profile resolution
     @MainActor
     public func setCredentials(_ credentials: AuthCredentialsProtocol?) {
-        self.credentials = credentials
-    }
-
-    /// Get access token from stored credentials
-    @MainActor
-    private func getAccessToken() -> String? {
-        return credentials?.accessToken
+        profileResolver.setCredentials(credentials)
     }
 
     // MARK: - Caching
@@ -377,219 +360,5 @@ public final class FeedStore {
         return newPost
     }
 
-    /// Get cached profile or return nil if not available
-    @MainActor
-    private func getCachedProfile(for did: String) -> BlueskyProfileInfo? {
-        let cacheKey = NSString(string: did)
-        return profileCache.object(forKey: cacheKey)?.profile
-    }
 
-    /// Cache a resolved profile
-    @MainActor
-    private func cacheProfile(_ profile: BlueskyProfileInfo, for did: String) {
-        let cacheKey = NSString(string: did)
-        profileCache.setObject(ProfileWrapper(profile), forKey: cacheKey)
-        print("💾 FeedStore: Cached profile for \(did): @\(profile.handle)")
-    }
-
-    // MARK: - Profile Resolution
-
-    /// Resolve user profiles for posts that don't have displayName or avatar
-    @MainActor
-    private func resolveProfiles() async {
-        // Get DIDs that need profile resolution (excluding those with cached profiles)
-        let didsNeedingResolution = Set(posts.compactMap { post -> String? in
-            // Skip if already has complete profile data
-            if post.author.displayName != nil && post.author.avatar != nil {
-                return nil
-            }
-            
-            // Skip if we have a cached profile
-            if getCachedProfile(for: post.author.did) != nil {
-                return nil
-            }
-            
-            return post.author.did
-        })
-        
-        print("🔄 FeedStore: Need to resolve \(didsNeedingResolution.count) profiles")
-
-        // First, update posts with any cached profiles we have
-        updatePostsWithCachedProfiles()
-
-        // Try to get access token from credentials (if available)
-        let accessToken = getAccessToken()
-
-        // Only resolve profiles that aren't cached
-        guard !didsNeedingResolution.isEmpty else {
-            print("✅ FeedStore: All profiles are cached, no network requests needed")
-            return
-        }
-
-        // Resolve profiles in parallel
-        await withTaskGroup(of: (String, BlueskyProfileInfo?).self) { group in
-            for did in didsNeedingResolution {
-                group.addTask {
-                    let profile = await self.multiPDSClient.getProfileInfo(for: did, accessToken: accessToken)
-                    return (did, profile)
-                }
-            }
-
-            // Collect results and update posts
-            for await (did, profileInfo) in group {
-                guard let profileInfo = profileInfo else { continue }
-
-                // Cache the resolved profile
-                cacheProfile(profileInfo, for: did)
-
-                // Update posts with resolved profile information
-                updatePostsWithProfile(profileInfo, for: did)
-            }
-        }
-    }
-
-    /// Update posts with cached profiles
-    @MainActor
-    private func updatePostsWithCachedProfiles() {
-        posts = posts.map { post in
-            // Skip if already has complete profile data
-            if post.author.displayName != nil && post.author.avatar != nil {
-                return post
-            }
-            
-            // Check for cached profile
-            guard let cachedProfile = getCachedProfile(for: post.author.did) else {
-                return post
-            }
-            
-            print("🔄 FeedStore: Applying cached profile for \(post.author.did): @\(cachedProfile.handle)")
-            
-            return createUpdatedPost(post, with: cachedProfile)
-        }
-    }
-
-    /// Update posts with a specific profile
-    @MainActor
-    private func updatePostsWithProfile(_ profile: BlueskyProfileInfo, for did: String) {
-        posts = posts.map { post in
-            guard post.author.did == did else { return post }
-            return createUpdatedPost(post, with: profile)
-        }
-    }
-
-    /// Helper to create updated post with profile information
-    @MainActor
-    private func createUpdatedPost(_ post: FeedPost, with profile: BlueskyProfileInfo) -> FeedPost {
-        let updatedAuthor = FeedAuthor(
-            did: post.author.did,
-            handle: profile.handle,
-            displayName: profile.displayName,
-            avatar: profile.avatar
-        )
-
-        let updatedPost = FeedPost(
-            id: post.id,
-            author: updatedAuthor,
-            record: post.record,
-            coordinates: post.coordinates,
-            address: post.address,
-            distance: post.distance
-        )
-        
-        // Update the cache with the enhanced post
-        let cacheKey = NSString(string: post.id)
-        feedPostCache.setObject(FeedPostWrapper(updatedPost), forKey: cacheKey)
-        
-        return updatedPost
-    }
-
-}
-
-// MARK: - Models
-
-public struct FeedPost: Identifiable, Sendable, Hashable {
-    public let id: String
-    public let author: FeedAuthor
-    public let record: ATProtoRecord
-    public let coordinates: AnchorAppViewCoordinates?
-    public let address: AnchorAppViewAddress?
-    public let distance: Double? // Only present in nearby feeds
-
-    // Public initializer for testing and previews
-    public init(id: String, author: FeedAuthor, record: ATProtoRecord, coordinates: AnchorAppViewCoordinates? = nil, address: AnchorAppViewAddress? = nil, distance: Double? = nil) {
-        self.id = id
-        self.author = author
-        self.record = record
-        self.coordinates = coordinates
-        self.address = address
-        self.distance = distance
-    }
-
-    // New initializer for AppView API responses
-    init(from checkin: AnchorAppViewCheckin) {
-        id = checkin.id
-        author = FeedAuthor(
-            did: checkin.author.did,
-            handle: checkin.author.handle,
-            displayName: nil, // Will be resolved asynchronously
-            avatar: nil // Will be resolved asynchronously
-        )
-
-        // Parse the createdAt string to Date
-        let dateFormatter = ISO8601DateFormatter()
-        let createdAt = dateFormatter.date(from: checkin.createdAt) ?? Date()
-
-        record = ATProtoRecord(
-            text: checkin.text,
-            createdAt: createdAt
-        )
-
-        coordinates = checkin.coordinates
-        address = checkin.address
-        distance = checkin.distance
-    }
-}
-
-public struct FeedAuthor: Sendable, Hashable {
-    public let did: String
-    public let handle: String
-    public let displayName: String?
-    public let avatar: String?
-
-    // Public initializer for testing and previews
-    public init(did: String, handle: String, displayName: String?, avatar: String?) {
-        self.did = did
-        self.handle = handle
-        self.displayName = displayName
-        self.avatar = avatar
-    }
-
-}
-
-// MARK: - Error Types
-
-public enum FeedError: LocalizedError, Sendable {
-    case invalidURL
-    case invalidResponse
-    case httpError(Int)
-    case networkError(Error)
-    case decodingError(Error)
-    case apiError(String)
-
-    public var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            "Invalid AppView API URL"
-        case .invalidResponse:
-            "Invalid response from AppView API"
-        case let .httpError(code):
-            "HTTP error \(code) from AppView API"
-        case let .networkError(error):
-            "Network error: \(error.localizedDescription)"
-        case let .decodingError(error):
-            "Failed to decode AppView response: \(error.localizedDescription)"
-        case let .apiError(message):
-            "AppView API error: \(message)"
-        }
-    }
 }

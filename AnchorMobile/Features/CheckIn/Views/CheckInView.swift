@@ -60,14 +60,6 @@ struct CheckInMainView: View {
         VStack(spacing: 30) {
             // Header
             VStack(spacing: 12) {
-                Image(systemName: "anchor.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.blue)
-                
-                Text("Ready to Drop Anchor")
-                    .font(.title2)
-                    .fontWeight(.medium)
-                
                 Text("Find nearby places where you can check in and share your location with friends.")
                     .font(.body)
                     .foregroundColor(.secondary)
@@ -83,18 +75,6 @@ struct CheckInMainView: View {
                         .padding()
                         .background(Color.accentColor)
                         .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                
-                Button(action: {
-                    // Quick check-in at current location
-                    // This would create a generic "Current Location" place
-                }) {
-                    Label("Quick Drop Here", systemImage: "location.fill")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.secondary.opacity(0.1))
-                        .foregroundColor(.primary)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }

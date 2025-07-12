@@ -1,0 +1,4 @@
+project: Anchor.xcodeproj
+schemes:
+- AnchorKit
+- AnchorMobile

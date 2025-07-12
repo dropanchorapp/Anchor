@@ -55,7 +55,7 @@ struct SettingsModelTests {
 
         #expect(settings.defaultMessage == "Dropped ⚓")
         #expect(settings.includeEmoji == true)
-        #expect(settings.searchRadius == 1000.0)
+        #expect(settings.searchRadius == 300.0)
         #expect(settings.preferredCategories == ["climbing", "gym", "cafe"])
     }
 }

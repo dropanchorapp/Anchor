@@ -119,7 +119,9 @@ struct LoadingLocationView: View {
                 .font(.headline)
                 .fontWeight(.medium)
             
-            Text(timeoutReached ? "Location request is taking longer than expected" : "Please wait while we find your current location")
+            Text(timeoutReached 
+                ? "Location request is taking longer than expected" 
+                : "Please wait while we find your current location")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

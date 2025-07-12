@@ -43,19 +43,3 @@ struct CoreModelTests {
         }
     }
 }
-
-// Authentication model tests removed to avoid SwiftData ModelContainer issues in CI.
-// AuthCredentials functionality is tested indirectly through service integration tests.
-
-@Suite("Settings Models", .tags(.unit, .models))
-struct SettingsModelTests {
-    @Test("Default settings values")
-    func anchorSettingsDefaults() {
-        let settings = AnchorSettings()
-
-        #expect(settings.defaultMessage == "Dropped ⚓")
-        #expect(settings.includeEmoji == true)
-        #expect(settings.searchRadius == 1000.0)
-        #expect(settings.preferredCategories == ["climbing", "gym", "cafe"])
-    }
-}

@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "AnchorAppIcon-transparent.png",
+      "filename" : "anchor-icon-light.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

@@ -35,9 +35,22 @@
 		3F9C6F422DECDC11009A1F50 /* AnchorKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AnchorKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3F2C26992E23D64000956CBD /* Exceptions for "AnchorMobile" folder in "AnchorMobile" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3F77C4F22E0EC17000CC0D38 /* AnchorMobile */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3F77C4F42E0EC17000CC0D38 /* AnchorMobile */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3F2C26992E23D64000956CBD /* Exceptions for "AnchorMobile" folder in "AnchorMobile" target */,
+			);
 			path = AnchorMobile;
 			sourceTree = "<group>";
 		};
@@ -426,6 +439,9 @@
 				DEVELOPMENT_TEAM = 9Z77B473HX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AnchorMobile/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Anchor;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";
@@ -463,6 +479,9 @@
 				DEVELOPMENT_TEAM = 9Z77B473HX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AnchorMobile/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Anchor;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Anchor needs access to your location to find nearby places where you can check in.";

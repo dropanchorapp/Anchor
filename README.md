@@ -37,12 +37,13 @@
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="Static/checkin-screen.png" alt="Anchor Check-in Screen" width="400"/>
-  <img src="Static/settings-screen.png" alt="Anchor Settings Screen" width="400"/>
+  <img src="Static/anchor-feed-screen.jpeg" alt="Anchor Global Feed" width="300"/>
+  <img src="Static/anchor-checkin-screen.jpeg" alt="Anchor Check-in Screen" width="300"/>
+  <img src="Static/anchor-nearby-locations-screen.jpeg" alt="Anchor Nearby Places" width="300"/>
 </p>
 
 <p align="center">
-  <em>Check-in interface and settings panel</em>
+  <em>Global feed, check-in interface, and nearby places discovery</em>
 </p>
 
 ## 🚀 Quick Start

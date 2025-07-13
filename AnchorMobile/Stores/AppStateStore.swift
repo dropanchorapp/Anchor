@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import AnchorKit
 
 /// Observable store for managing AnchorMobile-specific app state
 /// 
@@ -18,6 +19,12 @@ import UIKit
 public final class AppStateStore {
     
     // MARK: - Properties
+    
+    /// Whether the app has completed initialization
+    private(set) var isInitialized = false
+    
+    /// Current initialization step (for debugging/monitoring)
+    private(set) var initializationStep: String = "Not started"
     
     /// Last time the feed was fetched
     private(set) var lastFeedFetchTime: Date?
@@ -111,6 +118,65 @@ public final class AppStateStore {
     public func invalidateFeedCache() {
         lastFeedFetchTime = nil
         print("🔄 Feed cache invalidated - next fetch will proceed")
+    }
+    
+    // MARK: - App Initialization
+    
+    /// Perform sequential app initialization
+    /// - Parameters:
+    ///   - authStore: Authentication store for loading credentials
+    ///   - locationService: Location service for requesting permissions
+    public func initializeApp(authStore: AuthStore, locationService: LocationService) async {
+        guard !isInitialized else {
+            print("📱 App already initialized, skipping")
+            return
+        }
+        
+        print("📱 AppStateStore: Starting sequential initialization")
+        
+        // Step 1: Load stored credentials
+        initializationStep = "Loading credentials"
+        print("📱 Step 1: Loading stored credentials...")
+        let credentials = await authStore.loadStoredCredentials()
+        if let creds = credentials {
+            print("✅ Successfully loaded credentials for @\(creds.handle)")
+        } else {
+            print("ℹ️ No stored credentials found - user needs to sign in")
+        }
+        
+        // Step 2: Check location permissions (non-blocking)
+        initializationStep = "Checking location permissions"
+        print("📱 Step 2: Checking location permissions...")
+        
+        // Check current permission status without triggering request
+        // This avoids blocking the UI during app initialization
+        if locationService.hasLocationPermission {
+            print("✅ Location permission already granted")
+        } else if locationService.shouldRequestPermission {
+            print("ℹ️ Location permission not yet requested - will prompt when needed")
+        } else {
+            print("⚠️ Location permission denied - user can enable in settings later")
+        }
+        
+        // Don't await permission request during initialization - let the user trigger it later
+        // This prevents the "UI unresponsiveness" warning and improves app startup time
+        
+        // Step 3: Mark app as initialized
+        initializationStep = "Completed"
+        print("📱 Step 3: Initialization complete")
+        isInitialized = true
+        
+        // Step 4: Record app launch
+        recordAppLaunch()
+    }
+    
+    // MARK: - App Launch
+    
+    /// Record that the app has launched
+    public func recordAppLaunch() {
+        lastAppBecameActiveTime = Date()
+        isAppActive = true
+        print("📱 App launched at \(Date())")
     }
     
     // MARK: - Convenience Methods

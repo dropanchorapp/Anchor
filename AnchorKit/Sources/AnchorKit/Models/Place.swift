@@ -124,3 +124,40 @@ extension Place: LocationRepresentable {
     public var postalCode: String? { nil }
     public var coordinate: (Double, Double)? { (latitude, longitude) }
 }
+
+// MARK: - PlaceWithDistance
+
+/// Place enriched with distance information for display
+public struct PlaceWithDistance: Identifiable, Sendable {
+    public let place: Place
+    public let distanceMeters: Double
+
+    public var id: String { place.id }
+
+    public init(place: Place, distanceMeters: Double) {
+        self.place = place
+        self.distanceMeters = distanceMeters
+    }
+
+    /// Formatted distance string for display
+    public var formattedDistance: String {
+        if distanceMeters < 1000 {
+            return String(format: "%.0fm", distanceMeters)
+        } else {
+            return String(format: "%.1fkm", distanceMeters / 1000)
+        }
+    }
+}
+
+// MARK: - PlaceWithDistance Hashable
+
+extension PlaceWithDistance: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(place.id)
+        hasher.combine(distanceMeters)
+    }
+
+    public static func == (lhs: PlaceWithDistance, rhs: PlaceWithDistance) -> Bool {
+        lhs.place.id == rhs.place.id && lhs.distanceMeters == rhs.distanceMeters
+    }
+}

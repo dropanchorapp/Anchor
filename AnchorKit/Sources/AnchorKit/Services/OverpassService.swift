@@ -143,20 +143,42 @@ public final class OverpassService: @unchecked Sendable {
         }
     }
 
-    /// Find climbing-specific places nearby
+    /// Find nearby places with distance information, sorted by distance (closest first)
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
-    ///   - radiusMeters: Search radius in meters (default: 2000)
-    /// - Returns: Array of climbing places
-    public func findClimbingPlaces(
+    ///   - radiusMeters: Search radius in meters (default from config)
+    ///   - categories: Optional filter for specific OSM tags (e.g., ["leisure=climbing"])
+    /// - Returns: Array of nearby places with distance information, sorted by distance
+    public func findNearbyPlacesWithDistance(
         near coordinate: CLLocationCoordinate2D,
-        radiusMeters: Double = 2000
-    ) async throws -> [Place] {
-        try await findNearbyPlaces(
+        radiusMeters: Double = Double(AnchorConfig.shared.locationSearchRadius),
+        categories: [String] = []
+    ) async throws -> [PlaceWithDistance] {
+        // Get places using the existing method
+        let places = try await findNearbyPlaces(
             near: coordinate,
             radiusMeters: radiusMeters,
-            categories: ["leisure=climbing", "sport=climbing"]
+            categories: categories
         )
+
+        // Create CLLocation for distance calculations
+        let currentLocation = CLLocation(
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude
+        )
+
+        // Calculate distances and create PlaceWithDistance objects
+        let placesWithDistance = places.map { place in
+            let placeLocation = CLLocation(
+                latitude: place.latitude,
+                longitude: place.longitude
+            )
+            let distance = currentLocation.distance(from: placeLocation)
+            return PlaceWithDistance(place: place, distanceMeters: distance)
+        }
+
+        // Sort by distance (closest first)
+        return placesWithDistance.sorted { $0.distanceMeters < $1.distanceMeters }
     }
 
     /// Find places by multiple categories
@@ -325,7 +347,7 @@ private extension OverpassService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.setValue("Anchor/1.0 (macOS menubar check-in app; https://github.com/example/anchor)", forHTTPHeaderField: "User-Agent")
+        request.setValue(AnchorConfig.shared.userAgent, forHTTPHeaderField: "User-Agent")
 
         let body = "data=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         request.httpBody = body.data(using: .utf8)

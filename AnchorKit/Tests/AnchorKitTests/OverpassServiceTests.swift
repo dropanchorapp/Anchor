@@ -65,6 +65,52 @@ struct OverpassServiceTests {
         }
     }
 
+    @Test("Find nearby places with distance information")
+    func findNearbyPlacesWithDistance() async throws {
+        // Test the new findNearbyPlacesWithDistance method
+        let coordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194) // San Francisco downtown
+
+        print("🧪 Testing findNearbyPlacesWithDistance method")
+
+        do {
+            let placesWithDistance = try await overpassService.findNearbyPlacesWithDistance(
+                near: coordinate,
+                radiusMeters: 1000
+            )
+
+            print("✅ Successfully found \(placesWithDistance.count) places with distance")
+
+            // Verify that places are returned with distance information
+            #expect(!placesWithDistance.isEmpty, "Should find at least some places")
+
+            // Verify that distances are calculated
+            for placeWithDistance in placesWithDistance.prefix(5) {
+                let place = placeWithDistance.place
+                let distance = placeWithDistance.distanceMeters
+                let formatted = placeWithDistance.formattedDistance
+
+                print("   - \(place.name): \(formatted) (\(distance)m)")
+
+                // Verify distance is positive and reasonable (within search radius + some buffer)
+                #expect(distance >= 0, "Distance should be non-negative")
+                #expect(distance <= 1500, "Distance should be within reasonable range")
+                #expect(!formatted.isEmpty, "Formatted distance should not be empty")
+            }
+
+            // Verify places are sorted by distance (closest first)
+            if placesWithDistance.count > 1 {
+                let distances = placesWithDistance.map { $0.distanceMeters }
+                let sortedDistances = distances.sorted()
+                #expect(distances == sortedDistances, "Places should be sorted by distance")
+                print("✅ Places are correctly sorted by distance")
+            }
+
+        } catch {
+            print("❌ Error with findNearbyPlacesWithDistance: \(error)")
+            throw error
+        }
+    }
+
     @Test("Broader query for amenities in San Francisco")
     func broaderQuery() async throws {
         // Test with a broader query to find any named place

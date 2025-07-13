@@ -12,7 +12,7 @@ struct FeedView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(AppStateStore.self) private var appStateStore
-    @State private var feedStore: FeedStore?
+    @State private var feedStore = FeedStore()
     @State private var selectedPost: FeedPost?
 
     var body: some View {
@@ -23,21 +23,21 @@ struct FeedView: View {
                    authStore.credentials?.accessToken.isEmpty == false {
                     // Feed content
                     Group {
-                        if let feedStore = feedStore, feedStore.isLoading {
+                        if feedStore.isLoading {
                             FeedLoadingView()
-                        } else if let feedStore = feedStore, let error = feedStore.error {
+                        } else if let error = feedStore.error {
                             FeedErrorView(error: error) {
                                 Task {
                                     await loadFeed()
                                 }
                             }
-                        } else if let feedStore = feedStore, feedStore.posts.isEmpty {
+                        } else if feedStore.posts.isEmpty {
                             FeedEmptyView {
                                 Task {
                                     await loadFeed()
                                 }
                             }
-                        } else if let feedStore = feedStore {
+                        } else {
                             List(feedStore.posts, id: \.id) { post in
                                 FeedPostView(post: post) {
                                     selectedPost = post
@@ -48,9 +48,6 @@ struct FeedView: View {
                             }
                             .listStyle(.plain)
                             .scrollContentBackground(.hidden)
-                        } else {
-                            // Fallback case when feedStore is nil
-                            FeedInitializingView()
                         }
                     }
                     .refreshable {
@@ -66,44 +63,22 @@ struct FeedView: View {
             .navigationDestination(item: $selectedPost) { post in
                 FeedPostDetailView(post: post)
             }
-            .task {
-                // Initialize feedStore (always initialize, regardless of auth state)
-                if feedStore == nil {
-                    feedStore = FeedStore()
-                }
-                
+            .onAppear {
                 // Set credentials for profile resolution
-                feedStore?.setCredentials(authStore.credentials)
+                feedStore.setCredentials(authStore.credentials)
                 
-                // Only load feed if authenticated
-                if authStore.isAuthenticated && authStore.credentials != nil {
+                // Load feed on first appearance
+                Task {
                     await loadFeedIfNeeded()
                 }
             }
-            .onChange(of: authStore.isAuthenticated) { oldValue, newValue in
-                // When user logs in, automatically fetch the feed
-                if !oldValue && newValue && authStore.credentials != nil {
-                    Task {
-                        // Force a fresh feed load when authentication becomes available
-                        appStateStore.invalidateFeedCache()
-                        await loadFeed()
-                    }
-                }
-            }
-            .onChange(of: authStore.credentials?.accessToken) { _, newToken in
+            .onChange(of: authStore.credentials?.did) { _, _ in
                 // Update credentials in feedStore when they change
-                feedStore?.setCredentials(authStore.credentials)
-                
-                // When credentials change (e.g., token refresh), refetch if we have a new valid token
-                if let newToken = newToken, !newToken.isEmpty, authStore.isAuthenticated {
-                    Task {
-                        await loadFeed()
-                    }
-                }
+                feedStore.setCredentials(authStore.credentials)
             }
             .onChange(of: appStateStore.isAppActive) { oldValue, newValue in
                 // When app becomes active, check if we should refresh
-                if !oldValue && newValue && authStore.isAuthenticated {
+                if !oldValue && newValue {
                     Task {
                         await loadFeedIfNeeded()
                     }
@@ -123,10 +98,6 @@ struct FeedView: View {
     
     /// Force load feed regardless of timing (used for manual refresh and auth changes)
     private func loadFeed() async {
-        guard let feedStore = feedStore else { 
-            return 
-        }
-        
         do {
             _ = try await feedStore.fetchGlobalFeed()
             

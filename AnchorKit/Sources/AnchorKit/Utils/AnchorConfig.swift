@@ -66,6 +66,13 @@ public final class AnchorConfig: @unchecked Sendable {
     public var dnsTimeoutSeconds: Double {
         10.0
     }
+
+    // MARK: - User Agent Configuration
+
+    /// User-Agent string for HTTP requests to external APIs
+    public var userAgent: String {
+        "Anchor/1.0 (atproto check-in app; https://dropanchor.app)"
+    }
 }
 
 // MARK: - PDS Server Model

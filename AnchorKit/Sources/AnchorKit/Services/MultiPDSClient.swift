@@ -94,7 +94,7 @@ public final class MultiPDSClient: @unchecked Sendable {
             var request = URLRequest(url: url)
             request.timeoutInterval = timeout
             request.setValue("application/json", forHTTPHeaderField: "Accept")
-            request.setValue("Anchor/1.0", forHTTPHeaderField: "User-Agent")
+            request.setValue(AnchorConfig.shared.userAgent, forHTTPHeaderField: "User-Agent")
 
             // Add authentication if access token is provided
             if let accessToken = accessToken {

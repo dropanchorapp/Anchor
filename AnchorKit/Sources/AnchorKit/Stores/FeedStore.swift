@@ -3,7 +3,7 @@ import Foundation
 /// Wrapper class for FeedPost to use with NSCache
 private final class FeedPostWrapper {
     let post: FeedPost
-    
+
     init(_ post: FeedPost) {
         self.post = post
     }
@@ -26,7 +26,7 @@ public final class FeedStore {
     private let appViewService: AnchorAppViewServiceProtocol
     private let session: URLSessionProtocol
     private let profileResolver: FeedProfileResolver
-    
+
     // Cache
     private let feedPostCache = NSCache<NSString, FeedPostWrapper>()
 
@@ -53,7 +53,7 @@ public final class FeedStore {
         self.appViewService = appViewService ?? AnchorAppViewService(session: session)
         let multiPDSClient = MultiPDSClient(session: session)
         self.profileResolver = FeedProfileResolver(multiPDSClient: multiPDSClient)
-        
+
         // Configure cache
         feedPostCache.countLimit = 1000 // Cache for recent posts
     }
@@ -122,13 +122,13 @@ public final class FeedStore {
 
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) items")
-                
+
                 // Resolve user profiles asynchronously
                 Task {
                     posts = await profileResolver.resolveProfiles(for: posts)
                     print("✅ FeedStore: Resolved profiles for posts")
                 }
-                
+
                 return true
 
             } catch is CancellationError {
@@ -209,13 +209,13 @@ public final class FeedStore {
 
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) following items")
-                
+
                 // Resolve user profiles asynchronously
                 Task {
                     posts = await profileResolver.resolveProfiles(for: posts)
                     print("✅ FeedStore: Resolved profiles for posts")
                 }
-                
+
                 return true
 
             } catch is CancellationError {
@@ -301,13 +301,13 @@ public final class FeedStore {
 
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) nearby items")
-                
+
                 // Resolve user profiles asynchronously
                 Task {
                     posts = await profileResolver.resolveProfiles(for: posts)
                     print("✅ FeedStore: Resolved profiles for posts")
                 }
-                
+
                 return true
 
             } catch is CancellationError {
@@ -345,20 +345,19 @@ public final class FeedStore {
     @MainActor
     private func getCachedOrCreatePost(from checkin: AnchorAppViewCheckin) -> FeedPost {
         let cacheKey = NSString(string: checkin.id)
-        
+
         // Check if we have a cached post
         if let cachedWrapper = feedPostCache.object(forKey: cacheKey) {
             print("🔄 FeedStore: Using cached post for \(checkin.id)")
             return cachedWrapper.post
         }
-        
+
         // Create new post and cache it
         let newPost = FeedPost(from: checkin)
         feedPostCache.setObject(FeedPostWrapper(newPost), forKey: cacheKey)
         print("💾 FeedStore: Cached new post for \(checkin.id)")
-        
+
         return newPost
     }
-
 
 }

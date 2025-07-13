@@ -7,13 +7,14 @@
 
 import SwiftUI
 import CoreLocation
+import Foundation
 import AnchorKit
 
 struct NearbyPlacesView: View {
     @Environment(LocationService.self) private var locationService
     @Environment(\.dismiss) private var dismiss
     @State private var overpassService = OverpassService()
-    @State private var places: [Place] = []
+    @State private var places: [PlaceWithDistance] = []
     @State private var isLoading = false
     @State private var error: Error?
     @State private var searchText = ""
@@ -21,20 +22,20 @@ struct NearbyPlacesView: View {
     
     let onPlaceSelected: (Place) -> Void
     
-    var filteredPlaces: [Place] {
+    var filteredPlaces: [PlaceWithDistance] {
         var filtered = places
         
         // Filter by category
         if let selectedCategory = selectedCategory {
-            filtered = filtered.filter { place in
-                place.categoryGroup == selectedCategory
+            filtered = filtered.filter { placeWithDistance in
+                placeWithDistance.place.categoryGroup == selectedCategory
             }
         }
         
         // Filter by search text
         if !searchText.isEmpty {
-            filtered = filtered.filter { place in
-                place.name.localizedCaseInsensitiveContains(searchText)
+            filtered = filtered.filter { placeWithDistance in
+                placeWithDistance.place.name.localizedCaseInsensitiveContains(searchText)
             }
         }
         
@@ -113,9 +114,11 @@ struct NearbyPlacesView: View {
                     .padding()
                     Spacer()
                 } else {
-                    List(filteredPlaces, id: \.id) { place in
-                        PlaceRowView(place: place) {
-                            onPlaceSelected(place)
+                    List(filteredPlaces, id: \.id) { placeWithDistance in
+                        PlaceRowView(
+                            placeWithDistance: placeWithDistance
+                        ) {
+                            onPlaceSelected(placeWithDistance.place)
                         }
                         .listRowInsets(EdgeInsets())
                     }
@@ -148,9 +151,9 @@ struct NearbyPlacesView: View {
         error = nil
         
         do {
-            places = try await overpassService.findNearbyPlaces(
+            places = try await overpassService.findNearbyPlacesWithDistance(
                 near: location.coordinate,
-                radiusMeters: 1000
+                radiusMeters: 400
             )
         } catch {
             self.error = error
@@ -194,13 +197,15 @@ struct CategoryFilterButton: View {
 }
 
 struct PlaceRowView: View {
-    let place: Place
+    let placeWithDistance: PlaceWithDistance
     let onTap: () -> Void
     
+    private var place: Place {
+        placeWithDistance.place
+    }
+    
     private var distance: String {
-        // This would need to be calculated based on current location
-        // For now, returning a placeholder
-        return "200m"
+        placeWithDistance.formattedDistance
     }
     
     private var categoryGroup: PlaceCategorization.CategoryGroup? {

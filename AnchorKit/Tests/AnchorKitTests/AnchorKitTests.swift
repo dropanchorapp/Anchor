@@ -42,4 +42,12 @@ struct CoreModelTests {
             #expect(parsed == nil, "Should fail to parse '\(input)'")
         }
     }
+
+    @Test("AnchorConfig User-Agent is configurable")
+    func anchorConfigUserAgent() {
+        let userAgent = AnchorConfig.shared.userAgent
+        #expect(!userAgent.isEmpty, "User-Agent should not be empty")
+        #expect(userAgent.contains("Anchor"), "User-Agent should contain 'Anchor'")
+        #expect(userAgent.contains("1.0"), "User-Agent should contain version number")
+    }
 }

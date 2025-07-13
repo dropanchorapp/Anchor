@@ -27,21 +27,28 @@ struct AnchorMobileApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(authStore)
-                .environment(checkInStore)
-                .environment(appStateStore)
-                .environment(locationService)
-                .task {
-                    // Load credentials immediately when ContentView appears (backup)
-                    print("📱 AnchorMobileApp: Loading stored credentials in .task")
-                    let credentials = await authStore.loadStoredCredentials()
-                    if let creds = credentials {
-                        print("📱 AnchorMobileApp: Successfully loaded credentials for @\(creds.handle)")
-                    } else {
-                        print("📱 AnchorMobileApp: No stored credentials found")
+            Group {
+                if appStateStore.isInitialized {
+                    ContentView()
+                        .environment(authStore)
+                        .environment(checkInStore)
+                        .environment(appStateStore)
+                        .environment(locationService)
+                } else {
+                    // Show a simple loading view during initialization
+                    VStack {
+                        ProgressView()
+                        Text(appStateStore.initializationStep)
+                            .padding(.top, 8)
                     }
                 }
+            }
+            .task {
+                await appStateStore.initializeApp(
+                    authStore: authStore,
+                    locationService: locationService
+                )
+            }
         }
     }
 }

@@ -223,7 +223,7 @@ public final class ATProtoClient: ATProtoClientProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Anchor/1.0 (macOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue(AnchorConfig.shared.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("Bearer \(credentials.accessToken)", forHTTPHeaderField: "Authorization")
 
         let (data, response) = try await session.data(for: request)
@@ -279,7 +279,7 @@ public final class ATProtoClient: ATProtoClientProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Anchor/1.0 (macOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue(AnchorConfig.shared.userAgent, forHTTPHeaderField: "User-Agent")
 
         if let body {
             do {

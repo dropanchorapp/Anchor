@@ -66,10 +66,6 @@ public final class AuthStore: AuthStoreProtocol {
     /// Dependency injection initializer
     public init(authService: ATProtoAuthServiceProtocol) {
         self.authService = authService
-        // Load credentials immediately on initialization
-        Task { @MainActor in
-            await loadStoredCredentials()
-        }
     }
 
     // MARK: - Authentication Methods

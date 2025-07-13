@@ -37,13 +37,14 @@
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="Static/anchor-feed-screen.jpeg" alt="Anchor Global Feed" width="300"/>
-  <img src="Static/anchor-checkin-screen.jpeg" alt="Anchor Check-in Screen" width="300"/>
-  <img src="Static/anchor-nearby-locations-screen.jpeg" alt="Anchor Nearby Places" width="300"/>
+  <img src="Static/anchor-feed-screen.jpeg" alt="Anchor Global Feed" width="240"/>
+  <img src="Static/anchor-checkin-screen.jpeg" alt="Anchor Check-in Screen" width="240"/>
+  <img src="Static/anchor-nearby-locations-screen.jpeg" alt="Anchor Nearby Places" width="240"/>
+  <img src="Static/anchor-checkin-message-screen.jpeg" alt="Anchor Check-in Message" width="240"/>
 </p>
 
 <p align="center">
-  <em>Global feed, check-in interface, and nearby places discovery</em>
+  <em>Global feed, check-in interface, nearby places discovery, and message composition</em>
 </p>
 
 ## 🚀 Quick Start

@@ -307,6 +307,10 @@ We welcome contributions! The modular architecture makes it easy to contribute t
 
 Please check our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
+## 🤖 AI Disclosure
+
+This app was developed with assistance from [Claude Code](https://claude.ai/code), Anthropic's AI coding assistant, under human oversight and direction. While AI helped with code generation, architecture decisions, and implementation, all design choices, feature specifications, and quality control were guided by human developers.
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.

@@ -7,28 +7,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Building the App
 
 ```bash
-# Build the Xcode project
-xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor build
+# Build the iOS app
+xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile build -destination 'platform=iOS Simulator,name=iPhone 16'
 
 # Or using Xcode Build MCP tools
-# Use scheme "Anchor" and workspace path "Anchor/Anchor.xcodeproj"
+# Use scheme "AnchorMobile" and project path "Anchor.xcodeproj"
 ```
 
 ### Running Tests
 
 ```bash
-# Run unit tests
-xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
+# Run iOS app tests
+xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'platform=iOS Simulator,name=iPhone 16'
 
-# Run specific test target
-xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorTests test
+# Run AnchorKit unit tests
+cd AnchorKit && swift test
 ```
 
 ### Building the AnchorKit Package
 
 ```bash
 # From the AnchorKit directory
-cd Anchor/AnchorKit
+cd AnchorKit
 swift build
 swift test
 ```
@@ -68,15 +68,15 @@ swiftlint --fix
 
 ### High-Level Structure
 
-Anchor is a macOS menubar app for location-based check-ins to Bluesky using the AT Protocol. The project uses a modular architecture with two main components:
+Anchor is an iOS app for location-based check-ins to Bluesky using the AT Protocol. The project uses a modular architecture with two main components:
 
-- **Anchor (Main App)**: SwiftUI-based menubar application
-- **AnchorKit**: Reusable business logic package for potential iOS/watchOS expansion
+- **AnchorMobile (Main App)**: SwiftUI-based iOS application with TabView navigation
+- **AnchorKit**: Reusable business logic package for potential macOS/watchOS expansion
 
 ### Key Architectural Patterns
 
 1. **Shared Business Logic**: AnchorKit contains all models, services, and utilities that could be reused across platforms
-2. **MenuBarExtra Pattern**: Uses SwiftUI's MenuBarExtra for native macOS menubar integration
+2. **TabView Navigation**: Uses SwiftUI's TabView for native iOS navigation patterns
 3. **Observable Pattern**: LocationService uses @Observable for reactive UI updates
 4. **Async/Await**: Modern Swift concurrency throughout location and networking code
 5. **Protocol-First Architecture**: Services accept protocol types for maximum testability without SwiftData dependencies
@@ -105,7 +105,7 @@ Anchor is a macOS menubar app for location-based check-ins to Bluesky using the 
 
 ### Services Architecture
 
-- **LocationService**: CoreLocation wrapper with proper permission handling for menubar apps
+- **LocationService**: CoreLocation wrapper with proper permission handling for iOS apps
 - **OverpassService**: OpenStreetMap POI discovery via Overpass API
 - **CheckInStore**: StrongRef-based check-in creation with atomic address + checkin record operations
 - **FeedStore**: Feed management using new Anchor AppView backend (no authentication required)
@@ -117,7 +117,7 @@ Anchor is a macOS menubar app for location-based check-ins to Bluesky using the 
 
 ### Location Permission Strategy
 
-The menubar app architecture solves critical location permission issues that CLI apps face on macOS. The LocationService is designed specifically for MenuBarExtra apps where permission dialogs work properly.
+The iOS app architecture provides proper location permission handling through native iOS permission flows. The LocationService is designed specifically for iOS apps where location permission dialogs work seamlessly with the app lifecycle.
 
 ### Protocol-First Architecture Implementation
 
@@ -187,7 +187,7 @@ When creating a check-in, the system creates **two separate records** on the use
 
 ### Platform Requirements
 
-- macOS 14.0+ (declared in project settings)
+- iOS 18.6+ (declared in project settings)
 - Swift 6.0+ with strict concurrency
 - Xcode 15.0+ for development
 
@@ -205,7 +205,7 @@ When creating a check-in, the system creates **two separate records** on the use
 - **Swift Testing**: Modern declarative testing framework (migrated from XCTest)
 - **Unit tests**: Comprehensive business logic testing in AnchorKit package
 - **Integration tests**: Network-dependent tests for external APIs (Overpass, Bluesky)
-- **UI tests**: Menubar app functionality testing in AnchorUITests
+- **UI tests**: iOS app functionality testing in AnchorUITests
 - **Protocol-based testing**: Services accept `AuthCredentialsProtocol` enabling testing without SwiftData ModelContainer
 - **Dependency injection**: URLSession mocking and in-memory storage for isolated unit tests
 - **Mock implementations**: `TestAuthCredentials`, `MockCredentialsStorage`, `MockURLSession`, `MockATProtoClient`, `MockBlueskyPostService` for comprehensive testing
@@ -240,7 +240,7 @@ swift test --filter .services      # Service layer tests
 swift test --filter .network       # Network-dependent tests
 
 # Run from Xcode project (includes UI tests)
-xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
+xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
 #### Test Coverage
@@ -262,11 +262,12 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 - **Unicode support**: Proper UTF-8 byte counting for AT Protocol facet range calculations
 - **Isolation**: Tests run independently without requiring external services or SwiftData containers
 
-### Menubar App Specifics
+### iOS App Specifics
 
-- Uses `.menuBarExtraStyle(.window)` for proper window presentation
-- Frame size: 320x400 pixels for optimal menubar experience
-- Includes quit button since app doesn't appear in dock
+- Uses `TabView` for native iOS navigation patterns
+- Supports standard iOS navigation with NavigationStack
+- Native iOS UI patterns with proper safe area handling
+- Location permissions handled through standard iOS permission flows
 
 ## Available MCP Tools
 
@@ -287,7 +288,7 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 
 ### 📱 Xcode & iOS Development
 
-- Since this is a mac os app not all xcode build mcp tools can be used
+- Since this is an iOS app, all iOS simulator build MCP tools can be used
 - `mcp__XcodeBuildMCP__clean_ws` - Clean workspace build products
 - `mcp__XcodeBuildMCP__clean_proj` - Clean project build products
 - `mcp__XcodeBuildMCP__build_ios_sim_name_ws` - Build for named simulator (workspace)
@@ -318,56 +319,65 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 
 ### Core Functionality
 
-- **Always accessible** via menubar icon with anchor symbol
-- **Quick drop** interface for immediate check-ins at current location
-- **Location permissions** work properly (critical advantage over CLI apps)
-- **Native macOS integration** with proper system dialogs
-- **Hide from Dock** (`LSUIElement = true`) - menubar-only app
-- **Quit button** in interface (no dock to quit from)
+- **Native iOS app** with TabView navigation between Feed, Check In, and Settings
+- **Quick check-in** interface for immediate check-ins at nearby places
+- **Location permissions** handled through standard iOS permission flows
+- **Native iOS integration** with proper system dialogs and navigation patterns
+- **Standard iOS app lifecycle** with background/foreground state handling
 
 ### Main Views
 
-#### ContentView (Main Interface)
+#### FeedView (Feed Tab)
+
+- Global check-in feed from Anchor AppView backend
+- Individual check-in posts with rich text formatting
+- Pull-to-refresh functionality
+- Empty states with anchor-no-locations illustration
+
+#### CheckInView (Check In Tab)
 
 - Current location status with enable button
-- Quick drop button for current location
-- Recent check-ins display (future)
-- Navigation to nearby places and settings
+- "Check In" button to discover nearby places
+- Location permission prompts and status
 
-#### DropView (Check-in Interface)
+#### NearbyPlacesView (Place Discovery)
 
-- Selected place or current location display
-- Message input field for custom text
-- Authentication status and sign-in prompts
-- Drop button to post to Bluesky via AT Protocol
-
-#### NearbyView (Place Discovery)
-
-- List of nearby POIs from Overpass API
+- List of nearby POIs from Overpass API (400m radius)
 - Category filters (All, 🧗‍♂️, 🍽️, 🏪)
-- Quick selection for dropping anchor
-- Distance-based sorting
+- Distance-based sorting (closest first)
+- Empty state with anchor-no-locations illustration and subtle borders
 
-#### SettingsView (Configuration)
+#### CheckInComposeView (Check-in Interface)
 
-- Bluesky authentication status
+- Selected place display with category icon
+- Message input field for custom text
+- Authentication status and Bluesky toggle
+- Drop anchor button to create check-in
+
+#### SettingsView (Settings Tab)
+
+- Bluesky authentication status and sign-in
+- Account information display
 - Future: Default message preferences, app preferences
 
 ### Bluesky Integration & Anchor AppView
 
 #### StrongRef-Based Record Storage
+
 - **Address Records**: Structured venue data stored as `community.lexicon.location.address` records on user's PDS
 - **Check-in Records**: User messages with StrongRef to address stored as `app.dropanchor.checkin` records on user's PDS
 - **Content Integrity**: CID verification ensures address records haven't been tampered with since checkin creation
 - **Atomic Creation**: Both address and checkin records created atomically with automatic cleanup on failure
 
 #### Dual Posting Architecture
+
 - **PDS Storage**: Clean, structured check-in data with StrongRef address references
 - **Social Posting**: Enhanced marketing-friendly posts on Bluesky with rich text formatting
 - **Feed Reading**: Uses new Anchor AppView backend at `https://anchor-feed-generator.val.run`
 - **API Endpoints**: Global, nearby, user-specific, and following feeds via REST API
 
 #### Technical Details
+
 - Message format: `Dropped anchor at [Place Name] 🧭 "[Custom Message]" [Category Emoji]`
 - Automatic token refresh and session management
 - **Secure credential storage**: Multiple options (Keychain recommended, SwiftData legacy, InMemory for testing)
@@ -376,8 +386,9 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme Anchor test
 
 ### Future Expansion
 
-- **iOS companion app** using same AnchorKit business logic
+- **macOS companion app** using same AnchorKit business logic
 - **Apple Watch complications** for ultra-quick drops
 - **Shortcuts integration** for automation
 - **Recent places** for quick repeat check-ins
-- **Launch at login** functionality
+- **Background location** for automatic check-ins
+- **Widget support** for iOS home screen

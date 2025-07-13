@@ -12,9 +12,16 @@ struct FeedEmptyView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "checkmark.bubble")
-                .foregroundStyle(.secondary)
-                .font(.system(size: 40))
+            Image("anchor-no-locations")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 120, height: 120)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray4), lineWidth: 0.5)
+                )
 
             Text("No check-ins found")
                 .font(.title2)

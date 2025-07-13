@@ -99,9 +99,16 @@ struct NearbyPlacesView: View {
                 } else if filteredPlaces.isEmpty {
                     Spacer()
                     VStack(spacing: 16) {
-                        Image(systemName: "location.slash")
-                            .font(.system(size: 40))
-                            .foregroundColor(.secondary)
+                        Image("anchor-no-locations")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 120, height: 120)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(.systemGray4), lineWidth: 0.5)
+                            )
                         
                         Text("No places found")
                             .font(.headline)
@@ -268,9 +275,70 @@ enum LocationError: LocalizedError {
     }
 }
 
-#Preview {
+#Preview("Default") {
     NearbyPlacesView { place in
         print("Selected place: \(place.name)")
     }
     .environment(LocationService())
+}
+
+#Preview("No Places Found") {
+    // Mock the empty state UI directly
+    NavigationStack {
+        VStack(spacing: 0) {
+            // Category filter (same as in the actual view)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    CategoryFilterButton(
+                        category: nil,
+                        isSelected: true,
+                        action: { }
+                    )
+                    
+                    ForEach(PlaceCategorization.CategoryGroup.allCases, id: \.self) { category in
+                        CategoryFilterButton(
+                            category: category,
+                            isSelected: false,
+                            action: { }
+                        )
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .padding(.vertical, 8)
+            
+            // Empty state UI
+            Spacer()
+            VStack(spacing: 16) {
+                Image("anchor-no-locations")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 120, height: 120)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 0.5)
+                    )
+                
+                Text("No places found")
+                    .font(.headline)
+                
+                Text("Try adjusting your search or category filter")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            Spacer()
+        }
+        .navigationTitle("Nearby Places")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Cancel") { }
+            }
+        }
+        .searchable(text: .constant(""), prompt: "Search places...")
+    }
 }

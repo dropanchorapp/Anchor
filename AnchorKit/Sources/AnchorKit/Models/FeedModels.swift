@@ -26,8 +26,8 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         author = FeedAuthor(
             did: checkin.author.did,
             handle: checkin.author.handle,
-            displayName: nil, // Will be resolved asynchronously
-            avatar: nil // Will be resolved asynchronously
+            displayName: checkin.author.displayName,
+            avatar: checkin.author.avatar
         )
 
         // Parse the createdAt string to Date

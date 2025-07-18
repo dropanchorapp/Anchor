@@ -25,7 +25,6 @@ public final class FeedStore {
 
     private let appViewService: AnchorAppViewServiceProtocol
     private let session: URLSessionProtocol
-    private let profileResolver: FeedProfileResolver
 
     // Cache
     private let feedPostCache = NSCache<NSString, FeedPostWrapper>()
@@ -51,8 +50,6 @@ public final class FeedStore {
     public init(appViewService: AnchorAppViewServiceProtocol? = nil, session: URLSessionProtocol = URLSession.shared) {
         self.session = session
         self.appViewService = appViewService ?? AnchorAppViewService(session: session)
-        let multiPDSClient = MultiPDSClient(session: session)
-        self.profileResolver = FeedProfileResolver(multiPDSClient: multiPDSClient)
 
         // Configure cache
         feedPostCache.countLimit = 1000 // Cache for recent posts
@@ -122,12 +119,6 @@ public final class FeedStore {
 
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) items")
-
-                // Resolve user profiles asynchronously
-                Task {
-                    posts = await profileResolver.resolveProfiles(for: posts)
-                    print("✅ FeedStore: Resolved profiles for posts")
-                }
 
                 return true
 
@@ -209,12 +200,6 @@ public final class FeedStore {
 
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) following items")
-
-                // Resolve user profiles asynchronously
-                Task {
-                    posts = await profileResolver.resolveProfiles(for: posts)
-                    print("✅ FeedStore: Resolved profiles for posts")
-                }
 
                 return true
 
@@ -302,12 +287,6 @@ public final class FeedStore {
                 posts = feedPosts
                 print("✅ FeedStore: Updated posts array with \(feedPosts.count) nearby items")
 
-                // Resolve user profiles asynchronously
-                Task {
-                    posts = await profileResolver.resolveProfiles(for: posts)
-                    print("✅ FeedStore: Resolved profiles for posts")
-                }
-
                 return true
 
             } catch is CancellationError {
@@ -329,14 +308,6 @@ public final class FeedStore {
         let result = try await task.value
         print("🏁 FeedStore: fetchNearbyFeed completed with result: \(result)")
         return result
-    }
-
-    // MARK: - Authentication
-
-    /// Set authentication credentials for profile resolution
-    @MainActor
-    public func setCredentials(_ credentials: AuthCredentialsProtocol?) {
-        profileResolver.setCredentials(credentials)
     }
 
     // MARK: - Caching

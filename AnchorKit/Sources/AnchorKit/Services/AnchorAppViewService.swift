@@ -211,10 +211,14 @@ public struct AnchorAppViewCheckin: Codable, Sendable, Identifiable {
 public struct AnchorAppViewAuthor: Codable, Sendable {
     public let did: String
     public let handle: String
+    public let displayName: String?
+    public let avatar: String?
 
-    public init(did: String, handle: String) {
+    public init(did: String, handle: String, displayName: String? = nil, avatar: String? = nil) {
         self.did = did
         self.handle = handle
+        self.displayName = displayName
+        self.avatar = avatar
     }
 }
 

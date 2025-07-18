@@ -64,17 +64,16 @@ struct FeedView: View {
                 FeedPostDetailView(post: post)
             }
             .onAppear {
-                // Set credentials for profile resolution
-                feedStore.setCredentials(authStore.credentials)
-                
                 // Load feed on first appearance
                 Task {
                     await loadFeedIfNeeded()
                 }
             }
             .onChange(of: authStore.credentials?.did) { _, _ in
-                // Update credentials in feedStore when they change
-                feedStore.setCredentials(authStore.credentials)
+                // Credentials change - reload feed to potentially show following feed
+                Task {
+                    await loadFeedIfNeeded()
+                }
             }
             .onChange(of: appStateStore.isAppActive) { oldValue, newValue in
                 // When app becomes active, check if we should refresh

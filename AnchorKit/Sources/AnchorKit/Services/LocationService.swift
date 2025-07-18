@@ -97,79 +97,84 @@ public final class LocationService: NSObject, @unchecked Sendable {
         let currentStatus = authorizationStatus
         switch currentStatus {
         case .denied, .restricted:
-            print("❌ Location access previously denied. Please enable in System Settings:")
-            print("   Privacy & Security > Location Services > anchor")
-            return false
+            return handleDeniedPermission()
 
         case .authorized, .authorizedAlways:
-            print("✅ Location permission already granted (not requesting again)")
-            // Get initial location if we don't have one yet
-            await MainActor.run {
-                if currentLocation == nil {
-                    startLocationUpdates()
-                }
-            }
-            return true
+            return await handleGrantedPermission()
 
         #if !os(macOS)
         case .authorizedWhenInUse:
-            print("✅ Location permission already granted (not requesting again)")
-            // Get initial location if we don't have one yet
-            await MainActor.run {
-                if currentLocation == nil {
-                    startLocationUpdates()
-                }
-            }
-            return true
+            return await handleGrantedPermission()
         #endif
 
         case .notDetermined:
-            print("📍 Requesting location permission...")
-
-            // Use continuation but handle the permission request properly off main thread
-            return await withCheckedContinuation { continuation in
-                // Set up completion handler on main actor
-                Task { @MainActor in
-                    self.permissionCompletion = { granted in
-                        continuation.resume(returning: granted)
-                    }
-                }
-
-                // Dispatch authorization request to background queue to prevent UI blocking
-                // This follows Apple's recommendation to avoid calling location methods on main thread
-                Task.detached { [weak self] in
-                    guard let self = self else {
-                        continuation.resume(returning: false)
-                        return
-                    }
-
-                    // Check authorization status again right before requesting to handle race conditions
-                    let freshStatus = self.locationManager.authorizationStatus
-                    await MainActor.run {
-                        self.authorizationStatus = freshStatus
-                    }
-
-                    // Only request if still not determined
-                    if freshStatus == .notDetermined {
-                        // For menubar apps, this WILL trigger the system dialog
-                        #if os(macOS)
-                        self.locationManager.requestWhenInUseAuthorization()
-                        #else
-                        self.locationManager.requestWhenInUseAuthorization()
-                        #endif
-                    } else {
-                        // Status changed while we were setting up - handle it
-                        let hasPermission = await MainActor.run {
-                            self.hasLocationPermission
-                        }
-                        continuation.resume(returning: hasPermission)
-                    }
-                }
-            }
+            return await requestPermissionFromUser()
 
         @unknown default:
             print("❌ Unknown location authorization status: \(authorizationStatus.rawValue)")
             return false
+        }
+    }
+
+    private func handleDeniedPermission() -> Bool {
+        print("❌ Location access previously denied. Please enable in System Settings:")
+        print("   Privacy & Security > Location Services > anchor")
+        return false
+    }
+
+    private func handleGrantedPermission() async -> Bool {
+        print("✅ Location permission already granted (not requesting again)")
+        // Get initial location if we don't have one yet
+        await MainActor.run {
+            if currentLocation == nil {
+                startLocationUpdates()
+            }
+        }
+        return true
+    }
+
+    private func requestPermissionFromUser() async -> Bool {
+        print("📍 Requesting location permission...")
+
+        // Use continuation but handle the permission request properly off main thread
+        return await withCheckedContinuation { continuation in
+            // Set up completion handler on main actor
+            Task { @MainActor in
+                self.permissionCompletion = { granted in
+                    continuation.resume(returning: granted)
+                }
+            }
+
+            // Dispatch authorization request to background queue to prevent UI blocking
+            // This follows Apple's recommendation to avoid calling location methods on main thread
+            Task.detached { [weak self] in
+                guard let self = self else {
+                    continuation.resume(returning: false)
+                    return
+                }
+
+                // Check authorization status again right before requesting to handle race conditions
+                let freshStatus = self.locationManager.authorizationStatus
+                await MainActor.run {
+                    self.authorizationStatus = freshStatus
+                }
+
+                // Only request if still not determined
+                if freshStatus == .notDetermined {
+                    // For menubar apps, this WILL trigger the system dialog
+                    #if os(macOS)
+                    self.locationManager.requestWhenInUseAuthorization()
+                    #else
+                    self.locationManager.requestWhenInUseAuthorization()
+                    #endif
+                } else {
+                    // Status changed while we were setting up - handle it
+                    let hasPermission = await MainActor.run {
+                        self.hasLocationPermission
+                    }
+                    continuation.resume(returning: hasPermission)
+                }
+            }
         }
     }
 

@@ -10,20 +10,10 @@ import AnchorKit
 
 struct AuthenticationView: View {
     @Environment(AuthStore.self) private var authStore
-    @State private var handle = ""
-    @State private var appPassword = ""
-    @State private var customPDS = ""
-    @State private var useCustomPDS = false
-    @State private var showingAppPasswordInfo = false
     @State private var showingError = false
     @State private var isLoading = false
     @State private var lastError: String?
-    @State private var showAdvancedOptions = false
-    @FocusState private var focusedField: Field?
-    
-    enum Field: CaseIterable {
-        case handle, appPassword, customPDS
-    }
+    @State private var showingOAuthWebView = false
     
     var body: some View {
         NavigationStack {
@@ -44,18 +34,6 @@ struct AuthenticationView: View {
             .navigationTitle("Account")
             .navigationBarTitleDisplayMode(.large)
             .contentShape(Rectangle())
-            .onTapGesture {
-                focusedField = nil
-            }
-        }
-        .alert("App Password Info", isPresented: $showingAppPasswordInfo) {
-            Button("Open Bluesky Settings") {
-                UIApplication.shared.open(authStore.getAppPasswordURL())
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("App passwords are secure tokens that let Anchor post to your Bluesky account. " +
-                 "You can create and manage them in your Bluesky settings.")
         }
         .alert("Authentication Error", isPresented: $showingError) {
             Button("OK") {
@@ -67,6 +45,28 @@ struct AuthenticationView: View {
         }
         .onChange(of: lastError) { _, newError in
             showingError = newError != nil
+        }
+        .sheet(isPresented: $showingOAuthWebView) {
+            NavigationView {
+                OAuthWebView(
+                    url: URL(string: "https://dropanchor.app/mobile-auth")!,
+                    onAuthComplete: handleOAuthResult,
+                    onCancel: {
+                        showingOAuthWebView = false
+                        isLoading = false
+                    }
+                )
+                .navigationTitle("Sign in to Bluesky")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            showingOAuthWebView = false
+                            isLoading = false
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -138,200 +138,34 @@ struct AuthenticationView: View {
     
     @ViewBuilder
     private var loginForm: some View {
-        VStack(spacing: 20) {
-            // Handle input
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Handle")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                
-                TextField("username.bsky.social", text: $handle)
-                    .textFieldStyle(.roundedBorder)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .keyboardType(.emailAddress)
-                    .focused($focusedField, equals: .handle)
-                    .submitLabel(.next)
-                    .onSubmit {
-                        focusedField = .appPassword
-                    }
-            }
-            
-            // App password input
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("App Password")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    
-                    Spacer()
-                    
-                    Button("What's this?") {
-                        showingAppPasswordInfo = true
-                    }
-                    .font(.callout)
-                    .foregroundStyle(.blue)
-                }
-                
-                SecureField("App password", text: $appPassword)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($focusedField, equals: .appPassword)
-                    .submitLabel(.done)
-                    .onSubmit {
-                        if !useCustomPDS {
-                            focusedField = nil
-                            signIn()
-                        } else {
-                            focusedField = .customPDS
-                        }
-                    }
-            }
-            
-            // Advanced Options (collapsible)
-            DisclosureGroup("Advanced Options", isExpanded: $showAdvancedOptions) {
-                VStack(alignment: .leading, spacing: 12) {
-                    VStack(spacing: 8) {
-                        // Auto-detect option (default)
-                        Button(action: { useCustomPDS = false }) {
-                            HStack {
-                                Image(systemName: useCustomPDS ? "circle" : "checkmark.circle.fill")
-                                    .foregroundStyle(useCustomPDS ? .secondary : Color.blue)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Auto-detect server")
-                                        .font(.body)
-                                        .foregroundStyle(.primary)
-                                    Text("Discover your home server automatically")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                
-                                Spacer()
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        
-                        // Custom PDS option
-                        Button(action: { useCustomPDS = true }) {
-                            HStack {
-                                Image(systemName: useCustomPDS ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(useCustomPDS ? .blue : .secondary)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Custom server")
-                                        .font(.body)
-                                        .foregroundStyle(.primary)
-                                    Text("Specify your PDS server manually")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                
-                                Spacer()
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        
-                        // Custom PDS URL field (shown when custom is selected)
-                        if useCustomPDS {
-                            TextField("https://your-pds.example.com", text: $customPDS)
-                                .textFieldStyle(.roundedBorder)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .keyboardType(.URL)
-                                .focused($focusedField, equals: .customPDS)
-                                .submitLabel(.done)
-                                .onSubmit {
-                                    focusedField = nil
-                                    signIn()
-                                }
-                        }
-                    }
-                    .padding(.top, 8)
-                }
-            }
-            .font(.headline)
-            .foregroundStyle(.primary)
-            .onChange(of: useCustomPDS) { _, newValue in
-                if newValue {
-                    showAdvancedOptions = true
-                }
-            }
-            
-            // Sign in button
-            Button(action: signIn) {
+        VStack(spacing: 24) {
+            // OAuth sign in button
+            Button(action: startOAuthFlow) {
                 HStack {
                     if isLoading {
                         ProgressView()
                             .scaleEffect(0.9)
                     }
-                    Text(isLoading ? "Signing in..." : "Sign In")
+                    Text(isLoading ? "Opening..." : "Sign in with Bluesky")
                 }
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(isLoading || handle.isEmpty || appPassword.isEmpty || 
-                     (useCustomPDS && customPDS.isEmpty))
+            .disabled(isLoading)
             
             // Info text
-            VStack(spacing: 8) {
-                Text("Anchor uses the AT Protocol to securely connect to your account. " +
-                     "Your credentials are stored locally on your device.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                
-                if useCustomPDS {
-                    Text("💡 Custom servers are advanced AT Protocol hosting providers. " +
-                         "Most users should use auto-detect.")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                        .multilineTextAlignment(.center)
-                }
-            }
-            .padding(.top)
+            Text("You'll be redirected to Bluesky's secure authentication page. " +
+                 "Your credentials are never stored by Anchor.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
+    
     
     // MARK: - Actions
     
-    private func signIn() {
-        guard !isLoading else { return }
-        
-        isLoading = true
-        lastError = nil
-        
-        Task {
-            do {
-                // Determine PDS URL to use
-                let pdsURL = useCustomPDS ? customPDS.trimmingCharacters(in: .whitespacesAndNewlines) : nil
-                
-                let success = try await authStore.authenticate(
-                    handle: handle.trimmingCharacters(in: .whitespacesAndNewlines),
-                    appPassword: appPassword,
-                    pdsURL: pdsURL
-                )
-                
-                if success {
-                    // Clear form on successful login
-                    handle = ""
-                    appPassword = ""
-                    
-                    // Provide haptic feedback
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                    impactFeedback.impactOccurred()
-                }
-                
-            } catch {
-                lastError = "Authentication failed: \(error.localizedDescription)"
-                
-            }
-            
-            isLoading = false
-        }
-    }
     
     private func signOut() {
         guard !isLoading else { return }
@@ -345,6 +179,52 @@ struct AuthenticationView: View {
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
             impactFeedback.impactOccurred()
             
+            isLoading = false
+        }
+    }
+    
+    private func startOAuthFlow() {
+        guard !isLoading else { return }
+        
+        isLoading = true
+        showingOAuthWebView = true
+    }
+    
+    private func handleOAuthResult(_ result: OAuthResult) {
+        showingOAuthWebView = false
+        
+        switch result {
+        case .success(let authData):
+            Task {
+                do {
+                    let oauthAuthData = AnchorKit.OAuthAuthenticationData(
+                        accessToken: authData.accessToken,
+                        refreshToken: authData.refreshToken,
+                        did: authData.did,
+                        handle: authData.handle,
+                        sessionId: authData.sessionId,
+                        avatar: authData.avatar,
+                        displayName: authData.displayName
+                    )
+                    
+                    let success = try await authStore.authenticateWithOAuth(oauthAuthData)
+                    
+                    if success {
+                        // Provide haptic feedback
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                        
+                        print("✅ OAuth authentication completed for handle: \(authData.handle)")
+                    }
+                } catch {
+                    lastError = "OAuth authentication failed: \(error.localizedDescription)"
+                }
+                
+                isLoading = false
+            }
+            
+        case .failure(let error):
+            lastError = "OAuth authentication failed: \(error.localizedDescription)"
             isLoading = false
         }
     }

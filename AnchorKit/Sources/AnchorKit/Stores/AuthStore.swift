@@ -10,6 +10,7 @@ public protocol AuthStoreProtocol {
     func loadStoredCredentials() async -> AuthCredentials?
     func authenticate(handle: String, appPassword: String) async throws -> Bool
     func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool
+    func authenticateWithOAuth(_ authData: OAuthAuthenticationData) async throws -> Bool
     func signOut() async
     func getAppPasswordURL() -> URL
     func getValidCredentials() async throws -> AuthCredentialsProtocol
@@ -32,6 +33,7 @@ public final class AuthStore: AuthStoreProtocol {
     // MARK: - Properties
 
     private let authService: ATProtoAuthServiceProtocol
+    private let oauthService: OAuthServiceProtocol
 
     /// Whether the user is currently authenticated (observable for UI)
     public private(set) var isAuthenticated: Bool = false
@@ -53,19 +55,22 @@ public final class AuthStore: AuthStoreProtocol {
         let client = ATProtoClient(session: session)
         let storage = KeychainCredentialsStorage()
         let authService = ATProtoAuthService(client: client, storage: storage)
-        self.init(authService: authService)
+        let oauthService = OAuthService(storage: storage, client: client)
+        self.init(authService: authService, oauthService: oauthService)
     }
 
     /// Convenience initializer for testing with custom storage
     public convenience init(session: URLSessionProtocol = URLSession.shared, storage: CredentialsStorageProtocol) {
         let client = ATProtoClient(session: session)
         let authService = ATProtoAuthService(client: client, storage: storage)
-        self.init(authService: authService)
+        let oauthService = OAuthService(storage: storage, client: client)
+        self.init(authService: authService, oauthService: oauthService)
     }
 
     /// Dependency injection initializer
-    public init(authService: ATProtoAuthServiceProtocol) {
+    public init(authService: ATProtoAuthServiceProtocol, oauthService: OAuthServiceProtocol) {
         self.authService = authService
+        self.oauthService = oauthService
     }
 
     // MARK: - Authentication Methods
@@ -82,6 +87,16 @@ public final class AuthStore: AuthStoreProtocol {
 
     public func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool {
         _ = try await authService.authenticate(handle: handle, appPassword: appPassword, pdsURL: pdsURL)
+        updateAuthenticationState()
+        return true
+    }
+    
+    public func authenticateWithOAuth(_ authData: OAuthAuthenticationData) async throws -> Bool {
+        _ = try await oauthService.processOAuthAuthentication(authData)
+        
+        // Reload stored credentials so authService is aware of them
+        _ = await loadStoredCredentials()
+        
         updateAuthenticationState()
         return true
     }

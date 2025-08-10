@@ -164,7 +164,6 @@ struct MessageInputSection: View {
     }
 }
 
-
 struct PreviewSection: View {
     let previewText: String
     
@@ -316,4 +315,3 @@ struct CheckInSuccessView: View {
         print("Dismissed")
     }
 }
-

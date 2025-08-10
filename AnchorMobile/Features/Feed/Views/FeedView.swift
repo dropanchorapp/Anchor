@@ -38,13 +38,22 @@ struct FeedView: View {
                                 }
                             }
                         } else {
-                            List(feedStore.posts, id: \.id) { post in
-                                FeedPostView(post: post) {
-                                    selectedPost = post
+                            let groupedPosts = feedStore.posts.groupedByDate()
+                            
+                            List(groupedPosts) { section in
+                                Section {
+                                    ForEach(section.posts, id: \.id) { post in
+                                        FeedPostView(post: post) {
+                                            selectedPost = post
+                                        }
+                                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                        .listRowSeparator(.visible, edges: .bottom)
+                                        .listRowBackground(Color.clear)
+                                    }
+                                } header: {
+                                    FeedDateHeaderView(date: section.date)
+                                        .listRowInsets(EdgeInsets())
                                 }
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparator(.visible, edges: .bottom)
-                                .listRowBackground(Color.clear)
                             }
                             .listStyle(.plain)
                             .scrollContentBackground(.hidden)

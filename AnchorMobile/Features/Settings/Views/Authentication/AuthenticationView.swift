@@ -163,9 +163,7 @@ struct AuthenticationView: View {
         }
     }
     
-    
     // MARK: - Actions
-    
     
     private func signOut() {
         guard !isLoading else { return }

@@ -10,10 +10,38 @@ import AnchorKit
 
 struct FeedPostLocationView: View {
     let post: FeedPost
+    
+    var locationDisplayName: String {
+        // Use address name if available
+        if let addressName = post.address?.name, !addressName.isEmpty {
+            return addressName
+        }
+        
+        // Use LocationFormatter to build name from address components
+        if let addressObj = post.address {
+            let name = LocationFormatter.shared.getLocationName([addressObj])
+            if name != "Unknown Location" {
+                return name
+            }
+        }
+        
+        // Backend should now always provide venue names, but fallback gracefully
+        return "Checked in"
+    }
+    
     var formattedAddress: String {
         guard let addressObj = post.address else { return "" }
-        return LocationFormatter.shared.getLocationAddress([addressObj])
+        
+        let address = LocationFormatter.shared.getLocationAddress([addressObj])
+        
+        // Don't show address if it's the same as the location name
+        if address == locationDisplayName {
+            return ""
+        }
+        
+        return address
     }
+    
     var body: some View {
         if post.coordinates != nil {
             VStack(alignment: .leading, spacing: 8) {
@@ -21,7 +49,7 @@ struct FeedPostLocationView: View {
                 HStack(alignment: .center, spacing: 10) {
                     Text(FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
                         .font(.title3)
-                    Text(post.address?.name ?? "Location")
+                    Text(locationDisplayName)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundStyle(.primary)

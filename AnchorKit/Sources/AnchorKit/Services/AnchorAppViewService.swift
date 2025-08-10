@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Anchor AppView Service Protocol
 
 /// Service protocol for the new Anchor AppView backend
-/// Uses the REST API at https://anchor-feed-generator.val.run
+/// Uses the REST API at https://dropanchor.app/api
 @MainActor
 public protocol AnchorAppViewServiceProtocol {
     func getGlobalFeed(limit: Int, cursor: String?) async throws -> AnchorAppViewFeedResponse
@@ -16,13 +16,13 @@ public protocol AnchorAppViewServiceProtocol {
 // MARK: - Anchor AppView Service Implementation
 
 /// Service for integrating with the new Anchor AppView backend
-/// Provides feeds from the Val Town-hosted location-feed-generator API
+/// Provides feeds from the dropanchor.app location-feed-generator API
 @MainActor
 public final class AnchorAppViewService: AnchorAppViewServiceProtocol {
     // MARK: - Properties
 
     private let session: URLSessionProtocol
-    private let baseURL = "https://anchor-feed-generator.val.run"
+    private let baseURL = "https://dropanchor.app/api"
 
     // MARK: - Initialization
 
@@ -204,6 +204,27 @@ public struct AnchorAppViewCheckin: Codable, Sendable, Identifiable {
         self.coordinates = coordinates
         self.address = address
         self.distance = distance
+    }
+    
+    // Custom decoder to handle null id values by using uri as fallback
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Handle null id by using uri as fallback
+        let idValue = try container.decodeIfPresent(String.self, forKey: .id)
+        uri = try container.decode(String.self, forKey: .uri)
+        id = idValue ?? uri
+        
+        author = try container.decode(AnchorAppViewAuthor.self, forKey: .author)
+        text = try container.decode(String.self, forKey: .text)
+        createdAt = try container.decode(String.self, forKey: .createdAt)
+        coordinates = try container.decodeIfPresent(AnchorAppViewCoordinates.self, forKey: .coordinates)
+        address = try container.decodeIfPresent(AnchorAppViewAddress.self, forKey: .address)
+        distance = try container.decodeIfPresent(Double.self, forKey: .distance)
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, uri, author, text, createdAt, coordinates, address, distance
     }
 }
 

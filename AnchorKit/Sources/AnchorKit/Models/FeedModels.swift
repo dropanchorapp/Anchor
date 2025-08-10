@@ -61,6 +61,39 @@ public struct FeedAuthor: Sendable, Hashable {
 
 }
 
+// MARK: - Date Grouping
+
+public struct FeedSection: Identifiable {
+    public let id = UUID()
+    public let date: Date
+    public let posts: [FeedPost]
+    
+    public init(date: Date, posts: [FeedPost]) {
+        self.date = date
+        self.posts = posts
+    }
+}
+
+extension Array where Element == FeedPost {
+    /// Groups posts by date (day) in descending order (newest first)
+    public func groupedByDate() -> [FeedSection] {
+        let calendar = Calendar.current
+        
+        // Group posts by day
+        let grouped = Dictionary(grouping: self) { post in
+            calendar.startOfDay(for: post.record.createdAt)
+        }
+        
+        // Sort by date descending (newest first) and create sections
+        return grouped
+            .sorted { $0.key > $1.key }
+            .map { date, posts in
+                let sortedPosts = posts.sorted { $0.record.createdAt > $1.record.createdAt }
+                return FeedSection(date: date, posts: sortedPosts)
+            }
+    }
+}
+
 // MARK: - Error Types
 
 public enum FeedError: LocalizedError, Sendable {

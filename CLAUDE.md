@@ -392,3 +392,6 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 - **Recent places** for quick repeat check-ins
 - **Background location** for automatic check-ins
 - **Widget support** for iOS home screen
+
+- to deploy changes for the web app (dropanchor.app) you can use the deno task deploy task
+- the web app and backend api url is dropanchor.app

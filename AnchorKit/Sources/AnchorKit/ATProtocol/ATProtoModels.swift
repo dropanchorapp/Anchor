@@ -104,7 +104,6 @@ public struct CheckinRecord: Codable, Sendable, Hashable {
     }
 }
 
-
 // MARK: - StrongRef Checkin Models
 
 /// Error types for checkin content integrity

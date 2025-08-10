@@ -13,7 +13,7 @@ import AnchorKit
 struct NearbyPlacesView: View {
     @Environment(LocationService.self) private var locationService
     @Environment(\.dismiss) private var dismiss
-    @State private var overpassService = OverpassService()
+    @State private var anchorService = AnchorService()
     @State private var places: [PlaceWithDistance] = []
     @State private var isLoading = false
     @State private var error: Error?
@@ -158,7 +158,7 @@ struct NearbyPlacesView: View {
         error = nil
         
         do {
-            places = try await overpassService.findNearbyPlacesWithDistance(
+            places = try await anchorService.findNearbyPlacesWithDistance(
                 near: location.coordinate,
                 radiusMeters: 400
             )

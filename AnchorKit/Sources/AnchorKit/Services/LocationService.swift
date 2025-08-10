@@ -20,10 +20,23 @@ public final class LocationService: NSObject, @unchecked Sendable {
     /// Minimum time between location updates (10 minutes)
     private let locationUpdateInterval: TimeInterval = 600
 
-    /// Whether location services are available
+    /// Whether location services are available on the device
     public var isLocationServicesEnabled: Bool {
-        CLLocationManager.locationServicesEnabled()
+        // Lazy initialization on background queue to avoid blocking main thread
+        if _isLocationServicesEnabled == nil {
+            Task.detached {
+                let enabled = CLLocationManager.locationServicesEnabled()
+                await MainActor.run {
+                    self._isLocationServicesEnabled = enabled
+                }
+            }
+            // Return true optimistically during first check
+            return true
+        }
+        return _isLocationServicesEnabled!
     }
+    
+    private var _isLocationServicesEnabled: Bool?
 
     /// Whether we have permission to access location
     public var hasLocationPermission: Bool {

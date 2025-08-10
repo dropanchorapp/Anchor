@@ -55,6 +55,15 @@ struct AnchorMobileApp: App {
         
         let params = Dictionary(uniqueKeysWithValues: queryItems.map { ($0.name, $0.value ?? "") })
         
+        print("🔐 OAuth callback parameters:")
+        for (key, value) in params {
+            if key == "access_token" || key == "refresh_token" {
+                print("🔐   \(key): \(value.prefix(8))...")
+            } else {
+                print("🔐   \(key): \(value)")
+            }
+        }
+        
         // Validate required parameters
         guard let accessToken = params["access_token"],
               let refreshToken = params["refresh_token"],
@@ -62,10 +71,12 @@ struct AnchorMobileApp: App {
               let handle = params["handle"],
               let sessionId = params["session_id"] else {
             print("❌ Missing required OAuth parameters")
+            print("❌ Available parameters: \(params.keys.joined(separator: ", "))")
             return
         }
         
         print("✅ OAuth success for handle: \(handle)")
+        print("✅ Session ID: \(sessionId)")
         
         // Process OAuth authentication
         Task { @MainActor in
@@ -80,10 +91,14 @@ struct AnchorMobileApp: App {
                     displayName: params["display_name"]
                 )
                 
+                print("🔐 Created OAuthAuthenticationData with session ID: \(oauthAuthData.sessionId)")
+                
                 let success = try await authStore.authenticateWithOAuth(oauthAuthData)
                 
                 if success {
                     print("🎉 OAuth authentication completed for handle: \(handle)")
+                } else {
+                    print("❌ OAuth authentication returned false")
                 }
             } catch {
                 print("❌ OAuth authentication failed: \(error.localizedDescription)")

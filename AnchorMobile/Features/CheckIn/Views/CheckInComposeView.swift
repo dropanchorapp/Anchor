@@ -18,7 +18,6 @@ struct CheckInComposeView: View {
     @State private var isPosting = false
     @State private var showingSuccess = false
     @State private var error: Error?
-    @State private var shouldShareToFollowers = true
     
     private var categoryGroup: PlaceCategorization.CategoryGroup? {
         place.categoryGroup
@@ -37,7 +36,6 @@ struct CheckInComposeView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     PlaceInfoSection(place: place, categoryGroup: categoryGroup)
                     MessageInputSection(message: $message)
-                    SharingOptionsSection(shouldShareToFollowers: $shouldShareToFollowers)
                     PreviewSection(previewText: previewText)
                     
                     if !authStore.isAuthenticated {
@@ -80,7 +78,7 @@ struct CheckInComposeView: View {
             Text(error?.localizedDescription ?? "An error occurred")
         }
         .sheet(isPresented: $showingSuccess) {
-            CheckInSuccessView(place: place, sharedToFollowers: shouldShareToFollowers) {
+            CheckInSuccessView(place: place, sharedToFollowers: false) {
                 dismiss()
             }
         }
@@ -93,10 +91,9 @@ struct CheckInComposeView: View {
         error = nil
         
         do {
-            _ = try await checkInStore.createCheckinWithOptionalPost(
+            _ = try await checkInStore.createCheckin(
                 place: place,
-                customMessage: message.isEmpty ? nil : message,
-                shouldCreatePost: shouldShareToFollowers
+                customMessage: message.isEmpty ? nil : message
             )
             
             showingSuccess = true
@@ -167,47 +164,6 @@ struct MessageInputSection: View {
     }
 }
 
-struct SharingOptionsSection: View {
-    @Binding var shouldShareToFollowers: Bool
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Sharing Options")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            HStack(spacing: 12) {
-                Button(action: {
-                    shouldShareToFollowers.toggle()
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: shouldShareToFollowers ? "checkmark.square.fill" : "square")
-                            .foregroundColor(shouldShareToFollowers ? .blue : .secondary)
-                            .font(.title2)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Also post to your public timeline")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                            
-                            Text("Share this check-in with your followers")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.leading)
-                        }
-                        
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-            .padding()
-            .background(Color.secondary.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
-    }
-}
 
 struct PreviewSection: View {
     let previewText: String
@@ -361,10 +317,3 @@ struct CheckInSuccessView: View {
     }
 }
 
-#Preview("Sharing Options") {
-    VStack {
-        SharingOptionsSection(shouldShareToFollowers: .constant(true))
-        SharingOptionsSection(shouldShareToFollowers: .constant(false))
-    }
-    .padding()
-}

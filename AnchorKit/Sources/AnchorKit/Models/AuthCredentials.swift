@@ -9,6 +9,7 @@ public protocol AuthCredentialsProtocol: Sendable {
     var pdsURL: String { get }
     var expiresAt: Date { get }
     var appPassword: String? { get }
+    var sessionId: String? { get }
     var isExpired: Bool { get }
     var isValid: Bool { get }
 }
@@ -35,6 +36,9 @@ public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
 
     /// App password for automatic re-authentication (stored securely in keychain)
     public var appPassword: String?
+    
+    /// Session ID for backend API authentication (from OAuth flow)
+    public var sessionId: String?
 
     /// Creation date for record tracking
     public var createdAt: Date
@@ -46,7 +50,8 @@ public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
         did: String,
         pdsURL: String,
         expiresAt: Date,
-        appPassword: String? = nil
+        appPassword: String? = nil,
+        sessionId: String? = nil
     ) {
         self.handle = handle
         self.accessToken = accessToken
@@ -55,6 +60,7 @@ public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
         self.pdsURL = pdsURL
         self.expiresAt = expiresAt
         self.appPassword = appPassword
+        self.sessionId = sessionId
         createdAt = Date()
     }
 }

@@ -84,13 +84,21 @@ public final class OAuthService: OAuthServiceProtocol {
     
     /// Process OAuth authentication data and create AT Protocol credentials
     public func processOAuthAuthentication(_ authData: OAuthAuthenticationData) async throws -> AuthCredentialsProtocol {
+        print("🔐 OAuthService: Processing OAuth authentication for handle: \(authData.handle)")
+        print("🔐 OAuthService: DID: \(authData.did)")
+        print("🔐 OAuthService: Session ID: \(authData.sessionId)")
+        print("🔐 OAuthService: Has access token: \(authData.accessToken.isEmpty == false)")
+        print("🔐 OAuthService: Has refresh token: \(authData.refreshToken.isEmpty == false)")
+        
         // Create credentials from OAuth data
         let credentials = createCredentials(from: authData)
+        
+        print("🔐 OAuthService: Created credentials with session ID: \(credentials.sessionId ?? "nil")")
         
         // Store credentials securely
         try await storage.save(credentials)
         
-        print("✅ OAuth credentials stored for handle: \(credentials.handle)")
+        print("✅ OAuthService: Credentials stored for handle: \(credentials.handle)")
         
         return credentials
     }
@@ -108,7 +116,8 @@ public final class OAuthService: OAuthServiceProtocol {
             did: authData.did,
             pdsURL: "https://bsky.social", // Default PDS for OAuth flow
             expiresAt: expiresAt,
-            appPassword: nil // OAuth doesn't use app passwords
+            appPassword: nil, // OAuth doesn't use app passwords
+            sessionId: authData.sessionId // Backend API session ID
         )
     }
 }

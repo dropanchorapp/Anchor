@@ -52,6 +52,7 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             pdsURL: credentials.pdsURL,
             expiresAt: credentials.expiresAt,
             appPassword: credentials.appPassword,
+            sessionId: credentials.sessionId,
             createdAt: Date() // Use current time for created timestamp
         )
 
@@ -109,7 +110,8 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
                 did: credentialsData.did,
                 pdsURL: credentialsData.pdsURL,
                 expiresAt: credentialsData.expiresAt,
-                appPassword: credentialsData.appPassword
+                appPassword: credentialsData.appPassword,
+                sessionId: credentialsData.sessionId
             )
 
             print("🔐 Loaded credentials from keychain for @\(credentials.handle), " +
@@ -181,6 +183,7 @@ private struct CredentialsData: Codable {
     let pdsURL: String
     let expiresAt: Date
     let appPassword: String?
+    let sessionId: String?
     let createdAt: Date
 }
 

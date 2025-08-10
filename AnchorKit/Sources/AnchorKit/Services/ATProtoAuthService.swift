@@ -169,15 +169,23 @@ public final class ATProtoAuthService: ATProtoAuthServiceProtocol {
     }
 
     public func loadStoredCredentials() async -> AuthCredentials? {
+        print("🔑 ATProtoAuthService: Loading stored credentials...")
         let loadedCredentials = await storage.load()
 
         guard let credentials = loadedCredentials else {
-            print("🔑 No stored credentials found")
+            print("🔑 ATProtoAuthService: No stored credentials found")
             _credentials = nil
             return nil
         }
 
-        print("🔑 Loaded stored credentials for @\(credentials.handle) (PDS: \(credentials.pdsURL))")
+        print("🔑 ATProtoAuthService: Loaded stored credentials for @\(credentials.handle) (PDS: \(credentials.pdsURL))")
+        print("🔑 ATProtoAuthService: Loaded credentials DID: \(credentials.did)")
+        print("🔑 ATProtoAuthService: Loaded credentials session ID present: \(credentials.sessionId != nil)")
+        if let sessionId = credentials.sessionId {
+            print("🔑 ATProtoAuthService: Loaded session ID: \(sessionId.prefix(8))...")
+        } else {
+            print("🔑 ATProtoAuthService: No session ID in loaded credentials")
+        }
 
         // If credentials are expired, try to refresh them automatically
         if credentials.isExpired {

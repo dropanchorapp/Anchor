@@ -4,119 +4,86 @@ import Foundation
 
 @MainActor
 public protocol CheckInStoreProtocol {
-    func createCheckinWithPost(place: Place, customMessage: String?) async throws -> Bool
-    func createCheckinWithOptionalPost(place: Place, customMessage: String?, shouldCreatePost: Bool) async throws -> Bool
+    func createCheckin(place: Place, customMessage: String?) async throws -> Bool
     func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet])
 }
 
 // MARK: - Check-In Store
 
-/// Check-in creation and management store using StrongRef architecture
+/// Check-in creation and management store using backend API
 ///
-/// **STRONGREF ARCHITECTURE:**
-/// When creating a check-in, this store creates TWO separate records on the user's PDS:
+/// **BACKEND ARCHITECTURE:**
+/// This store creates check-ins by calling the Anchor backend API, which handles:
 ///
-/// 1. **Address Record (community.lexicon.location.address)**: Reusable venue information
-///    - Contains structured address data that can be referenced by multiple checkins
-///    - Follows community lexicon standards for interoperability
+/// 1. **Authentication**: Uses OAuth session cookies for secure API access
+/// 2. **StrongRef Creation**: Backend creates address + checkin records on user's PDS
+/// 3. **Content Integrity**: Backend handles CID verification and atomic operations
 ///
-/// 2. **Check-in Record (app.dropanchor.checkin)**: User message with StrongRef to address
-///    - References the address record via StrongRef (URI + CID)
-///    - Contains user's message, coordinates, and metadata
-///    - Enables content integrity verification through CID matching
-///
-/// Additionally creates an enhanced social post on Bluesky for social engagement.
-///
-/// **Note:** Authentication is handled by AuthStore, not this store.
+/// **Note:** Authentication is handled by AuthStore, checkin creation by backend API.
 @MainActor
 @Observable
 public final class CheckInStore: CheckInStoreProtocol {
     // MARK: - Properties
 
     private let authStore: AuthStoreProtocol
-    private let postService: BlueskyPostServiceProtocol
+    private let backendService: AnchorBackendServiceProtocol
     private let richTextProcessor: RichTextProcessorProtocol
-    private let atprotoClient: ATProtoClientProtocol
 
     // MARK: - Initialization
 
     /// Convenience initializer for production use with AuthStore
     public convenience init(authStore: AuthStoreProtocol, session: URLSessionProtocol = URLSession.shared) {
-        let atprotoClient = ATProtoClient(session: session)
+        let backendService = AnchorBackendService(session: session)
         let richTextProcessor = RichTextProcessor()
-        let postService = BlueskyPostService(client: atprotoClient, richTextProcessor: richTextProcessor)
 
         self.init(
             authStore: authStore,
-            postService: postService,
-            richTextProcessor: richTextProcessor,
-            atprotoClient: atprotoClient
+            backendService: backendService,
+            richTextProcessor: richTextProcessor
         )
     }
 
     public init(
         authStore: AuthStoreProtocol,
-        postService: BlueskyPostServiceProtocol,
-        richTextProcessor: RichTextProcessorProtocol,
-        atprotoClient: ATProtoClientProtocol
+        backendService: AnchorBackendServiceProtocol,
+        richTextProcessor: RichTextProcessorProtocol
     ) {
         self.authStore = authStore
-        self.postService = postService
+        self.backendService = backendService
         self.richTextProcessor = richTextProcessor
-        self.atprotoClient = atprotoClient
     }
 
-    // MARK: - Check-ins & Posts
+    // MARK: - Check-ins
 
-    public func createCheckinWithPost(place: Place, customMessage: String?) async throws -> Bool {
-        // Maintain backward compatibility - always create both check-in and post
-        try await createCheckinWithOptionalPost(place: place, customMessage: customMessage, shouldCreatePost: true)
-    }
-
-    public func createCheckinWithOptionalPost(place: Place, customMessage: String?, shouldCreatePost: Bool) async throws -> Bool {
+    public func createCheckin(place: Place, customMessage: String?) async throws -> Bool {
+        print("🔰 CheckInStore: Starting checkin creation for place: \(place.name)")
+        
         // Get valid credentials from AuthStore (handles refresh automatically)
+        print("🔰 CheckInStore: Getting valid credentials from AuthStore")
         let activeCredentials = try await authStore.getValidCredentials()
-
-        // Build address record from place data
-        let addressRecord = CommunityAddressRecord(
-            name: place.name,
-            street: nil, // OSM places don't always have structured street data
-            locality: place.tags["addr:city"] ?? place.tags["place"] ?? place.tags["name"],
-            region: place.tags["addr:state"] ?? place.tags["addr:region"],
-            country: place.tags["addr:country"],
-            postalCode: place.tags["addr:postcode"]
-        )
-
-        // Build coordinates
-        let coordinates = GeoCoordinates(latitude: place.latitude, longitude: place.longitude)
-
-        // Extract place category information
-        let category = extractCategory(from: place.tags)
-        let categoryGroup = extractCategoryGroup(from: place.tags)
-        let categoryIcon = extractCategoryIcon(from: place.tags)
-
-        // Step 1: Create check-in with address using strongref (atomic operation)
-        _ = try await atprotoClient.createCheckinWithAddress(
-            text: customMessage ?? "",
-            address: addressRecord,
-            coordinates: coordinates,
-            category: category,
-            categoryGroup: categoryGroup,
-            categoryIcon: categoryIcon,
-            credentials: activeCredentials
-        )
-
-        // Step 2: Optionally create enhanced post on Bluesky
-        if shouldCreatePost {
-            let (postText, _) = richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
-            _ = try await postService.createPost(
-                text: postText,
-                credentials: activeCredentials,
-                embedRecord: nil // Could embed the checkin record in the future
-            )
+        
+        print("🔰 CheckInStore: Got credentials for handle: \(activeCredentials.handle)")
+        print("🔰 CheckInStore: DID: \(activeCredentials.did)")
+        print("🔰 CheckInStore: Session ID present: \(activeCredentials.sessionId != nil)")
+        
+        // Ensure we have a session ID for backend authentication
+        guard let sessionId = activeCredentials.sessionId else {
+            print("❌ CheckInStore: No session ID found in credentials")
+            throw CheckInError.missingSessionId
         }
-
-        return true
+        
+        print("🔰 CheckInStore: Using session ID: \(sessionId.prefix(8))...")
+        
+        // Create checkin using backend API
+        print("🔰 CheckInStore: Calling backend service to create checkin")
+        let result = try await backendService.createCheckin(
+            place: place,
+            message: customMessage,
+            sessionId: sessionId
+        )
+        
+        print("✅ CheckInStore: Checkin creation successful: \(result)")
+        return result
     }
 
     // MARK: - Rich Text Processing
@@ -124,95 +91,21 @@ public final class CheckInStore: CheckInStoreProtocol {
     public func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet]) {
         richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
     }
+}
 
-    // MARK: - Private Helpers
+// MARK: - Check-In Errors
 
-    private func extractCategory(from tags: [String: String]) -> String? {
-        // Extract OSM category (amenity, shop, etc.)
-        return tags["amenity"] ?? tags["shop"] ?? tags["leisure"] ?? tags["tourism"]
-    }
-
-    private func extractCategoryGroup(from tags: [String: String]) -> String? {
-        if let group = extractAmenityCategoryGroup(from: tags) {
-            return group
-        }
-        if let group = extractShopCategoryGroup(from: tags) {
-            return group
-        }
-        if let group = extractLeisureCategoryGroup(from: tags) {
-            return group
-        }
-        return nil
-    }
-
-    private func extractAmenityCategoryGroup(from tags: [String: String]) -> String? {
-        guard let amenity = tags["amenity"] else { return nil }
-        switch amenity {
-        case "restaurant", "cafe", "bar", "pub", "fast_food":
-            return "Food & Drink"
-        case "climbing_gym", "fitness_centre", "gym":
-            return "Sports & Fitness"
-        case "hotel", "hostel", "guest_house":
-            return "Accommodation"
-        default:
-            return "Services"
-        }
-    }
-
-    private func extractShopCategoryGroup(from tags: [String: String]) -> String? {
-        return tags["shop"] != nil ? "Shopping" : nil
-    }
-
-    private func extractLeisureCategoryGroup(from tags: [String: String]) -> String? {
-        guard let leisure = tags["leisure"] else { return nil }
-        switch leisure {
-        case "climbing", "fitness_centre", "sports_centre":
-            return "Sports & Fitness"
-        case "park", "garden":
-            return "Outdoors"
-        default:
-            return "Recreation"
-        }
-    }
-
-    private func extractCategoryIcon(from tags: [String: String]) -> String? {
-        if let icon = extractAmenityCategoryIcon(from: tags) {
-            return icon
-        }
-        if let icon = extractShopCategoryIcon(from: tags) {
-            return icon
-        }
-        if let icon = extractLeisureCategoryIcon(from: tags) {
-            return icon
-        }
-        return nil
-    }
-
-    private func extractAmenityCategoryIcon(from tags: [String: String]) -> String? {
-        guard let amenity = tags["amenity"] else { return nil }
-        switch amenity {
-        case "restaurant": return "🍽️"
-        case "cafe": return "☕"
-        case "bar", "pub": return "🍺"
-        case "fast_food": return "🍔"
-        case "climbing_gym": return "🧗‍♂️"
-        case "fitness_centre", "gym": return "💪"
-        case "hotel", "hostel", "guest_house": return "🏨"
-        default: return nil
-        }
-    }
-
-    private func extractShopCategoryIcon(from tags: [String: String]) -> String? {
-        return tags["shop"] != nil ? "🏪" : nil
-    }
-
-    private func extractLeisureCategoryIcon(from tags: [String: String]) -> String? {
-        guard let leisure = tags["leisure"] else { return nil }
-        switch leisure {
-        case "climbing": return "🧗‍♂️"
-        case "fitness_centre", "sports_centre": return "💪"
-        case "park", "garden": return "🌳"
-        default: return "🎯"
+/// Errors that can occur during check-in creation
+public enum CheckInError: Error, LocalizedError {
+    case missingSessionId
+    case authenticationFailed
+    
+    public var errorDescription: String? {
+        switch self {
+        case .missingSessionId:
+            return "Session ID required for backend authentication"
+        case .authenticationFailed:
+            return "Authentication failed"
         }
     }
 }

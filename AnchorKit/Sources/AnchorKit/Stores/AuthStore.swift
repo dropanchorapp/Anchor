@@ -114,14 +114,27 @@ public final class AuthStore: AuthStoreProtocol {
 
     /// Get current credentials, refreshing if expired (for other services to use)
     public func getValidCredentials() async throws -> AuthCredentialsProtocol {
+        print("🔑 AuthStore: Getting valid credentials...")
+        
         guard let credentials = authService.credentials else {
+            print("❌ AuthStore: No credentials found in authService")
             throw ATProtoError.missingCredentials
         }
+        
+        print("🔑 AuthStore: Found credentials for handle: \(credentials.handle)")
+        print("🔑 AuthStore: DID: \(credentials.did)")
+        print("🔑 AuthStore: Session ID present: \(credentials.sessionId != nil)")
+        if let sessionId = credentials.sessionId {
+            print("🔑 AuthStore: Session ID: \(sessionId.prefix(8))...")
+        }
+        print("🔑 AuthStore: Credentials expired: \(credentials.isExpired)")
 
         if credentials.isExpired {
+            print("🔄 AuthStore: Refreshing expired credentials...")
             return try await authService.refreshCredentials(credentials)
         }
 
+        print("✅ AuthStore: Returning valid credentials")
         return credentials
     }
 

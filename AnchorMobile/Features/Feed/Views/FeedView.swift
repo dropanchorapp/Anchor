@@ -126,12 +126,6 @@ struct FeedView: View {
         .environment(authStore)
         .environment(CheckInStore(authStore: authStore))
         .environment(AppStateStore())
-        .onAppear {
-            // Simulate authenticated state for preview
-            Task {
-                try? await authStore.authenticate(handle: "preview.user.bsky.social", appPassword: "preview-app-password")
-            }
-        }
 }
 
 #Preview("Filled State") {

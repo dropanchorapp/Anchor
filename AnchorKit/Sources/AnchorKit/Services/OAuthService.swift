@@ -49,40 +49,34 @@ public protocol OAuthServiceProtocol {
 
 // MARK: - OAuth Service
 
-/// OAuth authentication service for AT Protocol
+/// OAuth authentication service for backend API authentication
 ///
 /// Handles OAuth authentication flow completion by:
-/// - Converting OAuth tokens to AT Protocol credentials
-/// - Storing credentials securely
+/// - Converting OAuth tokens to authentication credentials
+/// - Storing credentials securely with session ID for backend API access
 /// - Integrating with existing authentication flow
 @Observable
 public final class OAuthService: OAuthServiceProtocol {
     // MARK: - Properties
     
     private let storage: CredentialsStorageProtocol
-    private let client: ATProtoClientProtocol
     
     // MARK: - Initialization
     
-    /// Initialize OAuth service with dependencies
-    public init(
-        storage: CredentialsStorageProtocol,
-        client: ATProtoClientProtocol
-    ) {
+    /// Initialize OAuth service with storage
+    public init(storage: CredentialsStorageProtocol) {
         self.storage = storage
-        self.client = client
     }
     
     /// Convenience initializer for production use
-    public convenience init(session: URLSessionProtocol = URLSession.shared) {
+    public convenience init() {
         let storage = KeychainCredentialsStorage()
-        let client = ATProtoClient(session: session)
-        self.init(storage: storage, client: client)
+        self.init(storage: storage)
     }
     
     // MARK: - OAuth Methods
     
-    /// Process OAuth authentication data and create AT Protocol credentials
+    /// Process OAuth authentication data and create authentication credentials
     public func processOAuthAuthentication(_ authData: OAuthAuthenticationData) async throws -> AuthCredentialsProtocol {
         print("🔐 OAuthService: Processing OAuth authentication for handle: \(authData.handle)")
         print("🔐 OAuthService: DID: \(authData.did)")
@@ -105,7 +99,7 @@ public final class OAuthService: OAuthServiceProtocol {
     
     // MARK: - Private Methods
     
-    /// Convert OAuth authentication data to AT Protocol credentials
+    /// Convert OAuth authentication data to authentication credentials
     private func createCredentials(from authData: OAuthAuthenticationData) -> AuthCredentials {
         let expiresAt = Date().addingTimeInterval(3600) // OAuth tokens typically expire in 1 hour
         

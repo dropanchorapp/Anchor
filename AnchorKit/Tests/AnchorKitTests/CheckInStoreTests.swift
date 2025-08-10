@@ -7,20 +7,15 @@ import Testing
 struct CheckInStoreTests {
     let store: CheckInStore
     let mockAuthStore: MockAuthStore
-    let mockATProtoClient: MockATProtoClient
-    let mockPostService: MockBlueskyPostService
+    let mockBackendService: MockAnchorBackendService
 
     init() {
         mockAuthStore = MockAuthStore()
-        mockATProtoClient = MockATProtoClient()
-        mockPostService = MockBlueskyPostService()
-        let richTextProcessor = RichTextProcessor()
+        mockBackendService = MockAnchorBackendService()
 
         store = CheckInStore(
             authStore: mockAuthStore,
-            postService: mockPostService,
-            richTextProcessor: richTextProcessor,
-            atprotoClient: mockATProtoClient
+            backendService: mockBackendService
         )
     }
 
@@ -28,73 +23,63 @@ struct CheckInStoreTests {
 
     @Test("Create checkin without authentication fails")
     func createCheckinWithoutAuthentication() async {
-        // Given: Auth service that will throw authentication error
+        // Given: No authentication
         mockAuthStore.shouldThrowAuthError = true
         let place = TestUtilities.createSamplePlace()
 
-        // When/Then: Creating check-in should fail
-        await #expect(throws: ATProtoError.self) {
-            try await store.createCheckinWithPost(place: place, customMessage: "Test message")
+        // When/Then: Creating check-in should fail with auth error
+        await #expect(throws: AuthStoreError.self) {
+            try await store.createCheckin(place: place, customMessage: "Test message")
         }
     }
 
-    @Test("Build check-in text with facets contains expected content")
-    func buildCheckInTextWithFacets() {
-        // Given: A place and custom message
+    @Test("Create checkin - success")
+    func createCheckinSuccess() async throws {
+        // Given: Authenticated user and backend will succeed
+        mockBackendService.createCheckinResult = true
         let place = TestUtilities.createSamplePlace()
         let customMessage = "Great climbing session!"
 
-        // When: Building check-in text
-        let (text, facets) = store.buildCheckInTextWithFacets(place: place, customMessage: customMessage)
+        // When: Creating check-in
+        let result = try await store.createCheckin(place: place, customMessage: customMessage)
 
-        // Then: Should contain expected content
-        #expect(text.contains("Great climbing session!"))
-        #expect(text.contains("#checkin"))
-        #expect(text.contains("#dropanchor"))
-        #expect(!facets.isEmpty)
+        // Then: Should succeed and call backend service with correct parameters
+        #expect(result, "Check-in creation should succeed")
+        #expect(mockBackendService.createCheckinCallCount == 1, "Should call backend service once")
+        #expect(mockBackendService.lastCreateCheckinPlace?.name == place.name, "Should pass correct place")
+        #expect(mockBackendService.lastCreateCheckinMessage == customMessage, "Should pass correct message")
+        #expect(mockBackendService.lastCreateCheckinSessionId == "test-session-id", "Should pass session ID from credentials")
     }
 
-    @Test("Create checkin with post calls both AT Protocol services")
-    func createCheckinWithPostCallsBothServices() async throws {
-        // Given: Valid authentication and a place
-        mockAuthStore.shouldThrowAuthError = false
-        mockATProtoClient.shouldThrowError = false
-        mockPostService.shouldThrowError = false
+    @Test("Create checkin - backend failure")
+    func createCheckinBackendFailure() async {
+        // Given: Backend service will fail
+        mockBackendService.shouldThrowError = true
         let place = TestUtilities.createSamplePlace()
 
-        // When: Creating check-in with post
-        let result = try await store.createCheckinWithPost(place: place, customMessage: "Test message")
-
-        // Then: Should succeed and call both services
-        #expect(result == true)
-        // Note: In a more sophisticated test, we could verify that both 
-        // createCheckinWithAddress and createPost were called
-    }
-
-    @Test("Create checkin with strongref handles AT Protocol errors")
-    func createCheckinHandlesATProtoErrors() async {
-        // Given: AT Protocol service that will throw errors
-        mockAuthStore.shouldThrowAuthError = false
-        mockATProtoClient.shouldThrowError = true
-        let place = TestUtilities.createSamplePlace()
-
-        // When/Then: Creating check-in should fail with AT Protocol error
-        await #expect(throws: ATProtoError.self) {
-            try await store.createCheckinWithPost(place: place, customMessage: "Test message")
+        // When/Then: Creating check-in should fail with backend error
+        await #expect(throws: NSError.self) {
+            try await store.createCheckin(place: place, customMessage: "Test message")
         }
     }
 
-    @Test("Create checkin without post succeeds")
-    func createCheckinWithoutPostSucceeds() async throws {
-        // Given: Valid authentication and a place
-        mockAuthStore.shouldThrowAuthError = false
-        mockATProtoClient.shouldThrowError = false
+    @Test("Create checkin - missing session ID fails")
+    func createCheckinMissingSessionId() async {
+        // Given: Credentials without session ID
+        mockAuthStore.testCredentials = TestAuthCredentials(
+            handle: "test.bsky.social",
+            accessToken: "test-token",
+            refreshToken: "test-refresh",
+            did: "did:plc:test",
+            pdsURL: "https://bsky.social",
+            expiresAt: Date().addingTimeInterval(3600),
+            sessionId: nil // No session ID
+        )
         let place = TestUtilities.createSamplePlace()
 
-        // When: Creating check-in without post
-        let result = try await store.createCheckinWithOptionalPost(place: place, customMessage: "Test message", shouldCreatePost: false)
-
-        // Then: Should succeed without calling post service
-        #expect(result == true)
+        // When/Then: Creating check-in should fail with missing session ID error
+        await #expect(throws: CheckInError.self) {
+            try await store.createCheckin(place: place, customMessage: "Test message")
+        }
     }
 }

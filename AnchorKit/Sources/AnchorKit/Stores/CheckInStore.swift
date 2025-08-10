@@ -5,7 +5,6 @@ import Foundation
 @MainActor
 public protocol CheckInStoreProtocol {
     func createCheckin(place: Place, customMessage: String?) async throws -> Bool
-    func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet])
 }
 
 // MARK: - Check-In Store
@@ -27,30 +26,18 @@ public final class CheckInStore: CheckInStoreProtocol {
 
     private let authStore: AuthStoreProtocol
     private let backendService: AnchorBackendServiceProtocol
-    private let richTextProcessor: RichTextProcessorProtocol
 
     // MARK: - Initialization
 
     /// Convenience initializer for production use with AuthStore
     public convenience init(authStore: AuthStoreProtocol, session: URLSessionProtocol = URLSession.shared) {
         let backendService = AnchorBackendService(session: session)
-        let richTextProcessor = RichTextProcessor()
-
-        self.init(
-            authStore: authStore,
-            backendService: backendService,
-            richTextProcessor: richTextProcessor
-        )
+        self.init(authStore: authStore, backendService: backendService)
     }
 
-    public init(
-        authStore: AuthStoreProtocol,
-        backendService: AnchorBackendServiceProtocol,
-        richTextProcessor: RichTextProcessorProtocol
-    ) {
+    public init(authStore: AuthStoreProtocol, backendService: AnchorBackendServiceProtocol) {
         self.authStore = authStore
         self.backendService = backendService
-        self.richTextProcessor = richTextProcessor
     }
 
     // MARK: - Check-ins
@@ -84,12 +71,6 @@ public final class CheckInStore: CheckInStoreProtocol {
         
         print("✅ CheckInStore: Checkin creation successful: \(result)")
         return result
-    }
-
-    // MARK: - Rich Text Processing
-
-    public func buildCheckInTextWithFacets(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet]) {
-        richTextProcessor.buildCheckinText(place: place, customMessage: customMessage)
     }
 }
 

@@ -8,11 +8,8 @@ public protocol AuthStoreProtocol {
     var credentials: AuthCredentials? { get }
     var handle: String? { get }
     func loadStoredCredentials() async -> AuthCredentials?
-    func authenticate(handle: String, appPassword: String) async throws -> Bool
-    func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool
     func authenticateWithOAuth(_ authData: OAuthAuthenticationData) async throws -> Bool
     func signOut() async
-    func getAppPasswordURL() -> URL
     func getValidCredentials() async throws -> AuthCredentialsProtocol
 }
 
@@ -20,27 +17,31 @@ public protocol AuthStoreProtocol {
 
 /// Observable authentication store for Anchor app
 ///
-/// Manages authentication state and coordinates with AT Protocol services.
+/// Manages authentication state and coordinates with OAuth authentication service.
 /// Provides observable authentication state for UI binding.
 ///
 /// Responsibilities:
 /// - Observable authentication state for UI
-/// - Coordinate login/logout operations
+/// - OAuth authentication flow coordination
 /// - Session management and credential refresh
 /// - Simplified app-facing authentication interface
 @Observable
 public final class AuthStore: AuthStoreProtocol {
     // MARK: - Properties
 
-    private let authService: ATProtoAuthServiceProtocol
     private let oauthService: OAuthServiceProtocol
+    private let storage: CredentialsStorageProtocol
 
     /// Whether the user is currently authenticated (observable for UI)
     public private(set) var isAuthenticated: Bool = false
 
+    /// Current authentication credentials (backing storage)
+    @MainActor
+    private var _credentials: AuthCredentials?
+
     /// Current authentication credentials
     public var credentials: AuthCredentials? {
-        authService.credentials
+        _credentials
     }
 
     /// Current user handle (convenience property)
@@ -51,74 +52,71 @@ public final class AuthStore: AuthStoreProtocol {
     // MARK: - Initialization
 
     /// Convenience initializer for production use with Keychain storage
-    public convenience init(session: URLSessionProtocol = URLSession.shared) {
-        let client = ATProtoClient(session: session)
+    public convenience init() {
         let storage = KeychainCredentialsStorage()
-        let authService = ATProtoAuthService(client: client, storage: storage)
-        let oauthService = OAuthService(storage: storage, client: client)
-        self.init(authService: authService, oauthService: oauthService)
+        let oauthService = OAuthService(storage: storage)
+        self.init(storage: storage, oauthService: oauthService)
     }
 
     /// Convenience initializer for testing with custom storage
-    public convenience init(session: URLSessionProtocol = URLSession.shared, storage: CredentialsStorageProtocol) {
-        let client = ATProtoClient(session: session)
-        let authService = ATProtoAuthService(client: client, storage: storage)
-        let oauthService = OAuthService(storage: storage, client: client)
-        self.init(authService: authService, oauthService: oauthService)
+    public convenience init(storage: CredentialsStorageProtocol) {
+        let oauthService = OAuthService(storage: storage)
+        self.init(storage: storage, oauthService: oauthService)
     }
 
     /// Dependency injection initializer
-    public init(authService: ATProtoAuthServiceProtocol, oauthService: OAuthServiceProtocol) {
-        self.authService = authService
+    public init(storage: CredentialsStorageProtocol, oauthService: OAuthServiceProtocol) {
+        self.storage = storage
         self.oauthService = oauthService
     }
 
     // MARK: - Authentication Methods
 
     public func loadStoredCredentials() async -> AuthCredentials? {
-        let result = await authService.loadStoredCredentials()
+        print("🔑 AuthStore: Loading stored credentials...")
+        let loadedCredentials = await storage.load()
+        
+        guard let credentials = loadedCredentials else {
+            print("🔑 AuthStore: No stored credentials found")
+            _credentials = nil
+            updateAuthenticationState()
+            return nil
+        }
+        
+        print("🔑 AuthStore: Loaded stored credentials for @\(credentials.handle)")
+        print("🔑 AuthStore: Loaded credentials DID: \(credentials.did)")
+        print("🔑 AuthStore: Loaded credentials session ID present: \(credentials.sessionId != nil)")
+        
+        _credentials = credentials
         updateAuthenticationState()
-        return result
-    }
-
-    public func authenticate(handle: String, appPassword: String) async throws -> Bool {
-        return try await authenticate(handle: handle, appPassword: appPassword, pdsURL: nil)
-    }
-
-    public func authenticate(handle: String, appPassword: String, pdsURL: String?) async throws -> Bool {
-        _ = try await authService.authenticate(handle: handle, appPassword: appPassword, pdsURL: pdsURL)
-        updateAuthenticationState()
-        return true
+        return credentials
     }
     
     public func authenticateWithOAuth(_ authData: OAuthAuthenticationData) async throws -> Bool {
-        _ = try await oauthService.processOAuthAuthentication(authData)
-        
-        // Reload stored credentials so authService is aware of them
-        _ = await loadStoredCredentials()
-        
+        let credentials = try await oauthService.processOAuthAuthentication(authData)
+        _credentials = credentials as? AuthCredentials
         updateAuthenticationState()
         return true
     }
 
     public func signOut() async {
-        await authService.clearCredentials()
+        print("🗑️ AuthStore: Signing out...")
+        try? await storage.clear()
+        _credentials = nil
         updateAuthenticationState()
-    }
-
-    public func getAppPasswordURL() -> URL {
-        URL(string: "https://bsky.app/settings/app-passwords")!
+        print("✅ AuthStore: Signed out successfully")
     }
 
     // MARK: - Internal Methods
 
-    /// Get current credentials, refreshing if expired (for other services to use)
+    /// Get current credentials (for other services to use)
+    /// Note: OAuth tokens are handled by the backend, so no client-side refresh needed
     public func getValidCredentials() async throws -> AuthCredentialsProtocol {
         print("🔑 AuthStore: Getting valid credentials...")
         
-        guard let credentials = authService.credentials else {
-            print("❌ AuthStore: No credentials found in authService")
-            throw ATProtoError.missingCredentials
+        guard let credentials = _credentials else {
+            print("❌ AuthStore: No credentials found")
+            throw AuthStoreError.missingCredentials
         }
         
         print("🔑 AuthStore: Found credentials for handle: \(credentials.handle)")
@@ -127,13 +125,7 @@ public final class AuthStore: AuthStoreProtocol {
         if let sessionId = credentials.sessionId {
             print("🔑 AuthStore: Session ID: \(sessionId.prefix(8))...")
         }
-        print("🔑 AuthStore: Credentials expired: \(credentials.isExpired)")
-
-        if credentials.isExpired {
-            print("🔄 AuthStore: Refreshing expired credentials...")
-            return try await authService.refreshCredentials(credentials)
-        }
-
+        
         print("✅ AuthStore: Returning valid credentials")
         return credentials
     }
@@ -143,7 +135,24 @@ public final class AuthStore: AuthStoreProtocol {
     /// Updates the observable authentication state for UI binding
     @MainActor
     private func updateAuthenticationState() {
-        isAuthenticated = authService.credentials?.isValid ?? false
+        isAuthenticated = _credentials?.isValid ?? false
         print("🔄 AuthStore: Updated authentication state - isAuthenticated: \(isAuthenticated)")
+    }
+}
+
+// MARK: - Auth Store Errors
+
+/// Errors that can occur in AuthStore operations
+public enum AuthStoreError: Error, LocalizedError {
+    case missingCredentials
+    case authenticationFailed
+    
+    public var errorDescription: String? {
+        switch self {
+        case .missingCredentials:
+            return "No authentication credentials found"
+        case .authenticationFailed:
+            return "Authentication failed"
+        }
     }
 }

@@ -221,7 +221,7 @@ Anchor/
 └── Static/                  # Assets and documentation
 ```
 
-**Note**: Anchor AppView backend is a separate project available at <https://anchor-feed-generator.val.run>
+**Note**: Anchor AppView backend is a separate project available at <https://dropanchor.app>
 
 ## 🔧 Development
 
@@ -257,7 +257,7 @@ xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile test -destinati
 
 ### Anchor AppView
 
-Anchor AppView is a separate project that provides the global feed service. You can explore it at: <https://anchor-feed-generator.val.run>
+Anchor AppView is a separate project that provides the global feed service. You can explore it at: <https://dropanchor.app>
 
 ## 🔒 Privacy & Security
 

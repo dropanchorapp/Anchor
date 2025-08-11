@@ -43,8 +43,8 @@ struct FeedPostHeaderView: View {
                 }
             }
             Spacer()
-            // Timestamp
-            Text(post.record.createdAt, style: .relative)
+            // Timestamp - show time only since date is in section header
+            Text(post.record.createdAt.formatted(date: .omitted, time: .shortened))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

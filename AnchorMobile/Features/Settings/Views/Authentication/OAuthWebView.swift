@@ -76,7 +76,8 @@ struct OAuthWebView: UIViewRepresentable {
                   let refreshToken = params["refresh_token"],
                   let did = params["did"],
                   let handle = params["handle"],
-                  let sessionId = params["session_id"] else {
+                  let sessionId = params["session_id"],
+                  let pdsURL = params["pds_url"] else {
                 parent.onAuthComplete(.failure(OAuthError.missingParameters))
                 return
             }
@@ -87,6 +88,7 @@ struct OAuthWebView: UIViewRepresentable {
                 did: did,
                 handle: handle,
                 sessionId: sessionId,
+                pdsURL: pdsURL,
                 avatar: params["avatar"],
                 displayName: params["display_name"]
             )
@@ -104,6 +106,7 @@ struct OAuthAuthenticationData {
     let did: String
     let handle: String
     let sessionId: String
+    let pdsURL: String
     let avatar: String?
     let displayName: String?
 }

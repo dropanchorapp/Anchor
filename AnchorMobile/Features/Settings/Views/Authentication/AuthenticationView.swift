@@ -201,6 +201,7 @@ struct AuthenticationView: View {
                         did: authData.did,
                         handle: authData.handle,
                         sessionId: authData.sessionId,
+                        pdsURL: authData.pdsURL,
                         avatar: authData.avatar,
                         displayName: authData.displayName
                     )

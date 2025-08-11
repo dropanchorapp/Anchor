@@ -15,8 +15,9 @@ struct FeedDateGroupingTests {
     
     @Test("Posts from same day are grouped together")
     func sameDay() {
-        let today = Date()
-        let laterToday = Calendar.current.date(byAdding: .hour, value: 2, to: today)!
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let laterToday = calendar.date(byAdding: .hour, value: 2, to: today)!
         
         let posts = [
             createMockPost(createdAt: today, text: "First post"),
@@ -35,8 +36,9 @@ struct FeedDateGroupingTests {
     
     @Test("Posts from different days are in separate sections")
     func differentDays() {
-        let today = Date()
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
         
         let posts = [
             createMockPost(createdAt: yesterday, text: "Yesterday post"),
@@ -54,15 +56,16 @@ struct FeedDateGroupingTests {
     
     @Test("Multiple posts across multiple days are correctly grouped and sorted")
     func multipleDaysMultiplePosts() {
-        let today = Date()
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
-        let twoDaysAgo = Calendar.current.date(byAdding: .day, value: -2, to: today)!
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: today)!
         
         // Create posts with specific timestamps to ensure proper ordering
         let todayFirst = createMockPost(createdAt: today, text: "Today - first")
-        let todaySecond = createMockPost(createdAt: Calendar.current.date(byAdding: .minute, value: 1, to: today)!, text: "Today - second")
+        let todaySecond = createMockPost(createdAt: calendar.date(byAdding: .minute, value: 1, to: today)!, text: "Today - second")
         let twoDaysAgoFirst = createMockPost(createdAt: twoDaysAgo, text: "Two days ago - first")
-        let twoDaysAgoSecond = createMockPost(createdAt: Calendar.current.date(byAdding: .minute, value: 1, to: twoDaysAgo)!, text: "Two days ago - second")
+        let twoDaysAgoSecond = createMockPost(createdAt: calendar.date(byAdding: .minute, value: 1, to: twoDaysAgo)!, text: "Two days ago - second")
         
         let posts = [
             twoDaysAgoFirst,

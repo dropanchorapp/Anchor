@@ -97,8 +97,7 @@ extension ATProtoRecord {
         type = timelineRecord.type
 
         // Parse created date
-        let formatter = ISO8601DateFormatter()
-        createdAt = formatter.date(from: timelineRecord.createdAt) ?? Date()
+        createdAt = ISO8601DateFormatter.flexibleDate(from: timelineRecord.createdAt) ?? Date()
 
         // Convert timeline facets to AT Proto facets
         facets = timelineRecord.facets?.compactMap { ATProtoFacet(from: $0) } ?? []

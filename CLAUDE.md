@@ -109,7 +109,7 @@ Anchor is an iOS app for location-based check-ins to Bluesky using the AT Protoc
 - **OverpassService**: OpenStreetMap POI discovery via Overpass API
 - **CheckInStore**: StrongRef-based check-in creation with atomic address + checkin record operations
 - **FeedStore**: Feed management using new Anchor AppView backend (no authentication required)
-- **AnchorAppViewService**: Client for the Anchor AppView API at `https://anchor-feed-generator.val.run`
+- **AnchorAppViewService**: Client for the Anchor AppView API at `https://dropanchor.app`
 - **ATProtoClient**: Full AT Protocol client with StrongRef support, CID verification, and atomic record creation
 - **ATProtoAuthService**: Authentication service using `AuthCredentialsProtocol` for testability
 - **BlueskyPostService**: Enhanced social posting for Bluesky with rich text formatting
@@ -373,7 +373,7 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 
 - **PDS Storage**: Clean, structured check-in data with StrongRef address references
 - **Social Posting**: Enhanced marketing-friendly posts on Bluesky with rich text formatting
-- **Feed Reading**: Uses new Anchor AppView backend at `https://anchor-feed-generator.val.run`
+- **Feed Reading**: Uses new Anchor AppView backend at `https://dropanchor.app`
 - **API Endpoints**: Global, nearby, user-specific, and following feeds via REST API
 
 #### Technical Details
@@ -393,5 +393,46 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 - **Background location** for automatic check-ins
 - **Widget support** for iOS home screen
 
-- to deploy changes for the web app (dropanchor.app) you can use the deno task deploy task
-- the web app and backend api url is dropanchor.app
+## OAuth Authentication Flow
+
+### Backend Integration
+
+- **OAuth backend**: Uses `/Users/tijs/projects/Anchor/location-feed-generator` for web-based OAuth
+- **Mobile flow**: iOS app loads `https://dropanchor.app/mobile-auth` in WebView
+- **Callback handling**: Custom URL scheme `anchor-app://auth-callback` with auth parameters
+- **PDS URL resolution**: Backend resolves user's actual PDS URL from DID document and includes it in mobile callback
+
+### Key OAuth Implementation Details
+
+- **Personal PDS support**: OAuth flow correctly resolves and stores PDS URLs for users with personal PDS servers (not just bsky.social)
+- **User registration**: Mobile OAuth flow automatically registers users in backend database for PDS crawling
+- **Flexible date parsing**: `ISO8601DateFormatter.flexibleDate()` utility handles both fractional seconds (`2025-08-11T18:34:55.966Z`) and basic formats (`2025-08-11T18:34:55Z`) from API responses
+
+## Feed Display Architecture
+
+### Date Parsing & Display
+
+- **API timestamps**: Global feed provides ISO8601 timestamps with varying precision
+- **Parsing strategy**: Two-tier parsing (fractional seconds first, basic format fallback)
+- **Display format**: Time-only display (`6:34 PM`) since posts are grouped by date in sections
+- **Grouping logic**: `Array<FeedPost>.groupedByDate()` creates date-based sections with newest-first sorting within each day
+
+### Troubleshooting Feed Issues
+
+- If posts show same timestamp: Check ISO8601 parsing - likely fallback to `Date()` due to parse failure
+- If date grouping fails: Verify timezone handling in `Calendar.current.startOfDay(for:)`
+- For debug logging: Temporarily add debug prints to `FeedModels.swift` date parsing
+
+## Additional Development Notes
+
+### Backend Management
+
+- **Deploy backend changes**: `cd /Users/tijs/projects/Anchor/location-feed-generator && deno task deploy`
+- **Backend URL**: All API endpoints at `https://dropanchor.app`
+- **AT Protocol browser**: View records at `https://atproto-browser.vercel.app/at/{did}/{collection}/{rkey}`
+
+### Known Dependencies Between Projects
+
+- iOS app depends on location-feed-generator for OAuth and feed APIs
+- OAuth session management happens in backend, credentials stored in iOS app
+- Feed timestamps require consistent ISO8601 parsing between backend API and iOS client

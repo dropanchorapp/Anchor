@@ -16,6 +16,7 @@ public struct OAuthAuthenticationData {
     public let did: String
     public let handle: String
     public let sessionId: String
+    public let pdsURL: String
     public let avatar: String?
     public let displayName: String?
     
@@ -25,6 +26,7 @@ public struct OAuthAuthenticationData {
         did: String,
         handle: String,
         sessionId: String,
+        pdsURL: String,
         avatar: String? = nil,
         displayName: String? = nil
     ) {
@@ -33,6 +35,7 @@ public struct OAuthAuthenticationData {
         self.did = did
         self.handle = handle
         self.sessionId = sessionId
+        self.pdsURL = pdsURL
         self.avatar = avatar
         self.displayName = displayName
     }
@@ -80,9 +83,16 @@ public final class OAuthService: OAuthServiceProtocol {
     public func processOAuthAuthentication(_ authData: OAuthAuthenticationData) async throws -> AuthCredentialsProtocol {
         print("🔐 OAuthService: Processing OAuth authentication for handle: \(authData.handle)")
         print("🔐 OAuthService: DID: \(authData.did)")
+        print("🔐 OAuthService: PDS URL: \(authData.pdsURL)")
         print("🔐 OAuthService: Session ID: \(authData.sessionId)")
         print("🔐 OAuthService: Has access token: \(authData.accessToken.isEmpty == false)")
         print("🔐 OAuthService: Has refresh token: \(authData.refreshToken.isEmpty == false)")
+        
+        // Validate PDS URL
+        guard !authData.pdsURL.isEmpty, URL(string: authData.pdsURL) != nil else {
+            print("❌ OAuthService: Invalid PDS URL: \(authData.pdsURL)")
+            throw OAuthError.invalidPDSURL(authData.pdsURL)
+        }
         
         // Create credentials from OAuth data
         let credentials = createCredentials(from: authData)
@@ -92,7 +102,7 @@ public final class OAuthService: OAuthServiceProtocol {
         // Store credentials securely
         try await storage.save(credentials)
         
-        print("✅ OAuthService: Credentials stored for handle: \(credentials.handle)")
+        print("✅ OAuthService: Credentials stored for handle: \(credentials.handle) with PDS: \(credentials.pdsURL)")
         
         return credentials
     }
@@ -108,7 +118,7 @@ public final class OAuthService: OAuthServiceProtocol {
             accessToken: authData.accessToken,
             refreshToken: authData.refreshToken,
             did: authData.did,
-            pdsURL: "https://bsky.social", // Default PDS for OAuth flow
+            pdsURL: authData.pdsURL, // Use resolved PDS URL from OAuth flow
             expiresAt: expiresAt,
             appPassword: nil, // OAuth doesn't use app passwords
             sessionId: authData.sessionId // Backend API session ID
@@ -120,6 +130,7 @@ public final class OAuthService: OAuthServiceProtocol {
 
 public enum OAuthError: LocalizedError {
     case invalidAuthData
+    case invalidPDSURL(String)
     case storageError(Error)
     case networkError(Error)
     
@@ -127,6 +138,8 @@ public enum OAuthError: LocalizedError {
         switch self {
         case .invalidAuthData:
             return "Invalid OAuth authentication data"
+        case .invalidPDSURL(let url):
+            return "Invalid PDS URL: \(url). This indicates an issue with OAuth flow."
         case .storageError(let error):
             return "Failed to store credentials: \(error.localizedDescription)"
         case .networkError(let error):

@@ -69,7 +69,8 @@ struct AnchorMobileApp: App {
               let refreshToken = params["refresh_token"],
               let did = params["did"],
               let handle = params["handle"],
-              let sessionId = params["session_id"] else {
+              let sessionId = params["session_id"],
+              let pdsURL = params["pds_url"] else {
             print("❌ Missing required OAuth parameters")
             print("❌ Available parameters: \(params.keys.joined(separator: ", "))")
             return
@@ -87,6 +88,7 @@ struct AnchorMobileApp: App {
                     did: did,
                     handle: handle,
                     sessionId: sessionId,
+                    pdsURL: pdsURL,
                     avatar: params["avatar"],
                     displayName: params["display_name"]
                 )

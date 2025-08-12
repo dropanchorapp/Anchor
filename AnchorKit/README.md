@@ -9,7 +9,7 @@ AnchorKit is a reusable Swift package that provides the business logic for Ancho
 ## Features
 
 - **Location Services**: Proper CoreLocation integration with permission handling
-- **OpenStreetMap Integration**: Place discovery via Overpass API with smart caching
+- **Place Discovery**: Backend-powered place discovery with smart caching
 - **Bluesky Integration**: AT Protocol authentication and posting
 - **Modern Swift**: Uses Swift 6 with strict concurrency and @Observable patterns
 
@@ -17,14 +17,14 @@ AnchorKit is a reusable Swift package that provides the business logic for Ancho
 
 ### Models
 
-- `Place` - Location data from OpenStreetMap with coordinates and metadata
+- `Place` - Location data with coordinates and metadata
 - `AuthCredentials` - Bluesky authentication with secure storage
 - `AnchorSettings` - User preferences and app configuration
 
 ### Services
 
 - `LocationService` - CoreLocation wrapper with menubar app permission handling
-- `OverpassService` - OpenStreetMap POI queries with intelligent caching
+- `AnchorService` - Backend-powered POI queries with intelligent caching
 - `CheckInStore` - Check-in creation and management with dual posting architecture
 - `NearbyPlacesService` - Coordinated location and place discovery
 
@@ -32,7 +32,7 @@ AnchorKit is a reusable Swift package that provides the business logic for Ancho
 
 - **CoreLocation** - Native macOS/iOS geolocation
 - **AT Protocol** - Direct Bluesky integration without third-party SDKs
-- **Overpass API** - Rich OpenStreetMap data via `overpass.private.coffee`
+- **Anchor Backend** - Rich place data via `dropanchor.app` API
 - **Swift Concurrency** - Modern async/await patterns throughout
 
 ## Usage

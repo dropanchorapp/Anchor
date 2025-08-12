@@ -8,13 +8,13 @@ struct AnchorServiceTests {
     
     @Test("AnchorService initialization")
     func serviceInitialization() {
-        let service = AnchorService()
+        _ = AnchorService()
         // Service is a struct, so it will always be non-nil after initialization
-        #expect(true, "AnchorService should initialize successfully")
+        #expect(Bool(true), "AnchorService should initialize successfully")
         
         let customURL = URL(string: "https://custom.api.com/api")!
-        let customService = AnchorService(baseURL: customURL)
-        #expect(true, "AnchorService should initialize with custom URL")
+        _ = AnchorService(baseURL: customURL)
+        #expect(Bool(true), "AnchorService should initialize with custom URL")
     }
     
     @Test("API methods are available")
@@ -43,7 +43,7 @@ struct AnchorServiceTests {
             _ = try await service.findNearbyPlaces(near: coordinate)
         } catch {
             // Expected to fail in test environment - we're just checking the API exists
-            #expect(true, "Expected network error in test environment")
+            #expect(Bool(true), "Expected network error in test environment")
         }
     }
     
@@ -57,7 +57,7 @@ struct AnchorServiceTests {
             _ = try await service.findNearbyPlacesWithDistance(near: coordinate, radiusMeters: 400)
         } catch {
             // Expected to fail in test environment - we're just checking the API exists
-            #expect(true, "Expected network error in test environment")
+            #expect(Bool(true), "Expected network error in test environment")
         }
     }
     

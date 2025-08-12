@@ -106,7 +106,7 @@ Anchor is an iOS app for location-based check-ins to Bluesky using the AT Protoc
 ### Services Architecture
 
 - **LocationService**: CoreLocation wrapper with proper permission handling for iOS apps
-- **OverpassService**: OpenStreetMap POI discovery via Overpass API
+- **AnchorService**: Backend-powered POI discovery via Anchor API
 - **CheckInStore**: StrongRef-based check-in creation with atomic address + checkin record operations
 - **FeedStore**: Feed management using new Anchor AppView backend (no authentication required)
 - **AnchorAppViewService**: Client for the Anchor AppView API at `https://dropanchor.app`
@@ -217,7 +217,7 @@ Tests are organized with semantic tags for filtering and categorization:
 
 - `.unit` - Fast unit tests for models and utilities
 - `.integration` - Tests requiring network access or external services
-- `.services` - Service layer testing (FeedService, OverpassService, AuthService)
+- `.services` - Service layer testing (FeedService, AnchorService, AuthService)
 - `.stores` - Store layer testing (CheckInStore)
 - `.models` - Data model testing (Place, ATProtoRecord, AuthCredentials)
 - `.auth` - Authentication and credential management tests
@@ -250,7 +250,7 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 - **CheckInStore**: StrongRef-based checkin creation, atomic address + checkin operations, error handling
 - **ATProtoClient**: StrongRef creation, CID verification, record resolution, cleanup on failure
 - **StrongRef Models**: Record integrity, content verification, resolution workflows
-- **OverpassService**: POI discovery, query building, API integration
+- **AnchorService**: POI discovery, backend API integration
 - **Core Models**: Place creation, ID parsing, settings management, credential validation
 
 #### Testing Best Practices

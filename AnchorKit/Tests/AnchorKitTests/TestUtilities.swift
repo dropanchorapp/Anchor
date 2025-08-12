@@ -107,13 +107,13 @@ public final class MockAuthStore: AuthStoreProtocol {
 
 public class MockAnchorBackendService: AnchorBackendServiceProtocol {
     public var shouldThrowError = false
-    public var createCheckinResult = true
+    public var createCheckinResult = CheckinResult(success: true, checkinId: "test-checkin-id")
     public var createCheckinCallCount = 0
     public var lastCreateCheckinPlace: Place?
     public var lastCreateCheckinMessage: String?
     public var lastCreateCheckinSessionId: String?
 
-    public func createCheckin(place: Place, message: String?, sessionId: String) async throws -> Bool {
+    public func createCheckin(place: Place, message: String?, sessionId: String) async throws -> CheckinResult {
         createCheckinCallCount += 1
         lastCreateCheckinPlace = place
         lastCreateCheckinMessage = message
@@ -128,7 +128,7 @@ public class MockAnchorBackendService: AnchorBackendServiceProtocol {
     
     public func reset() {
         shouldThrowError = false
-        createCheckinResult = true
+        createCheckinResult = CheckinResult(success: true, checkinId: "test-checkin-id")
         createCheckinCallCount = 0
         lastCreateCheckinPlace = nil
         lastCreateCheckinMessage = nil

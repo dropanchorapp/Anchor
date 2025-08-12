@@ -36,7 +36,7 @@ struct CheckInStoreTests {
     @Test("Create checkin - success")
     func createCheckinSuccess() async throws {
         // Given: Authenticated user and backend will succeed
-        mockBackendService.createCheckinResult = true
+        mockBackendService.createCheckinResult = CheckinResult(success: true, checkinId: "test-checkin-id")
         let place = TestUtilities.createSamplePlace()
         let customMessage = "Great climbing session!"
 
@@ -44,7 +44,8 @@ struct CheckInStoreTests {
         let result = try await store.createCheckin(place: place, customMessage: customMessage)
 
         // Then: Should succeed and call backend service with correct parameters
-        #expect(result, "Check-in creation should succeed")
+        #expect(result.success, "Check-in creation should succeed")
+        #expect(result.checkinId == "test-checkin-id", "Should return checkin ID")
         #expect(mockBackendService.createCheckinCallCount == 1, "Should call backend service once")
         #expect(mockBackendService.lastCreateCheckinPlace?.name == place.name, "Should pass correct place")
         #expect(mockBackendService.lastCreateCheckinMessage == customMessage, "Should pass correct message")

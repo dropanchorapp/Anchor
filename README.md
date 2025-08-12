@@ -298,6 +298,7 @@ Anchor AppView is a separate project that provides the global feed service. You 
 - [ ] **Shortcuts Integration** - Automate check-ins
 - [ ] **Federation** - Connect with other Anchor instances
 - [ ] **Social Features** - Follow friends' check-ins across the AT Protocol network
+- [ ] **Unique Share URLs** - Migrate from rkey-only URLs to globally unique identifiers to prevent potential collisions at scale (current collision risk is negligible but not cryptographically guaranteed)
 
 ## 🤝 Contributing
 

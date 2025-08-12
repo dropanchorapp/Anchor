@@ -194,8 +194,11 @@ struct FeedPostDetailView: View {
                     
                     Spacer()
                     
-                    Button("Share") {
-                        // Share functionality placeholder
+                    ShareLink(
+                        item: "Dropped anchor at \(post.address?.name ?? "a location") https://dropanchor.app/checkin/\(post.id)",
+                        subject: Text("Check-in at \(post.address?.name ?? "a location")")
+                    ) {
+                        Text("Share")
                     }
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)

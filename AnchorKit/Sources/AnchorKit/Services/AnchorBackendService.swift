@@ -9,11 +9,22 @@ import Foundation
 
 // MARK: - Backend Service Protocol
 
+/// Result of creating a checkin
+public struct CheckinResult: Sendable {
+    public let success: Bool
+    public let checkinId: String?
+    
+    public init(success: Bool, checkinId: String? = nil) {
+        self.success = success
+        self.checkinId = checkinId
+    }
+}
+
 /// Service protocol for communicating with the Anchor backend API
 @MainActor
 public protocol AnchorBackendServiceProtocol {
     /// Create a checkin using the backend API
-    func createCheckin(place: Place, message: String?, sessionId: String) async throws -> Bool
+    func createCheckin(place: Place, message: String?, sessionId: String) async throws -> CheckinResult
 }
 
 // MARK: - Backend API Models
@@ -61,7 +72,7 @@ public final class AnchorBackendService: AnchorBackendServiceProtocol {
         self.baseURL = URL(string: baseURL)!
     }
     
-    public func createCheckin(place: Place, message: String?, sessionId: String) async throws -> Bool {
+    public func createCheckin(place: Place, message: String?, sessionId: String) async throws -> CheckinResult {
         let url = baseURL.appendingPathComponent("/api/checkins")
         
         print("🌐 BackendService: Making POST request to: \(url)")
@@ -125,7 +136,13 @@ public final class AnchorBackendService: AnchorBackendServiceProtocol {
             
             if checkinResponse.success {
                 print("✅ BackendService: Checkin creation successful")
-                return true
+                
+                // Extract rkey from checkinUri to create shareable ID
+                let checkinId = checkinResponse.checkinUri.flatMap { uri in
+                    extractRkey(from: uri)
+                }
+                
+                return CheckinResult(success: true, checkinId: checkinId)
             } else {
                 let errorMessage = checkinResponse.error ?? "Unknown error"
                 print("❌ BackendService: Server error: \(errorMessage)")
@@ -140,6 +157,14 @@ public final class AnchorBackendService: AnchorBackendServiceProtocol {
             }
         }
     }
+}
+
+// MARK: - Helper Functions
+
+/// Extract rkey from AT Protocol URI (at://did:plc:abc/collection/rkey)
+private func extractRkey(from uri: String) -> String? {
+    let components = uri.split(separator: "/")
+    return components.last.map(String.init)
 }
 
 // MARK: - Backend Errors

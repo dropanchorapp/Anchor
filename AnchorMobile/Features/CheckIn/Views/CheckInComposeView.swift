@@ -18,6 +18,7 @@ struct CheckInComposeView: View {
     @State private var isPosting = false
     @State private var showingSuccess = false
     @State private var error: Error?
+    @State private var checkinResult: CheckinResult?
     
     private var categoryGroup: PlaceCategorization.CategoryGroup? {
         place.categoryGroup
@@ -70,8 +71,14 @@ struct CheckInComposeView: View {
             Text(error?.localizedDescription ?? "An error occurred")
         }
         .sheet(isPresented: $showingSuccess) {
-            CheckInSuccessView(place: place, sharedToFollowers: false) {
-                dismiss()
+            if let result = checkinResult {
+                CheckInSuccessView(
+                    place: place, 
+                    checkinId: result.checkinId,
+                    sharedToFollowers: false
+                ) {
+                    dismiss()
+                }
             }
         }
     }
@@ -83,11 +90,12 @@ struct CheckInComposeView: View {
         error = nil
         
         do {
-            _ = try await checkInStore.createCheckin(
+            let result = try await checkInStore.createCheckin(
                 place: place,
                 customMessage: message.isEmpty ? nil : message
             )
             
+            checkinResult = result
             showingSuccess = true
         } catch {
             self.error = error
@@ -222,6 +230,7 @@ struct LoadingOverlay: View {
 
 struct CheckInSuccessView: View {
     let place: Place
+    let checkinId: String?
     let sharedToFollowers: Bool
     let onDismiss: () -> Void
     
@@ -248,11 +257,27 @@ struct CheckInSuccessView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             
-            Button("Done") {
-                onDismiss()
+            VStack(spacing: 12) {
+                if let checkinId = checkinId {
+                    ShareLink(
+                        item: "Dropped anchor at \(place.name) https://dropanchor.app/checkin/\(checkinId)",
+                        subject: Text("Check-in at \(place.name)")
+                    ) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share Check-in")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+                
+                Button("Done") {
+                    onDismiss()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
         }
         .padding()
         .presentationDetents([.medium])
@@ -285,7 +310,7 @@ struct CheckInSuccessView: View {
         tags: ["amenity": "cafe"]
     )
     
-    CheckInSuccessView(place: place, sharedToFollowers: true) {
+    CheckInSuccessView(place: place, checkinId: "3lw2aztgeua2o", sharedToFollowers: true) {
         print("Dismissed")
     }
 }

@@ -4,7 +4,7 @@ import Foundation
 
 @MainActor
 public protocol CheckInStoreProtocol {
-    func createCheckin(place: Place, customMessage: String?) async throws -> Bool
+    func createCheckin(place: Place, customMessage: String?) async throws -> CheckinResult
 }
 
 // MARK: - Check-In Store
@@ -42,7 +42,7 @@ public final class CheckInStore: CheckInStoreProtocol {
 
     // MARK: - Check-ins
 
-    public func createCheckin(place: Place, customMessage: String?) async throws -> Bool {
+    public func createCheckin(place: Place, customMessage: String?) async throws -> CheckinResult {
         print("🔰 CheckInStore: Starting checkin creation for place: \(place.name)")
         
         // Get valid credentials from AuthStore (handles refresh automatically)
@@ -69,7 +69,10 @@ public final class CheckInStore: CheckInStoreProtocol {
             sessionId: sessionId
         )
         
-        print("✅ CheckInStore: Checkin creation successful: \(result)")
+        print("✅ CheckInStore: Checkin creation successful: \(result.success)")
+        if let checkinId = result.checkinId {
+            print("✅ CheckInStore: Checkin ID: \(checkinId)")
+        }
         return result
     }
 }

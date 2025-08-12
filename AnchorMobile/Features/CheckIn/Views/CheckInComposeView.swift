@@ -23,20 +23,12 @@ struct CheckInComposeView: View {
         place.categoryGroup
     }
     
-    private var previewText: String {
-        let baseText = "Dropped anchor at \(place.name) 🧭"
-        let messageText = message.isEmpty ? "" : " \"\(message)\""
-        let categoryText = categoryGroup?.icon ?? " 📍"
-        return baseText + messageText + categoryText
-    }
-    
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     PlaceInfoSection(place: place, categoryGroup: categoryGroup)
                     MessageInputSection(message: $message)
-                    PreviewSection(previewText: previewText)
                     
                     if !authStore.isAuthenticated {
                         AuthenticationPromptSection()
@@ -160,24 +152,6 @@ struct MessageInputSection: View {
             TextField("What's happening?", text: $message, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(3...6)
-        }
-    }
-}
-
-struct PreviewSection: View {
-    let previewText: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Preview")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            Text(previewText)
-                .font(.body)
-                .padding()
-                .background(Color.secondary.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
 }

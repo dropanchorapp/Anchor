@@ -2,8 +2,8 @@ import Testing
 import Foundation
 @testable import AnchorKit
 
-@Suite("AnchorAppView Null ID Handling")
-struct AnchorAppViewNullIdTests {
+@Suite("AnchorFeed Null ID Handling")
+struct AnchorFeedNullIdTests {
     
     @Test("Checkin with null id uses uri as fallback")
     func nullIdUsesUriFallback() throws {
@@ -23,7 +23,7 @@ struct AnchorAppViewNullIdTests {
         let data = json.data(using: .utf8)!
         let decoder = JSONDecoder()
         
-        let checkin = try decoder.decode(AnchorAppViewCheckin.self, from: data)
+        let checkin = try decoder.decode(AnchorFeedCheckin.self, from: data)
         
         // Should use URI as ID when null
         #expect(checkin.id == "at://did:plc:test/app.dropanchor.checkin/123")
@@ -48,7 +48,7 @@ struct AnchorAppViewNullIdTests {
         let data = json.data(using: .utf8)!
         let decoder = JSONDecoder()
         
-        let checkin = try decoder.decode(AnchorAppViewCheckin.self, from: data)
+        let checkin = try decoder.decode(AnchorFeedCheckin.self, from: data)
         
         // Should use provided ID when not null
         #expect(checkin.id == "custom-id-123")
@@ -88,7 +88,7 @@ struct AnchorAppViewNullIdTests {
         let data = json.data(using: .utf8)!
         let decoder = JSONDecoder()
         
-        let response = try decoder.decode(AnchorAppViewFeedResponse.self, from: data)
+        let response = try decoder.decode(AnchorFeedResponse.self, from: data)
         
         #expect(response.checkins.count == 2)
         

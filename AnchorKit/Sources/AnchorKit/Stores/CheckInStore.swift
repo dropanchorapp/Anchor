@@ -9,7 +9,7 @@ public protocol CheckInStoreProtocol {
 
 // MARK: - Check-In Store
 
-/// Check-in creation and management store using backend API
+/// Check-in creation and management store using Anchor checkins service
 ///
 /// **BACKEND ARCHITECTURE:**
 /// This store creates check-ins by calling the Anchor backend API, which handles:
@@ -18,26 +18,26 @@ public protocol CheckInStoreProtocol {
 /// 2. **StrongRef Creation**: Backend creates address + checkin records on user's PDS
 /// 3. **Content Integrity**: Backend handles CID verification and atomic operations
 ///
-/// **Note:** Authentication is handled by AuthStore, checkin creation by backend API.
+/// **Note:** Authentication is handled by AuthStore, checkin creation by AnchorCheckinsService.
 @MainActor
 @Observable
 public final class CheckInStore: CheckInStoreProtocol {
     // MARK: - Properties
 
     private let authStore: AuthStoreProtocol
-    private let backendService: AnchorBackendServiceProtocol
+    private let checkinsService: AnchorCheckinsServiceProtocol
 
     // MARK: - Initialization
 
     /// Convenience initializer for production use with AuthStore
     public convenience init(authStore: AuthStoreProtocol, session: URLSessionProtocol = URLSession.shared) {
-        let backendService = AnchorBackendService(session: session)
-        self.init(authStore: authStore, backendService: backendService)
+        let checkinsService = AnchorCheckinsService(session: session, authStore: authStore)
+        self.init(authStore: authStore, checkinsService: checkinsService)
     }
 
-    public init(authStore: AuthStoreProtocol, backendService: AnchorBackendServiceProtocol) {
+    public init(authStore: AuthStoreProtocol, checkinsService: AnchorCheckinsServiceProtocol) {
         self.authStore = authStore
-        self.backendService = backendService
+        self.checkinsService = checkinsService
     }
 
     // MARK: - Check-ins
@@ -61,9 +61,9 @@ public final class CheckInStore: CheckInStoreProtocol {
         
         print("🔰 CheckInStore: Using session ID: \(sessionId.prefix(8))...")
         
-        // Create checkin using backend API
-        print("🔰 CheckInStore: Calling backend service to create checkin")
-        let result = try await backendService.createCheckin(
+        // Create checkin using checkins service
+        print("🔰 CheckInStore: Calling checkins service to create checkin")
+        let result = try await checkinsService.createCheckin(
             place: place,
             message: customMessage,
             sessionId: sessionId

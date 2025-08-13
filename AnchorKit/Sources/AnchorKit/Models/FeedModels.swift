@@ -6,12 +6,12 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
     public let id: String
     public let author: FeedAuthor
     public let record: ATProtoRecord
-    public let coordinates: AnchorAppViewCoordinates?
-    public let address: AnchorAppViewAddress?
+    public let coordinates: FeedCoordinates?
+    public let address: FeedAddress?
     public let distance: Double? // Only present in nearby feeds
 
     // Public initializer for testing and previews
-    public init(id: String, author: FeedAuthor, record: ATProtoRecord, coordinates: AnchorAppViewCoordinates? = nil, address: AnchorAppViewAddress? = nil, distance: Double? = nil) {
+    public init(id: String, author: FeedAuthor, record: ATProtoRecord, coordinates: FeedCoordinates? = nil, address: FeedAddress? = nil, distance: Double? = nil) {
         self.id = id
         self.author = author
         self.record = record
@@ -19,9 +19,9 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         self.address = address
         self.distance = distance
     }
-
-    // New initializer for AppView API responses
-    init(from checkin: AnchorAppViewCheckin) {
+    
+    // New initializer for Feed Service API responses
+    init(from checkin: AnchorFeedCheckin) {
         id = checkin.id
         author = FeedAuthor(
             did: checkin.author.did,
@@ -38,8 +38,18 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
             createdAt: createdAt
         )
 
-        coordinates = checkin.coordinates
-        address = checkin.address
+        coordinates = checkin.coordinates.map { 
+            FeedCoordinates(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        address = checkin.address.map {
+            FeedAddress(
+                name: $0.name,
+                streetAddress: $0.streetAddress,
+                locality: $0.locality,
+                region: $0.region,
+                country: $0.country
+            )
+        }
         distance = checkin.distance
     }
 }
@@ -58,6 +68,43 @@ public struct FeedAuthor: Sendable, Hashable {
         self.avatar = avatar
     }
 
+}
+
+/// Geographic coordinates for feeds
+public struct FeedCoordinates: Sendable, Hashable, Codable {
+    public let latitude: Double
+    public let longitude: Double
+
+    public init(latitude: Double, longitude: Double) {
+        self.latitude = latitude
+        self.longitude = longitude
+    }
+}
+
+/// Address information for feeds  
+public struct FeedAddress: Sendable, Hashable, Codable {
+    public let name: String?
+    public let streetAddress: String?
+    public let locality: String?
+    public let region: String?
+    public let country: String?
+
+    public init(name: String? = nil, streetAddress: String? = nil, locality: String? = nil, region: String? = nil, country: String? = nil) {
+        self.name = name
+        self.streetAddress = streetAddress
+        self.locality = locality
+        self.region = region
+        self.country = country
+    }
+}
+
+// MARK: - LocationRepresentable Conformance
+
+extension FeedAddress: LocationRepresentable {
+    public var displayName: String? { name }
+    public var street: String? { streetAddress }
+    public var postalCode: String? { nil }
+    public var coordinate: (Double, Double)? { nil }
 }
 
 // MARK: - Date Grouping

@@ -1,7 +1,7 @@
 # Makefile for Anchor Project
 # Swift project with multiple targets: macOS menu bar app, iOS mobile app, and shared AnchorKit library
 
-.PHONY: help lint lint-fix lint-strict test test-swift test-ui build build-anchor build-mobile build-debug build-swift clean clean-derived install-deps setup check info
+.PHONY: help lint lint-fix lint-strict test test-swift test-ui build build-debug build-swift clean clean-derived install-deps setup check info
 
 # Default target
 help: ## Show this help message
@@ -34,14 +34,7 @@ test-ui: ## Run Xcode project tests (Anchor + AnchorMobile)
 	@echo "🧪 Running AnchorMobile iOS tests..."
 	xcodebuild test -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16'
 
-# Build Commands
-build: build-anchor build-mobile ## Build all targets (Anchor + AnchorMobile)
-
-build-anchor: ## Build Anchor macOS menu bar app
-	@echo "🏗️ Building Anchor macOS app..."
-	xcodebuild build -project Anchor.xcodeproj -scheme Anchor -destination 'platform=macOS' -configuration Release
-
-build-mobile: ## Build AnchorMobile iOS app
+build: ## Build AnchorMobile iOS app
 	@echo "🏗️ Building AnchorMobile iOS app..."
 	xcodebuild build -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16' -configuration Release
 
@@ -67,15 +60,6 @@ clean: ## Clean all build artifacts
 clean-derived: ## Clean Xcode derived data
 	@echo "🧹 Cleaning Xcode derived data..."
 	rm -rf ~/Library/Developer/Xcode/DerivedData
-
-install-deps: ## Install development dependencies (SwiftLint via Homebrew)
-	@echo "📦 Installing development dependencies..."
-	@command -v swiftlint >/dev/null 2>&1 || { echo "Installing SwiftLint via Homebrew..."; brew install swiftlint; }
-	@echo "✅ Dependencies installed"
-
-setup: install-deps ## Setup development environment
-	@echo "🛠️ Setting up development environment..."
-	@echo "✅ Development environment ready"
 
 # Quality Assurance Commands
 check: lint-fix lint test-swift ## Run quality assurance checks (lint + test)

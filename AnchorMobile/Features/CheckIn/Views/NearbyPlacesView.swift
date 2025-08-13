@@ -13,8 +13,8 @@ import AnchorKit
 struct NearbyPlacesView: View {
     @Environment(LocationService.self) private var locationService
     @Environment(\.dismiss) private var dismiss
-    @State private var anchorService = AnchorService()
-    @State private var places: [PlaceWithDistance] = []
+    @State private var placesService = AnchorPlacesService()
+    @State private var places: [AnchorPlaceWithDistance] = []
     @State private var isLoading = false
     @State private var error: Error?
     @State private var searchText = ""
@@ -22,7 +22,7 @@ struct NearbyPlacesView: View {
     
     let onPlaceSelected: (Place) -> Void
     
-    var filteredPlaces: [PlaceWithDistance] {
+    var filteredPlaces: [AnchorPlaceWithDistance] {
         var filtered = places
         
         // Filter by category
@@ -121,7 +121,7 @@ struct NearbyPlacesView: View {
                     .padding()
                     Spacer()
                 } else {
-                    List(filteredPlaces, id: \.id) { placeWithDistance in
+                    List(filteredPlaces) { placeWithDistance in
                         PlaceRowView(
                             placeWithDistance: placeWithDistance
                         ) {
@@ -158,7 +158,7 @@ struct NearbyPlacesView: View {
         error = nil
         
         do {
-            places = try await anchorService.findNearbyPlacesWithDistance(
+            places = try await placesService.findNearbyPlacesWithDistance(
                 near: location.coordinate,
                 radiusMeters: 400
             )
@@ -204,7 +204,7 @@ struct CategoryFilterButton: View {
 }
 
 struct PlaceRowView: View {
-    let placeWithDistance: PlaceWithDistance
+    let placeWithDistance: AnchorPlaceWithDistance
     let onTap: () -> Void
     
     private var place: Place {

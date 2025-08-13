@@ -10,18 +10,24 @@ import AnchorKit
 
 // MARK: - Shared Mock Data for Feed Posts
 
-// Helper: mock AnchorAppViewCheckin
-private func makeMockCheckin(id: String, authorDid: String, authorHandle: String, text: String, createdAt: Date, latitude: Double?, longitude: Double?, addressName: String?, distance: Double? = nil) -> AnchorAppViewCheckin {
-    let isoDate = ISO8601DateFormatter().string(from: createdAt)
+// Helper: create mock FeedPost directly
+private func makeMockPost(id: String, authorDid: String, authorHandle: String, text: String, createdAt: Date, latitude: Double?, longitude: Double?, addressName: String?, distance: Double? = nil) -> FeedPost {
     let coords = (latitude != nil && longitude != nil) ?
-        AnchorAppViewCoordinates(latitude: latitude!, longitude: longitude!) : nil
-    let address = addressName != nil ? AnchorAppViewAddress(name: addressName) : nil
-    return AnchorAppViewCheckin(
+        FeedCoordinates(latitude: latitude!, longitude: longitude!) : nil
+    let address = addressName != nil ? FeedAddress(name: addressName) : nil
+    
+    return FeedPost(
         id: id,
-        uri: "at://\(authorDid)/app.bsky.feed.post/\(id)",
-        author: AnchorAppViewAuthor(did: authorDid, handle: authorHandle),
-        text: text,
-        createdAt: isoDate,
+        author: FeedAuthor(
+            did: authorDid,
+            handle: authorHandle,
+            displayName: nil,
+            avatar: nil
+        ),
+        record: ATProtoRecord(
+            text: text,
+            createdAt: createdAt
+        ),
         coordinates: coords,
         address: address,
         distance: distance
@@ -29,7 +35,7 @@ private func makeMockCheckin(id: String, authorDid: String, authorHandle: String
 }
 
 public let sampleCoffeeShopPost: FeedPost = {
-    let checkin = makeMockCheckin(
+    return makeMockPost(
         id: "sample1234",
         authorDid: "did:plc:sample1234",
         authorHandle: "coffee.lover.bsky.social",
@@ -39,26 +45,10 @@ public let sampleCoffeeShopPost: FeedPost = {
         longitude: -122.4194,
         addressName: "Blue Bottle Coffee"
     )
-    return FeedPost(
-        id: checkin.id,
-        author: FeedAuthor(
-            did: checkin.author.did,
-            handle: checkin.author.handle,
-            displayName: nil,
-            avatar: nil
-        ),
-        record: ATProtoRecord(
-            text: checkin.text,
-            createdAt: ISO8601DateFormatter().date(from: checkin.createdAt) ?? Date()
-        ),
-        coordinates: checkin.coordinates,
-        address: checkin.address,
-        distance: checkin.distance
-    )
 }()
 
 public let sampleRestaurantPost: FeedPost = {
-    let checkin = makeMockCheckin(
+    return makeMockPost(
         id: "sample5678",
         authorDid: "did:plc:sample5678",
         authorHandle: "foodie.adventures.bsky.social",
@@ -68,26 +58,10 @@ public let sampleRestaurantPost: FeedPost = {
         longitude: -122.4094,
         addressName: "Golden Dragon Restaurant"
     )
-    return FeedPost(
-        id: checkin.id,
-        author: FeedAuthor(
-            did: checkin.author.did,
-            handle: checkin.author.handle,
-            displayName: nil,
-            avatar: nil
-        ),
-        record: ATProtoRecord(
-            text: checkin.text,
-            createdAt: ISO8601DateFormatter().date(from: checkin.createdAt) ?? Date()
-        ),
-        coordinates: checkin.coordinates,
-        address: checkin.address,
-        distance: checkin.distance
-    )
 }()
 
 public let sampleClimbingPost: FeedPost = {
-    let checkin = makeMockCheckin(
+    return makeMockPost(
         id: "sample9999",
         authorDid: "did:plc:sample9999",
         authorHandle: "mountain.goat.bsky.social",
@@ -96,22 +70,6 @@ public let sampleClimbingPost: FeedPost = {
         latitude: 37.8651,
         longitude: -119.5383,
         addressName: "El Capitan"
-    )
-    return FeedPost(
-        id: checkin.id,
-        author: FeedAuthor(
-            did: checkin.author.did,
-            handle: checkin.author.handle,
-            displayName: nil,
-            avatar: nil
-        ),
-        record: ATProtoRecord(
-            text: checkin.text,
-            createdAt: ISO8601DateFormatter().date(from: checkin.createdAt) ?? Date()
-        ),
-        coordinates: checkin.coordinates,
-        address: checkin.address,
-        distance: checkin.distance
     )
 }()
 

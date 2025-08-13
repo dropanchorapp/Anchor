@@ -9,9 +9,9 @@ private final class FeedPostWrapper {
     }
 }
 
-/// Observable store for managing check-in feeds from the new Anchor AppView backend
+/// Observable store for managing check-in feeds from the Anchor feed service
 ///
-/// Manages feed state and coordinates with the Anchor AppView API.
+/// Manages feed state and coordinates with the Anchor Feed API.
 /// Provides observable feed state for UI binding.
 ///
 /// Responsibilities:
@@ -23,7 +23,7 @@ private final class FeedPostWrapper {
 public final class FeedStore {
     // MARK: - Properties
 
-    private let appViewService: AnchorAppViewServiceProtocol
+    private let feedService: AnchorFeedServiceProtocol
     private let session: URLSessionProtocol
 
     // Cache
@@ -47,9 +47,9 @@ public final class FeedStore {
 
     // MARK: - Initialization
 
-    public init(appViewService: AnchorAppViewServiceProtocol? = nil, session: URLSessionProtocol = URLSession.shared) {
+    public init(feedService: AnchorFeedServiceProtocol? = nil, session: URLSessionProtocol = URLSession.shared) {
         self.session = session
-        self.appViewService = appViewService ?? AnchorAppViewService(session: session)
+        self.feedService = feedService ?? AnchorFeedService(session: session)
 
         // Configure cache
         feedPostCache.countLimit = 1000 // Cache for recent posts
@@ -88,13 +88,13 @@ public final class FeedStore {
                 // Check for cancellation before starting network operations
                 try Task.checkCancellation()
 
-                // Fetch global feed from AppView (no authentication required)
-                print("📡 FeedStore: Fetching global feed from AppView...")
-                let feedResponse = try await appViewService.getGlobalFeed(
+                // Fetch global feed from Feed Service (no authentication required)
+                print("📡 FeedStore: Fetching global feed from Feed Service...")
+                let feedResponse = try await feedService.getGlobalFeed(
                     limit: AnchorConfig.shared.maxNearbyPlaces,
                     cursor: nil
                 )
-                print("📡 FeedStore: Received \(feedResponse.checkins.count) check-ins from AppView")
+                print("📡 FeedStore: Received \(feedResponse.checkins.count) check-ins from Feed Service")
 
                 // Check for cancellation before processing results
                 try Task.checkCancellation()
@@ -168,14 +168,14 @@ public final class FeedStore {
                 // Check for cancellation before starting network operations
                 try Task.checkCancellation()
 
-                // Fetch following feed from AppView
-                print("📡 FeedStore: Fetching following feed from AppView...")
-                let feedResponse = try await appViewService.getFollowingFeed(
+                // Fetch following feed from Feed Service
+                print("📡 FeedStore: Fetching following feed from Feed Service...")
+                let feedResponse = try await feedService.getFollowingFeed(
                     userDid: userDid,
                     limit: AnchorConfig.shared.maxNearbyPlaces,
                     cursor: nil
                 )
-                print("📡 FeedStore: Received \(feedResponse.checkins.count) following check-ins from AppView")
+                print("📡 FeedStore: Received \(feedResponse.checkins.count) following check-ins from Feed Service")
 
                 // Check for cancellation before processing results
                 try Task.checkCancellation()
@@ -252,15 +252,15 @@ public final class FeedStore {
                 // Check for cancellation before starting network operations
                 try Task.checkCancellation()
 
-                // Fetch nearby feed from AppView
-                print("📡 FeedStore: Fetching nearby feed from AppView...")
-                let nearbyResponse = try await appViewService.getNearbyCheckins(
+                // Fetch nearby feed from Feed Service
+                print("📡 FeedStore: Fetching nearby feed from Feed Service...")
+                let nearbyResponse = try await feedService.getNearbyCheckins(
                     latitude: latitude,
                     longitude: longitude,
                     radius: radius,
                     limit: AnchorConfig.shared.maxNearbyPlaces
                 )
-                print("📡 FeedStore: Received \(nearbyResponse.checkins.count) nearby check-ins from AppView")
+                print("📡 FeedStore: Received \(nearbyResponse.checkins.count) nearby check-ins from Feed Service")
 
                 // Check for cancellation before processing results
                 try Task.checkCancellation()
@@ -314,7 +314,7 @@ public final class FeedStore {
 
     /// Get cached post or create new one from checkin data
     @MainActor
-    private func getCachedOrCreatePost(from checkin: AnchorAppViewCheckin) -> FeedPost {
+    private func getCachedOrCreatePost(from checkin: AnchorFeedCheckin) -> FeedPost {
         let cacheKey = NSString(string: checkin.id)
 
         // Check if we have a cached post

@@ -101,11 +101,19 @@ public final class MockAuthStore: AuthStoreProtocol {
 
         return testCredentials
     }
+    
+    public func validateSessionOnAppLaunch() async {
+        // Mock implementation - no action needed
+    }
+    
+    public func validateSessionOnAppResume() async {
+        // Mock implementation - no action needed
+    }
 }
 
 // MARK: - Mock Backend Service
 
-public class MockAnchorBackendService: AnchorBackendServiceProtocol {
+public class MockAnchorCheckinsService: AnchorCheckinsServiceProtocol {
     public var shouldThrowError = false
     public var createCheckinResult = CheckinResult(success: true, checkinId: "test-checkin-id")
     public var createCheckinCallCount = 0
@@ -120,7 +128,7 @@ public class MockAnchorBackendService: AnchorBackendServiceProtocol {
         lastCreateCheckinSessionId = sessionId
         
         if shouldThrowError {
-            throw NSError(domain: "MockBackendService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock backend error"])
+            throw NSError(domain: "MockCheckinsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock checkins service error"])
         }
         
         return createCheckinResult

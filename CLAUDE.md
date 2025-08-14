@@ -436,3 +436,4 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 - iOS app depends on location-feed-generator for OAuth and feed APIs
 - OAuth session management happens in backend, credentials stored in iOS app
 - Feed timestamps require consistent ISO8601 parsing between backend API and iOS client
+- the current year is 2025

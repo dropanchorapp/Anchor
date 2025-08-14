@@ -192,28 +192,19 @@ struct AuthenticationView: View {
         showingOAuthWebView = false
         
         switch result {
-        case .success(let authData):
+        case .success(let callbackURL):
             Task {
                 do {
-                    let oauthAuthData = AnchorKit.OAuthAuthenticationData(
-                        accessToken: authData.accessToken,
-                        refreshToken: authData.refreshToken,
-                        did: authData.did,
-                        handle: authData.handle,
-                        sessionId: authData.sessionId,
-                        pdsURL: authData.pdsURL,
-                        avatar: authData.avatar,
-                        displayName: authData.displayName
-                    )
-                    
-                    let success = try await authStore.authenticateWithOAuth(oauthAuthData)
+                    let success = try await authStore.handleOAuthCallback(callbackURL)
                     
                     if success {
                         // Provide haptic feedback
                         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                         impactFeedback.impactOccurred()
                         
-                        print("✅ OAuth authentication completed for handle: \(authData.handle)")
+                        print("✅ OAuth authentication completed successfully")
+                    } else {
+                        lastError = "OAuth authentication failed"
                     }
                 } catch {
                     lastError = "OAuth authentication failed: \(error.localizedDescription)"

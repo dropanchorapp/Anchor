@@ -8,7 +8,8 @@ public protocol AuthStoreProtocol {
     var credentials: AuthCredentials? { get }
     var handle: String? { get }
     func loadStoredCredentials() async -> AuthCredentials?
-    func authenticateWithOAuth(_ authData: OAuthAuthenticationData) async throws -> Bool
+    func exchangeAuthorizationCode(_ code: String) async throws -> Bool
+    func handleOAuthCallback(_ callbackURL: URL) async throws -> Bool
     func signOut() async
     func getValidCredentials() async throws -> AuthCredentialsProtocol
     func validateSessionOnAppLaunch() async
@@ -77,28 +78,72 @@ public final class AuthStore: AuthStoreProtocol {
     public func loadStoredCredentials() async -> AuthCredentials? {
         print("🔑 AuthStore: Loading stored credentials...")
         let loadedCredentials = await storage.load()
-        
+
         guard let credentials = loadedCredentials else {
             print("🔑 AuthStore: No stored credentials found")
             _credentials = nil
             updateAuthenticationState()
             return nil
         }
-        
+
         print("🔑 AuthStore: Loaded stored credentials for @\(credentials.handle)")
         print("🔑 AuthStore: Loaded credentials DID: \(credentials.did)")
         print("🔑 AuthStore: Loaded credentials session ID present: \(credentials.sessionId != nil)")
-        
+
         _credentials = credentials
         updateAuthenticationState()
         return credentials
     }
-    
-    public func authenticateWithOAuth(_ authData: OAuthAuthenticationData) async throws -> Bool {
-        let credentials = try await authService.processOAuthAuthentication(authData)
-        _credentials = credentials as? AuthCredentials
-        updateAuthenticationState()
-        return true
+
+    public func exchangeAuthorizationCode(_ code: String) async throws -> Bool {
+        print("🔐 AuthStore: Exchanging authorization code for tokens...")
+        
+        do {
+            let credentials = try await authService.exchangeAuthorizationCode(code)
+            print("🔐 AuthStore: Token exchange returned credentials")
+            
+            // Cast to AuthCredentials for storage
+            guard let authCredentials = credentials as? AuthCredentials else {
+                print("❌ AuthStore: Failed to cast credentials to AuthCredentials")
+                throw AuthStoreError.authenticationFailed
+            }
+            
+            print("🔐 AuthStore: Successfully cast credentials")
+            
+            _credentials = authCredentials
+            updateAuthenticationState()
+            
+            print("✅ AuthStore: Authorization code exchange completed successfully")
+            print("✅ AuthStore: Authentication state updated - isAuthenticated: \(isAuthenticated)")
+            
+            return true
+            
+        } catch {
+            print("❌ AuthStore: Authorization code exchange failed: \(error)")
+            print("❌ AuthStore: Error type: \(type(of: error))")
+            if let authError = error as? AnchorAuthError {
+                print("❌ AuthStore: AnchorAuthError details: \(authError.errorDescription ?? "Unknown")")
+            }
+            throw error
+        }
+    }
+
+
+    public func handleOAuthCallback(_ callbackURL: URL) async throws -> Bool {
+        print("🔐 AuthStore: Handling OAuth callback from URL: \(callbackURL)")
+
+        // Parse the authorization code from callback URL
+        guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+              let codeQueryItem = components.queryItems?.first(where: { $0.name == "code" }),
+              let code = codeQueryItem.value else {
+            print("❌ AuthStore: No authorization code found in callback URL")
+            throw AuthStoreError.authenticationFailed
+        }
+
+        print("🔐 AuthStore: Found authorization code in callback URL")
+
+        // Exchange authorization code for tokens using AnchorKit
+        return try await exchangeAuthorizationCode(code)
     }
 
     public func signOut() async {
@@ -115,62 +160,62 @@ public final class AuthStore: AuthStoreProtocol {
     /// Note: OAuth tokens are handled by the backend, so no client-side refresh needed
     public func getValidCredentials() async throws -> AuthCredentialsProtocol {
         print("🔑 AuthStore: Getting valid credentials...")
-        
+
         guard let credentials = _credentials else {
             print("❌ AuthStore: No credentials found")
             throw AuthStoreError.missingCredentials
         }
-        
+
         print("🔑 AuthStore: Found credentials for handle: \(credentials.handle)")
         print("🔑 AuthStore: DID: \(credentials.did)")
         print("🔑 AuthStore: Session ID present: \(credentials.sessionId != nil)")
         if let sessionId = credentials.sessionId {
             print("🔑 AuthStore: Session ID: \(sessionId.prefix(8))...")
         }
-        
+
         print("✅ AuthStore: Returning valid credentials")
         return credentials
     }
-    
+
     // MARK: - Session Validation Methods
-    
+
     /// Validate session when app launches (called from AppDelegate/SceneDelegate)
     public func validateSessionOnAppLaunch() async {
         print("🚀 AuthStore: Validating session on app launch...")
-        
+
         guard let credentials = _credentials else {
             print("🚀 AuthStore: No credentials to validate")
             return
         }
-        
+
         await validateSessionInternal(credentials, reason: "app launch")
     }
-    
+
     /// Validate session when app resumes from background (called from AppDelegate/SceneDelegate)
     public func validateSessionOnAppResume() async {
         print("🔄 AuthStore: Validating session on app resume...")
-        
+
         guard let credentials = _credentials else {
             print("🔄 AuthStore: No credentials to validate")
             return
         }
-        
+
         // Only validate if we should refresh tokens or if it's been more than 5 minutes
-        let shouldValidate = authService.shouldRefreshTokens(credentials) || 
+        let shouldValidate = authService.shouldRefreshTokens(credentials) ||
                            shouldValidateSession(credentials)
-        
+
         if shouldValidate {
             await validateSessionInternal(credentials, reason: "app resume")
         } else {
             print("🔄 AuthStore: Session validation not needed")
         }
     }
-    
+
     /// Internal session validation with error handling
     private func validateSessionInternal(_ credentials: AuthCredentials, reason: String) async {
         do {
             let updatedCredentials = try await authService.validateSession(credentials)
-            
+
             // Update stored credentials if they changed
             if updatedCredentials.accessToken != credentials.accessToken {
                 _credentials = updatedCredentials
@@ -179,36 +224,36 @@ public final class AuthStore: AuthStoreProtocol {
             } else {
                 print("✅ AuthStore: Session validated for \(reason)")
             }
-            
+
         } catch {
             print("❌ AuthStore: Session validation failed for \(reason): \(error)")
-            
+
             // If validation fails due to invalid credentials, try explicit token refresh
             if case AnchorAuthError.invalidAuthData = error {
                 await attemptTokenRefresh(credentials, reason: reason)
             }
         }
     }
-    
+
     /// Attempt explicit token refresh as fallback
     private func attemptTokenRefresh(_ credentials: AuthCredentials, reason: String) async {
         print("🔄 AuthStore: Attempting token refresh as fallback for \(reason)...")
-        
+
         do {
             let refreshedCredentials = try await authService.refreshTokens(credentials)
             _credentials = refreshedCredentials
             updateAuthenticationState()
             print("✅ AuthStore: Token refresh successful for \(reason)")
-            
+
         } catch {
             print("❌ AuthStore: Token refresh failed for \(reason): \(error)")
-            
+
             // If refresh fails, sign out the user
             print("🗑️ AuthStore: Signing out user due to failed authentication")
             await signOut()
         }
     }
-    
+
     /// Check if session should be validated (every 5 minutes when app resumes)
     private func shouldValidateSession(_ credentials: AuthCredentials) -> Bool {
         // In a real app, you'd track the last validation time
@@ -232,7 +277,7 @@ public final class AuthStore: AuthStoreProtocol {
 public enum AuthStoreError: Error, LocalizedError {
     case missingCredentials
     case authenticationFailed
-    
+
     public var errorDescription: String? {
         switch self {
         case .missingCredentials:

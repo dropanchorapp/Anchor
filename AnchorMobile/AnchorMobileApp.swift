@@ -55,55 +55,29 @@ struct AnchorMobileApp: App {
         
         let params = Dictionary(uniqueKeysWithValues: queryItems.map { ($0.name, $0.value ?? "") })
         
-        print("🔐 OAuth callback parameters:")
-        for (key, value) in params {
-            if key == "access_token" || key == "refresh_token" {
-                print("🔐   \(key): \(value.prefix(8))...")
-            } else {
-                print("🔐   \(key): \(value)")
-            }
-        }
+        print("🔐 OAuth callback parameters: \(params.keys.joined(separator: ", "))")
         
-        // Validate required parameters
-        guard let accessToken = params["access_token"],
-              let refreshToken = params["refresh_token"],
-              let did = params["did"],
-              let handle = params["handle"],
-              let sessionId = params["session_id"],
-              let pdsURL = params["pds_url"] else {
-            print("❌ Missing required OAuth parameters")
+        // Validate authorization code parameter
+        guard let authorizationCode = params["code"] else {
+            print("❌ Missing authorization code parameter")
             print("❌ Available parameters: \(params.keys.joined(separator: ", "))")
             return
         }
         
-        print("✅ OAuth success for handle: \(handle)")
-        print("✅ Session ID: \(sessionId)")
+        print("✅ Received authorization code: \(authorizationCode.prefix(8))...")
         
-        // Process OAuth authentication
+        // Exchange authorization code for tokens
         Task { @MainActor in
             do {
-                let oauthAuthData = AnchorKit.OAuthAuthenticationData(
-                    accessToken: accessToken,
-                    refreshToken: refreshToken,
-                    did: did,
-                    handle: handle,
-                    sessionId: sessionId,
-                    pdsURL: pdsURL,
-                    avatar: params["avatar"],
-                    displayName: params["display_name"]
-                )
-                
-                print("🔐 Created OAuthAuthenticationData with session ID: \(oauthAuthData.sessionId)")
-                
-                let success = try await authStore.authenticateWithOAuth(oauthAuthData)
+                let success = try await authStore.exchangeAuthorizationCode(authorizationCode)
                 
                 if success {
-                    print("🎉 OAuth authentication completed for handle: \(handle)")
+                    print("🎉 OAuth token exchange completed successfully")
                 } else {
-                    print("❌ OAuth authentication returned false")
+                    print("❌ OAuth token exchange returned false")
                 }
             } catch {
-                print("❌ OAuth authentication failed: \(error.localizedDescription)")
+                print("❌ OAuth token exchange failed: \(error.localizedDescription)")
             }
         }
     }

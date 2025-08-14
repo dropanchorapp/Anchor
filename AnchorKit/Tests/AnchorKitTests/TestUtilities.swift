@@ -75,7 +75,17 @@ public final class MockAuthStore: AuthStoreProtocol {
         return credentials
     }
 
-    public func authenticateWithOAuth(_ authData: OAuthAuthenticationData) async throws -> Bool {
+    public func exchangeAuthorizationCode(_ code: String) async throws -> Bool {
+        if shouldThrowAuthError {
+            throw AuthStoreError.authenticationFailed
+        }
+        isAuthenticated = true
+        testCredentials = TestAuthCredentials.valid()
+        return true
+    }
+
+
+    public func handleOAuthCallback(_ callbackURL: URL) async throws -> Bool {
         if shouldThrowAuthError {
             throw AuthStoreError.authenticationFailed
         }
@@ -101,11 +111,11 @@ public final class MockAuthStore: AuthStoreProtocol {
 
         return testCredentials
     }
-    
+
     public func validateSessionOnAppLaunch() async {
         // Mock implementation - no action needed
     }
-    
+
     public func validateSessionOnAppResume() async {
         // Mock implementation - no action needed
     }
@@ -126,14 +136,14 @@ public class MockAnchorCheckinsService: AnchorCheckinsServiceProtocol {
         lastCreateCheckinPlace = place
         lastCreateCheckinMessage = message
         lastCreateCheckinSessionId = sessionId
-        
+
         if shouldThrowError {
             throw NSError(domain: "MockCheckinsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock checkins service error"])
         }
-        
+
         return createCheckinResult
     }
-    
+
     public func reset() {
         shouldThrowError = false
         createCheckinResult = CheckinResult(success: true, checkinId: "test-checkin-id")

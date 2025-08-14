@@ -63,56 +63,16 @@ struct OAuthWebView: UIViewRepresentable {
         }
         
         private func handleAuthCallback(url: URL) {
-            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let queryItems = components.queryItems else {
-                parent.onAuthComplete(.failure(OAuthError.invalidCallback))
-                return
-            }
-            
-            // Parse authentication data from URL parameters
-            let params = Dictionary(uniqueKeysWithValues: queryItems.map { ($0.name, $0.value ?? "") })
-            
-            guard let accessToken = params["access_token"],
-                  let refreshToken = params["refresh_token"],
-                  let did = params["did"],
-                  let handle = params["handle"],
-                  let sessionId = params["session_id"],
-                  let pdsURL = params["pds_url"] else {
-                parent.onAuthComplete(.failure(OAuthError.missingParameters))
-                return
-            }
-            
-            let authData = OAuthAuthenticationData(
-                accessToken: accessToken,
-                refreshToken: refreshToken,
-                did: did,
-                handle: handle,
-                sessionId: sessionId,
-                pdsURL: pdsURL,
-                avatar: params["avatar"],
-                displayName: params["display_name"]
-            )
-            
-            parent.onAuthComplete(.success(authData))
+            // Just pass the callback URL to AnchorKit - let it handle all the OAuth logic
+            parent.onAuthComplete(.success(url))
         }
     }
 }
 
 // MARK: - Supporting Types
 
-struct OAuthAuthenticationData {
-    let accessToken: String
-    let refreshToken: String
-    let did: String
-    let handle: String
-    let sessionId: String
-    let pdsURL: String
-    let avatar: String?
-    let displayName: String?
-}
-
 enum OAuthResult {
-    case success(OAuthAuthenticationData)
+    case success(URL) // Just pass the callback URL to AnchorKit
     case failure(OAuthError)
 }
 

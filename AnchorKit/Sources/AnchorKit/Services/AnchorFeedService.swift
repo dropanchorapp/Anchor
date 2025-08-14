@@ -203,16 +203,16 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         self.address = address
         self.distance = distance
     }
-    
+
     // Custom decoder to handle null id values by using uri as fallback
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         // Handle null id by using uri as fallback
         let idValue = try container.decodeIfPresent(String.self, forKey: .id)
         uri = try container.decode(String.self, forKey: .uri)
         id = idValue ?? uri
-        
+
         author = try container.decode(AnchorFeedAuthor.self, forKey: .author)
         text = try container.decode(String.self, forKey: .text)
         createdAt = try container.decode(String.self, forKey: .createdAt)
@@ -220,7 +220,7 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         address = try container.decodeIfPresent(AnchorFeedAddress.self, forKey: .address)
         distance = try container.decodeIfPresent(Double.self, forKey: .distance)
     }
-    
+
     private enum CodingKeys: String, CodingKey {
         case id, uri, author, text, createdAt, coordinates, address, distance
     }

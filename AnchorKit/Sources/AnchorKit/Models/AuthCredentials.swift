@@ -36,7 +36,7 @@ public struct AuthCredentials: AuthCredentialsProtocol, Sendable, Codable {
 
     /// App password for automatic re-authentication (stored securely in keychain)
     public var appPassword: String?
-    
+
     /// Session ID for backend API authentication (from OAuth flow)
     public var sessionId: String?
 
@@ -75,11 +75,12 @@ public extension AuthCredentials {
     }
 
     /// Check if credentials are valid for making API calls
+    /// Note: We have refresh tokens, so expired access tokens can be renewed
     var isValid: Bool {
         !handle.isEmpty &&
             !accessToken.isEmpty &&
+            !refreshToken.isEmpty &&
             !did.isEmpty &&
-            !pdsURL.isEmpty &&
-            !isExpired
+            !pdsURL.isEmpty
     }
 }

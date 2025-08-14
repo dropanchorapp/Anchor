@@ -23,32 +23,32 @@ public protocol AnchorStatsServiceProtocol {
 @MainActor
 public final class AnchorStatsService: AnchorStatsServiceProtocol {
     // MARK: - Properties
-    
+
     private let session: URLSessionProtocol
     private let baseURL: URL
-    
+
     // MARK: - Initialization
-    
+
     public init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
         self.baseURL = URL(string: "https://dropanchor.app/api")!
     }
-    
+
     // MARK: - Stats Methods
-    
+
     /// Get AppView health metrics and processing statistics
     /// - Returns: Statistics about the AppView system including user counts, checkin counts, and system health
     public func getStats() async throws -> AnchorStatsResponse {
         let url = baseURL.appendingPathComponent("/stats")
-        
+
         print("📊 StatsService: Fetching system statistics from: \(url)")
-        
+
         let request = URLRequest(url: url)
         return try await performRequest(request, responseType: AnchorStatsResponse.self)
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Perform HTTP request and decode response
     /// - Parameters:
     ///   - request: URLRequest to perform
@@ -57,13 +57,13 @@ public final class AnchorStatsService: AnchorStatsServiceProtocol {
     private func performRequest<T: Codable>(_ request: URLRequest, responseType: T.Type) async throws -> T {
         do {
             let (data, response) = try await session.data(for: request)
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw AnchorStatsError.invalidResponse
             }
-            
+
             print("📊 StatsService: Response status: \(httpResponse.statusCode)")
-            
+
             // Check for HTTP errors
             guard 200...299 ~= httpResponse.statusCode else {
                 // Try to decode error response
@@ -73,16 +73,16 @@ public final class AnchorStatsService: AnchorStatsServiceProtocol {
                     throw AnchorStatsError.httpError(httpResponse.statusCode)
                 }
             }
-            
+
             // Decode successful response
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             let result = try decoder.decode(responseType, from: data)
-            
+
             print("✅ StatsService: Successfully fetched statistics")
-            
+
             return result
-            
+
         } catch let error as AnchorStatsError {
             throw error
         } catch {
@@ -104,7 +104,7 @@ public struct AnchorStatsResponse: Codable, Sendable {
     public let lastProcessingRun: String?
     public let lastUpdate: String?
     public let timestamp: String
-    
+
     public init(
         totalCheckins: Int,
         totalUsers: Int,
@@ -129,7 +129,7 @@ public struct AnchorStatsResponse: Codable, Sendable {
 /// Error response from the Stats API
 public struct AnchorStatsErrorResponse: Codable, Sendable {
     public let error: String
-    
+
     public init(error: String) {
         self.error = error
     }
@@ -144,7 +144,7 @@ public enum AnchorStatsError: LocalizedError {
     case apiError(Int, String)
     case networkError(Error)
     case decodingError(Error)
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidResponse:

@@ -19,7 +19,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         self.address = address
         self.distance = distance
     }
-    
+
     // New initializer for Feed Service API responses
     init(from checkin: AnchorFeedCheckin) {
         id = checkin.id
@@ -38,7 +38,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
             createdAt: createdAt
         )
 
-        coordinates = checkin.coordinates.map { 
+        coordinates = checkin.coordinates.map {
             FeedCoordinates(latitude: $0.latitude, longitude: $0.longitude)
         }
         address = checkin.address.map {
@@ -113,7 +113,7 @@ public struct FeedSection: Identifiable {
     public let id = UUID()
     public let date: Date
     public let posts: [FeedPost]
-    
+
     public init(date: Date, posts: [FeedPost]) {
         self.date = date
         self.posts = posts
@@ -124,12 +124,12 @@ extension Array where Element == FeedPost {
     /// Groups posts by date (day) in descending order (newest first)
     public func groupedByDate() -> [FeedSection] {
         let calendar = Calendar.current
-        
+
         // Group posts by day
         let grouped = Dictionary(grouping: self) { post in
             calendar.startOfDay(for: post.record.createdAt)
         }
-        
+
         // Sort by date descending (newest first) and create sections
         return grouped
             .sorted { $0.key > $1.key }
@@ -148,11 +148,11 @@ extension ISO8601DateFormatter {
         // Try with fractional seconds first (for real API data like "2025-08-11T18:34:55.966Z")
         let formatterWithFractional = ISO8601DateFormatter()
         formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
+
         if let date = formatterWithFractional.date(from: string) {
             return date
         }
-        
+
         // Fallback to format without fractional seconds (for test data like "2024-01-01T12:00:00Z")
         let formatterBasic = ISO8601DateFormatter()
         return formatterBasic.date(from: string)

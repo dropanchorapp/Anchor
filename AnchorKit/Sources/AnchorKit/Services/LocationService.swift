@@ -35,7 +35,7 @@ public final class LocationService: NSObject, @unchecked Sendable {
         }
         return _isLocationServicesEnabled!
     }
-    
+
     private var _isLocationServicesEnabled: Bool?
 
     /// Whether we have permission to access location

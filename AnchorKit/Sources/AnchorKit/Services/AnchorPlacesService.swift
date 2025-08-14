@@ -27,12 +27,12 @@ public protocol AnchorPlacesServiceProtocol {
 /// Provides read-only access to nearby places, categories, and search functionality
 public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked Sendable {
     // MARK: - Properties
-    
+
     private let session: URLSession
     private let baseURL: URL
-    
+
     // MARK: - Initialization
-    
+
     public init(
         session: URLSession = .shared,
         baseURL: URL = URL(string: "https://dropanchor.app/api")!
@@ -40,9 +40,9 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         self.session = session
         self.baseURL = baseURL
     }
-    
+
     // MARK: - Public Methods
-    
+
     /// Find nearby places within a given radius using the Anchor backend API
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
@@ -61,7 +61,7 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         )
         return placesWithDistance.map { $0.place }
     }
-    
+
     /// Find nearby places with distance information from the Anchor backend API
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
@@ -73,41 +73,41 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         radiusMeters: Double = Double(AnchorConfig.shared.locationSearchRadius),
         categories: [String] = []
     ) async throws -> [AnchorPlaceWithDistance] {
-        
+
         print("🗺️ AnchorPlacesService: Finding places near (\(coordinate.latitude), \(coordinate.longitude)) within \(radiusMeters)m")
         if !categories.isEmpty {
             print("🗺️ AnchorPlacesService: Categories filter: \(categories)")
         }
-        
+
         // Build request to /api/places/nearby
         let request = try buildRequest(
             coordinate: coordinate,
             radiusMeters: radiusMeters,
             categories: categories
         )
-        
+
         print("🗺️ AnchorPlacesService: Making request to: \(request.url?.absoluteString ?? "unknown")")
-        
+
         do {
             let (data, response) = try await session.data(for: request)
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw AnchorPlacesError.invalidResponse
             }
-            
+
             print("🗺️ AnchorPlacesService: Response status: \(httpResponse.statusCode)")
-            
+
             guard httpResponse.statusCode == 200 else {
                 let errorString = String(data: data, encoding: .utf8) ?? "Unknown error"
                 print("❌ AnchorPlacesService: Error response: \(errorString)")
                 throw AnchorPlacesError.httpError(httpResponse.statusCode)
             }
-            
+
             // Parse response
             let placesResponse = try JSONDecoder().decode(AnchorPlacesNearbyResponse.self, from: data)
-            
+
             print("✅ AnchorPlacesService: Found \(placesResponse.places.count) places")
-            
+
             return placesResponse.places.map { apiPlace in
                 let elementType = Place.ElementType(rawValue: apiPlace.elementType) ?? .node
                 let place = Place(
@@ -120,13 +120,13 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
                 )
                 return AnchorPlaceWithDistance(place: place, distance: apiPlace.distance)
             }
-            
+
         } catch {
             print("❌ AnchorPlacesService: Network error: \(error)")
             throw AnchorPlacesError.networkError(error)
         }
     }
-    
+
     /// Find places by specific categories (convenience method)
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
@@ -144,7 +144,7 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
             categories: categories
         )
     }
-    
+
     /// Find places by category group (e.g., "food", "entertainment")
     /// - Parameters:
     ///   - coordinate: Center coordinate for search
@@ -165,26 +165,26 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
             categories: categories
         )
     }
-    
+
     /// Get all available place categories
     /// - Returns: Array of all available OSM tag categories
     public func getAllAvailableCategories() -> [String] {
         return PlaceCategorization.getAllCategories()
     }
-    
+
     /// Get prioritized/popular categories for UI display
     /// - Returns: Array of prioritized category tags
     public func getPrioritizedCategories() -> [String] {
         return PlaceCategorization.getPrioritizedCategories()
     }
-    
+
     /// Clear any cached data
     public func clearCache() {
         // Currently no caching implemented, but method provided for future use
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Build HTTP request for places API
     private func buildRequest(
         coordinate: CLLocationCoordinate2D,
@@ -192,26 +192,26 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         categories: [String]
     ) throws -> URLRequest {
         var components = URLComponents(url: baseURL.appendingPathComponent("/places/nearby"), resolvingAgainstBaseURL: false)!
-        
+
         var queryItems = [
             URLQueryItem(name: "lat", value: String(coordinate.latitude)),
             URLQueryItem(name: "lng", value: String(coordinate.longitude)),
             URLQueryItem(name: "radius", value: String(radiusMeters))
         ]
-        
+
         // Add categories if provided
         if !categories.isEmpty {
             for category in categories {
                 queryItems.append(URLQueryItem(name: "category", value: category))
             }
         }
-        
+
         components.queryItems = queryItems
-        
+
         guard let url = components.url else {
             throw AnchorPlacesError.invalidURL
         }
-        
+
         return URLRequest(url: url)
     }
 }
@@ -223,7 +223,7 @@ public struct AnchorPlacesNearbyResponse: Codable, Sendable {
     public let places: [AnchorPlacesAPIPlace]
     public let center: AnchorPlacesCoordinates
     public let radius: Double
-    
+
     public init(places: [AnchorPlacesAPIPlace], center: AnchorPlacesCoordinates, radius: Double) {
         self.places = places
         self.center = center
@@ -241,7 +241,7 @@ public struct AnchorPlacesAPIPlace: Codable, Sendable {
     public let longitude: Double
     public let tags: [String: String]
     public let distance: Double
-    
+
     public init(id: String, elementType: String, elementId: Int64, name: String, latitude: Double, longitude: Double, tags: [String: String], distance: Double) {
         self.id = id
         self.elementType = elementType
@@ -258,7 +258,7 @@ public struct AnchorPlacesAPIPlace: Codable, Sendable {
 public struct AnchorPlacesCoordinates: Codable, Sendable {
     public let latitude: Double
     public let longitude: Double
-    
+
     public init(latitude: Double, longitude: Double) {
         self.latitude = latitude
         self.longitude = longitude
@@ -269,17 +269,17 @@ public struct AnchorPlacesCoordinates: Codable, Sendable {
 public struct AnchorPlaceWithDistance: Sendable, Identifiable {
     public let place: Place
     public let distance: Double
-    
+
     public init(place: Place, distance: Double) {
         self.place = place
         self.distance = distance
     }
-    
+
     /// Unique identifier for SwiftUI lists
     public var id: String {
         place.id
     }
-    
+
     /// Formatted distance string (e.g., "150m" or "1.2km")
     public var formattedDistance: String {
         if distance < 1000 {
@@ -298,7 +298,7 @@ public enum AnchorPlacesError: LocalizedError {
     case httpError(Int)
     case networkError(Error)
     case decodingError(Error)
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidURL:

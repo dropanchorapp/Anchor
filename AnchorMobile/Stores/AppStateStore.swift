@@ -2,7 +2,7 @@
 //  AppStateStore.swift
 //  AnchorMobile
 //
-//  Created by Claude on 28/06/2025.
+//  Created by Tijs Teulings on 28/06/2025.
 //
 
 import Foundation

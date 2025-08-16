@@ -2,7 +2,7 @@
 //  OAuthWebView.swift
 //  AnchorMobile
 //
-//  Created by Claude on 10/08/2025.
+//  Created by Tijs Teulings on 10/08/2025.
 //
 
 import SwiftUI

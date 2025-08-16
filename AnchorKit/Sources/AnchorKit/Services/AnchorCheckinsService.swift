@@ -2,7 +2,7 @@
 //  AnchorCheckinsService.swift
 //  AnchorKit
 //
-//  Created by Claude Code on 13/08/2025.
+//  Created by Tijs Teulings on 13/08/2025.
 //
 
 import Foundation

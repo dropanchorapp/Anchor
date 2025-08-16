@@ -55,6 +55,9 @@ public final class CheckInStore: CheckInStoreProtocol {
 
         // Use OAuth access token for Bearer authentication (OAuth 2.1 standard)
         let accessToken = activeCredentials.accessToken
+        guard !accessToken.isEmpty else {
+            throw CheckInError.missingAccessToken
+        }
         print("🔰 CheckInStore: Using OAuth Bearer token: \(accessToken.prefix(8))...")
 
         // Create checkin using OAuth Bearer token authentication

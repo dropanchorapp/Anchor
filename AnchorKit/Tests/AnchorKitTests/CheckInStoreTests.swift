@@ -49,7 +49,7 @@ struct CheckInStoreTests {
         #expect(mockCheckinsService.createCheckinCallCount == 1, "Should call checkins service once")
         #expect(mockCheckinsService.lastCreateCheckinPlace?.name == place.name, "Should pass correct place")
         #expect(mockCheckinsService.lastCreateCheckinMessage == customMessage, "Should pass correct message")
-        #expect(mockCheckinsService.lastCreateCheckinSessionId == "test-session-id", "Should pass session ID from credentials")
+        #expect(mockCheckinsService.lastCreateCheckinAccessToken == "test-access-token", "Should pass access token from credentials")
     }
 
     @Test("Create checkin - backend failure")
@@ -64,22 +64,22 @@ struct CheckInStoreTests {
         }
     }
 
-    @Test("Create checkin - missing session ID fails")
-    func createCheckinMissingSessionId() async {
-        // Given: Credentials without session ID
+    @Test("Create checkin - missing access token fails")
+    func createCheckinMissingAccessToken() async {
+        // Given: Credentials without access token
         mockAuthStore.testCredentials = TestAuthCredentials(
             handle: "test.bsky.social",
-            accessToken: "test-token",
+            accessToken: "", // Empty access token
             refreshToken: "test-refresh",
             did: "did:plc:test",
             pdsURL: "https://bsky.social",
             expiresAt: Date().addingTimeInterval(3600),
-            sessionId: nil // No session ID
+            sessionId: "test-session"
         )
         let place = TestUtilities.createSamplePlace()
 
-        // When/Then: Creating check-in should fail with missing session ID error
-        await #expect(throws: CheckInError.self) {
+        // When/Then: Creating check-in should fail with missing access token error
+        await #expect(throws: CheckInError.missingAccessToken) {
             try await store.createCheckin(place: place, customMessage: "Test message")
         }
     }

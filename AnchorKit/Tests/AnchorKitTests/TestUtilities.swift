@@ -129,13 +129,13 @@ public class MockAnchorCheckinsService: AnchorCheckinsServiceProtocol {
     public var createCheckinCallCount = 0
     public var lastCreateCheckinPlace: Place?
     public var lastCreateCheckinMessage: String?
-    public var lastCreateCheckinSessionId: String?
+    public var lastCreateCheckinAccessToken: String?
 
-    public func createCheckin(place: Place, message: String?, sessionId: String) async throws -> CheckinResult {
+    public func createCheckin(place: Place, message: String?, accessToken: String) async throws -> CheckinResult {
         createCheckinCallCount += 1
         lastCreateCheckinPlace = place
         lastCreateCheckinMessage = message
-        lastCreateCheckinSessionId = sessionId
+        lastCreateCheckinAccessToken = accessToken
 
         if shouldThrowError {
             throw NSError(domain: "MockCheckinsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock checkins service error"])
@@ -150,7 +150,7 @@ public class MockAnchorCheckinsService: AnchorCheckinsServiceProtocol {
         createCheckinCallCount = 0
         lastCreateCheckinPlace = nil
         lastCreateCheckinMessage = nil
-        lastCreateCheckinSessionId = nil
+        lastCreateCheckinAccessToken = nil
     }
 }
 

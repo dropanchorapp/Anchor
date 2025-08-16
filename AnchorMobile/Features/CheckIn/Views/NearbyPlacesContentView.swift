@@ -2,7 +2,7 @@
 //  NearbyPlacesContentView.swift
 //  AnchorMobile
 //
-//  Created by Claude on 16/08/2025.
+//  Created by Tijs Teulings on 16/08/2025.
 //
 
 import SwiftUI

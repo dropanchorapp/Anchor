@@ -8,12 +8,11 @@
 import Foundation
 
 
-/// Token exchange response from backend
+/// Token exchange response from backend (OAuth 2.1 compliant)
 public struct TokenExchangeResponse: Codable {
     public let access_token: String
     public let refresh_token: String
-    public let expires_in: Int
-    public let expires_at: String
+    public let expires_in: Int  // OAuth 2.1 standard: lifetime in seconds
     public let token_type: String
     public let scope: String
     public let did: String
@@ -32,6 +31,8 @@ public protocol AnchorAuthServiceProtocol {
     /// Exchange authorization code for tokens (standard OAuth flow)
     func exchangeAuthorizationCode(_ code: String) async throws -> AuthCredentialsProtocol
 
+    /// Exchange authorization code with state for tokens (for OAuth callback handling)
+    func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> AuthCredentialsProtocol
 
     /// Validate current session and automatically refresh tokens if needed
     func validateSession(_ credentials: AuthCredentials) async throws -> AuthCredentials
@@ -84,7 +85,19 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
 
     /// Exchange authorization code for tokens (standard OAuth 2.1 flow)
     public func exchangeAuthorizationCode(_ code: String) async throws -> AuthCredentialsProtocol {
-        print("🔐 AnchorAuthService: Exchanging authorization code for tokens")
+        return try await performTokenExchange(requestBody: ["code": code])
+    }
+
+    /// Exchange authorization code with state for tokens (for OAuth callback handling)
+    public func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> AuthCredentialsProtocol {
+        return try await performTokenExchange(requestBody: ["code": code, "state": state])
+    }
+
+    // MARK: - Private Methods
+
+    /// Shared OAuth 2.1 compliant token exchange implementation
+    private func performTokenExchange(requestBody: [String: String]) async throws -> AuthCredentialsProtocol {
+        print("🔐 AnchorAuthService: Performing OAuth 2.1 token exchange")
 
         let url = baseURL.appendingPathComponent("/api/auth/exchange")
 
@@ -95,7 +108,6 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
         request.setValue("AnchorApp", forHTTPHeaderField: "User-Agent")
 
         // Create request body
-        let requestBody = ["code": code]
         let jsonData = try JSONEncoder().encode(requestBody)
         request.httpBody = jsonData
 
@@ -114,34 +126,18 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
                 throw AnchorAuthError.networkError(NSError(domain: "HTTPError", code: httpResponse.statusCode))
             }
 
-            // Parse the token response
+            // Parse the OAuth 2.1 compliant token response
             let tokenResponse = try JSONDecoder().decode(TokenExchangeResponse.self, from: data)
 
             print("🔐 AnchorAuthService: Token exchange successful for handle: \(tokenResponse.handle)")
-            print("🔐 AnchorAuthService: Token expires at: \(tokenResponse.expires_at)")
+            print("🔐 AnchorAuthService: Token expires in: \(tokenResponse.expires_in) seconds (OAuth 2.1 standard)")
             print("🔐 AnchorAuthService: PDS URL from backend: '\(tokenResponse.pds_url)'")
             print("🔐 AnchorAuthService: DID: \(tokenResponse.did)")
             print("🔐 AnchorAuthService: Session ID: \(tokenResponse.session_id)")
 
-            // Parse expiration date using flexible ISO8601 parsing
-            let expiresAt: Date
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            
-            if let parsedDate = dateFormatter.date(from: tokenResponse.expires_at) {
-                expiresAt = parsedDate
-                print("🔐 AnchorAuthService: Parsed expiration date with fractional seconds: \(expiresAt)")
-            } else {
-                // Fallback to basic format without fractional seconds
-                dateFormatter.formatOptions = [.withInternetDateTime]
-                if let parsedDate = dateFormatter.date(from: tokenResponse.expires_at) {
-                    expiresAt = parsedDate
-                    print("🔐 AnchorAuthService: Parsed expiration date without fractional seconds: \(expiresAt)")
-                } else {
-                    print("❌ AnchorAuthService: Failed to parse expiration date: '\(tokenResponse.expires_at)'")
-                    throw AnchorAuthError.invalidAuthData
-                }
-            }
+            // Calculate expiration time from expires_in following OAuth 2.1 spec
+            let expiresAt = Date().addingTimeInterval(TimeInterval(tokenResponse.expires_in))
+            print("🔐 AnchorAuthService: Calculated expiration date: \(expiresAt)")
 
             // Validate PDS URL
             guard !tokenResponse.pds_url.isEmpty, URL(string: tokenResponse.pds_url) != nil else {
@@ -149,7 +145,7 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
                 throw AnchorAuthError.invalidPDSURL(tokenResponse.pds_url)
             }
 
-            // Create credentials directly from token response
+            // Create credentials from OAuth 2.1 compliant response
             let credentials = AuthCredentials(
                 handle: tokenResponse.handle,
                 accessToken: tokenResponse.access_token,
@@ -161,7 +157,7 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
                 sessionId: tokenResponse.session_id
             )
 
-            print("🔐 AnchorAuthService: Created credentials with session ID: \(credentials.sessionId ?? "nil")")
+            print("🔐 AnchorAuthService: Created OAuth 2.1 compliant credentials with session ID: \(credentials.sessionId ?? "nil")")
 
             // Store credentials securely
             do {
@@ -172,7 +168,7 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
                 throw AnchorAuthError.storageError(error)
             }
 
-            print("✅ AnchorAuthService: Authentication process completed for handle: \(credentials.handle)")
+            print("✅ AnchorAuthService: OAuth 2.1 authentication process completed for handle: \(credentials.handle)")
             return credentials
 
         } catch {

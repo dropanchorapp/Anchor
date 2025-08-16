@@ -12,8 +12,8 @@ import Foundation
 /// Service protocol for Anchor checkin operations
 @MainActor
 public protocol AnchorCheckinsServiceProtocol {
-    /// Create a checkin using the backend API
-    func createCheckin(place: Place, message: String?, sessionId: String) async throws -> CheckinResult
+    /// Create a checkin using the backend API with OAuth Bearer token
+    func createCheckin(place: Place, message: String?, accessToken: String) async throws -> CheckinResult
 }
 
 // MARK: - Anchor Checkins Service
@@ -42,15 +42,15 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
 
     // MARK: - Checkin Methods
 
-    /// Create a checkin using the backend API
+    /// Create a checkin using the backend API with OAuth Bearer token
     /// - Parameters:
     ///   - place: The place/location for the checkin
     ///   - message: Optional text message for the checkin
-    ///   - sessionId: Authentication session ID
+    ///   - accessToken: OAuth access token for Bearer authentication
     /// - Returns: Result indicating success and optional checkin ID
-    public func createCheckin(place: Place, message: String?, sessionId: String) async throws -> CheckinResult {
-        return try await makeAuthenticatedRequest(sessionId: sessionId) { sessionId in
-            try await createCheckinInternal(place: place, message: message, sessionId: sessionId)
+    public func createCheckin(place: Place, message: String?, accessToken: String) async throws -> CheckinResult {
+        return try await makeAuthenticatedRequest(accessToken: accessToken) { accessToken in
+            try await createCheckinInternal(place: place, message: message, accessToken: accessToken)
         }
     }
 
@@ -58,16 +58,16 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
 
     /// Make an authenticated request with automatic token refresh retry
     /// - Parameters:
-    ///   - sessionId: Current session ID
-    ///   - operation: Operation to perform with session ID
+    ///   - accessToken: Current OAuth access token
+    ///   - operation: Operation to perform with access token
     /// - Returns: Result of the operation
     private func makeAuthenticatedRequest<T: Sendable>(
-        sessionId: String,
+        accessToken: String,
         operation: (String) async throws -> T
     ) async throws -> T {
         do {
-            // First attempt with current session
-            return try await operation(sessionId)
+            // First attempt with current access token
+            return try await operation(accessToken)
         } catch AnchorCheckinsError.authenticationRequired {
             print("🔄 CheckinsService: Authentication failed, attempting token refresh...")
 
@@ -77,21 +77,20 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
                 throw AnchorCheckinsError.authenticationRequired
             }
 
-            // Validate/refresh session
+            // Validate/refresh session (this will refresh OAuth tokens if needed)
             await authStore.validateSessionOnAppResume()
 
-            // Get updated credentials
-            guard let updatedCredentials = try? await authStore.getValidCredentials() as? AuthCredentials,
-                  let newSessionId = updatedCredentials.sessionId else {
+            // Get updated credentials with refreshed access token
+            guard let updatedCredentials = try? await authStore.getValidCredentials() as? AuthCredentials else {
                 print("❌ CheckinsService: Failed to get updated credentials after refresh")
                 throw AnchorCheckinsError.authenticationRequired
             }
 
-            print("🔄 CheckinsService: Retrying request with refreshed session")
+            print("🔄 CheckinsService: Retrying request with refreshed access token")
 
-            // Retry with new session ID
+            // Retry with new access token
             do {
-                return try await operation(newSessionId)
+                return try await operation(updatedCredentials.accessToken)
             } catch AnchorCheckinsError.authenticationRequired {
                 print("❌ CheckinsService: Authentication still failed after refresh")
                 throw AnchorCheckinsError.authenticationRequired
@@ -99,26 +98,26 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         }
     }
 
-    /// Internal implementation of checkin creation
+    /// Internal implementation of checkin creation using OAuth Bearer token
     /// - Parameters:
     ///   - place: The place for the checkin
     ///   - message: Optional message text
-    ///   - sessionId: Authentication session ID
+    ///   - accessToken: OAuth access token for Bearer authentication
     /// - Returns: Checkin creation result
-    private func createCheckinInternal(place: Place, message: String?, sessionId: String) async throws -> CheckinResult {
+    private func createCheckinInternal(place: Place, message: String?, accessToken: String) async throws -> CheckinResult {
         let url = baseURL.appendingPathComponent("/api/checkins")
 
         print("🏁 CheckinsService: Creating checkin for place: \(place.name)")
         print("🏁 CheckinsService: Location: (\(place.latitude), \(place.longitude))")
-        print("🏁 CheckinsService: Session ID: \(sessionId.prefix(8))...")
+        print("🏁 CheckinsService: Using OAuth Bearer token: \(accessToken.prefix(8))...")
 
-        // Create request
+        // Create request with OAuth Bearer token (OAuth 2.1 standard)
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("anchor_session=\(sessionId)", forHTTPHeaderField: "Cookie")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
-        // Create request body
+        // Create request body (no session_id needed with Bearer tokens)
         let requestBody = CheckinRequest(place: place, message: message)
         let jsonData = try JSONEncoder().encode(requestBody)
         request.httpBody = jsonData

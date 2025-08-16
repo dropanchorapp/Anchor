@@ -128,11 +128,45 @@ public final class AuthStore: AuthStoreProtocol {
         }
     }
 
+    /// Exchange authorization code with state for tokens (for OAuth callback handling)
+    public func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> Bool {
+        print("🔐 AuthStore: Exchanging authorization code with state for tokens...")
+        
+        do {
+            let credentials = try await authService.exchangeAuthorizationCodeWithState(code, state: state)
+            print("🔐 AuthStore: Token exchange returned credentials")
+            
+            // Cast to AuthCredentials for storage
+            guard let authCredentials = credentials as? AuthCredentials else {
+                print("❌ AuthStore: Failed to cast credentials to AuthCredentials")
+                throw AuthStoreError.authenticationFailed
+            }
+            
+            print("🔐 AuthStore: Successfully cast credentials")
+            
+            _credentials = authCredentials
+            updateAuthenticationState()
+            
+            print("✅ AuthStore: Authorization code exchange with state completed successfully")
+            print("✅ AuthStore: Authentication state updated - isAuthenticated: \(isAuthenticated)")
+            
+            return true
+            
+        } catch {
+            print("❌ AuthStore: Authorization code exchange with state failed: \(error)")
+            print("❌ AuthStore: Error type: \(type(of: error))")
+            if let authError = error as? AnchorAuthError {
+                print("❌ AuthStore: AnchorAuthError details: \(authError.errorDescription ?? "Unknown")")
+            }
+            throw error
+        }
+    }
+
 
     public func handleOAuthCallback(_ callbackURL: URL) async throws -> Bool {
         print("🔐 AuthStore: Handling OAuth callback from URL: \(callbackURL)")
 
-        // Parse the authorization code from callback URL
+        // Parse the authorization code and state from callback URL
         guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
               let codeQueryItem = components.queryItems?.first(where: { $0.name == "code" }),
               let code = codeQueryItem.value else {
@@ -140,10 +174,17 @@ public final class AuthStore: AuthStoreProtocol {
             throw AuthStoreError.authenticationFailed
         }
 
-        print("🔐 AuthStore: Found authorization code in callback URL")
+        // Extract state parameter (required for OAuth flow)
+        guard let stateQueryItem = components.queryItems?.first(where: { $0.name == "state" }),
+              let state = stateQueryItem.value else {
+            print("❌ AuthStore: No state parameter found in callback URL")
+            throw AuthStoreError.authenticationFailed
+        }
+
+        print("🔐 AuthStore: Found authorization code and state in callback URL")
 
         // Exchange authorization code for tokens using AnchorKit
-        return try await exchangeAuthorizationCode(code)
+        return try await exchangeAuthorizationCodeWithState(code, state: state)
     }
 
     public func signOut() async {

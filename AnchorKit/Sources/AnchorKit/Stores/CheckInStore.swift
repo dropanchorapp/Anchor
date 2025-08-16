@@ -51,22 +51,18 @@ public final class CheckInStore: CheckInStoreProtocol {
 
         print("🔰 CheckInStore: Got credentials for handle: \(activeCredentials.handle)")
         print("🔰 CheckInStore: DID: \(activeCredentials.did)")
-        print("🔰 CheckInStore: Session ID present: \(activeCredentials.sessionId != nil)")
+        print("🔰 CheckInStore: Access token present: \(!activeCredentials.accessToken.isEmpty)")
 
-        // Ensure we have a session ID for backend authentication
-        guard let sessionId = activeCredentials.sessionId else {
-            print("❌ CheckInStore: No session ID found in credentials")
-            throw CheckInError.missingSessionId
-        }
+        // Use OAuth access token for Bearer authentication (OAuth 2.1 standard)
+        let accessToken = activeCredentials.accessToken
+        print("🔰 CheckInStore: Using OAuth Bearer token: \(accessToken.prefix(8))...")
 
-        print("🔰 CheckInStore: Using session ID: \(sessionId.prefix(8))...")
-
-        // Create checkin using checkins service
+        // Create checkin using OAuth Bearer token authentication
         print("🔰 CheckInStore: Calling checkins service to create checkin")
         let result = try await checkinsService.createCheckin(
             place: place,
             message: customMessage,
-            sessionId: sessionId
+            accessToken: accessToken
         )
 
         print("✅ CheckInStore: Checkin creation successful: \(result.success)")
@@ -81,13 +77,13 @@ public final class CheckInStore: CheckInStoreProtocol {
 
 /// Errors that can occur during check-in creation
 public enum CheckInError: Error, LocalizedError {
-    case missingSessionId
+    case missingAccessToken
     case authenticationFailed
 
     public var errorDescription: String? {
         switch self {
-        case .missingSessionId:
-            return "Session ID required for backend authentication"
+        case .missingAccessToken:
+            return "OAuth access token required for authentication"
         case .authenticationFailed:
             return "Authentication failed"
         }

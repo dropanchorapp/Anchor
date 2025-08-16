@@ -89,7 +89,7 @@ struct NearbyPlacesView: View {
                         
                         Button("Try Again") {
                             Task {
-                                await loadNearbyPlaces()
+                                await loadNearbyPlaces(forceFreshLocation: false)
                             }
                         }
                         .buttonStyle(.borderedProminent)
@@ -130,6 +130,9 @@ struct NearbyPlacesView: View {
                         .listRowInsets(EdgeInsets())
                     }
                     .listStyle(.plain)
+                    .refreshable {
+                        await loadNearbyPlaces(forceFreshLocation: true)
+                    }
                 }
             }
             .navigationTitle("Nearby Places")
@@ -143,27 +146,49 @@ struct NearbyPlacesView: View {
             }
             .searchable(text: $searchText, prompt: "Search places...")
             .task {
-                await loadNearbyPlaces()
+                await loadNearbyPlaces(forceFreshLocation: false)
             }
         }
     }
     
-    private func loadNearbyPlaces() async {
-        guard let location = locationService.currentLocation else {
+    private func loadNearbyPlaces(forceFreshLocation: Bool = false) async {
+        isLoading = true
+        error = nil
+        
+        var location: CLLocation?
+        
+        if forceFreshLocation {
+            // Force fresh location update when user pulls to refresh
+            print("📍 Pull-to-refresh: requesting fresh location...")
+            if let freshCoordinates = await locationService.requestCurrentLocation() {
+                location = CLLocation(
+                    latitude: freshCoordinates.latitude,
+                    longitude: freshCoordinates.longitude
+                )
+            }
+        } else {
+            // Use existing location if available
+            location = locationService.currentLocation
+        }
+        
+        guard let location = location else {
             error = LocationError.locationNotAvailable
+            isLoading = false
             return
         }
         
-        isLoading = true
-        error = nil
+        print("📍 Loading nearby places at \(String(format: "%.6f", location.coordinate.latitude)), " +
+              "\(String(format: "%.6f", location.coordinate.longitude))")
         
         do {
             places = try await placesService.findNearbyPlacesWithDistance(
                 near: location.coordinate,
                 radiusMeters: 400
             )
+            print("📍 Found \(places.count) nearby places")
         } catch {
             self.error = error
+            print("❌ Error loading nearby places: \(error.localizedDescription)")
         }
         
         isLoading = false

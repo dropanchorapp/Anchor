@@ -74,7 +74,8 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         categories: [String] = []
     ) async throws -> [AnchorPlaceWithDistance] {
 
-        print("🗺️ AnchorPlacesService: Finding places near (\(coordinate.latitude), \(coordinate.longitude)) within \(radiusMeters)m")
+        print("🗺️ AnchorPlacesService: Finding places near (\(coordinate.latitude), \(coordinate.longitude)) " +
+              "within \(radiusMeters)m")
         if !categories.isEmpty {
             print("🗺️ AnchorPlacesService: Categories filter: \(categories)")
         }
@@ -156,9 +157,8 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         radiusMeters: Double = Double(AnchorConfig.shared.locationSearchRadius),
         group: String
     ) async throws -> [Place] {
-        // For now, use prioritized categories as a fallback
-        // TODO: Implement proper group-to-categories mapping
-        let categories = PlaceCategorization.getPrioritizedCategories()
+        // Map category group to specific OSM categories
+        let categories = PlaceCategorization.getCategoriesForGroup(group)
         return try await findPlacesByCategories(
             near: coordinate,
             radiusMeters: radiusMeters,
@@ -191,7 +191,10 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         radiusMeters: Double,
         categories: [String]
     ) throws -> URLRequest {
-        var components = URLComponents(url: baseURL.appendingPathComponent("/places/nearby"), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("/places/nearby"),
+            resolvingAgainstBaseURL: false
+        )!
 
         var queryItems = [
             URLQueryItem(name: "lat", value: String(coordinate.latitude)),

@@ -454,4 +454,45 @@ public struct PlaceCategorization {
             "leisure=park"
         ]
     }
+
+    // MARK: - Group to Categories Mapping
+
+    public static func getCategoriesForGroup(_ group: String) -> [String] {
+        let categoryGroup = CategoryGroup(rawValue: group)
+        return getCategoriesForGroup(categoryGroup)
+    }
+
+    public static func getCategoriesForGroup(_ group: CategoryGroup?) -> [String] {
+        guard let group = group else {
+            return getPrioritizedCategories()
+        }
+
+        switch group {
+        case .foodAndDrink:
+            return amenityCategories.filter { ["restaurant", "cafe", "bar", "pub", "fast_food", "food_court", "ice_cream", "biergarten"].contains($0) }.map { "amenity=\($0)" }
+        case .entertainment:
+            return (amenityCategories.filter { ["cinema", "theatre", "nightclub", "gambling", "casino"].contains($0) }.map { "amenity=\($0)" } +
+                   leisureCategories.filter { ["amusement_arcade", "escape_game", "trampoline_park", "water_park", "dance", "adult_gaming_centre", "miniature_golf"].contains($0) }.map { "leisure=\($0)" })
+        case .sports:
+            return leisureCategories.filter { ["fitness_centre", "sports_centre", "swimming_pool", "pitch", "track", "golf_course", "climbing", "horse_riding", "bowling_alley", "ice_rink", "stadium"].contains($0) }.map { "leisure=\($0)" }
+        case .shopping:
+            return shopCategories.map { "shop=\($0)" }
+        case .accommodation:
+            return tourismCategories.filter { ["hotel", "guest_house", "motel", "hostel", "apartment", "chalet", "alpine_hut", "camp_site", "caravan_site"].contains($0) }.map { "tourism=\($0)" }
+        case .transportation:
+            return amenityCategories.filter { ["bus_station", "taxi", "fuel", "parking", "charging_station", "car_rental", "car_sharing", "bicycle_rental"].contains($0) }.map { "amenity=\($0)" }
+        case .services:
+            return amenityCategories.filter { ["bank", "atm", "post_office", "police", "fire_station", "townhall", "embassy", "courthouse", "prison"].contains($0) }.map { "amenity=\($0)" }
+        case .nature:
+            return (leisureCategories.filter { ["park", "nature_reserve", "garden", "bird_hide", "wildlife_hide", "picnic_site", "playground"].contains($0) }.map { "leisure=\($0)" } +
+                   tourismCategories.filter { ["picnic_site", "viewpoint", "artwork"].contains($0) }.map { "tourism=\($0)" })
+        case .culture:
+            return (amenityCategories.filter { ["library", "community_centre", "social_centre", "arts_centre"].contains($0) }.map { "amenity=\($0)" } +
+                   tourismCategories.filter { ["museum", "gallery", "attraction", "artwork", "information"].contains($0) }.map { "tourism=\($0)" })
+        case .health:
+            return amenityCategories.filter { ["hospital", "clinic", "pharmacy", "dentist", "veterinary", "doctors"].contains($0) }.map { "amenity=\($0)" }
+        case .education:
+            return amenityCategories.filter { ["school", "university", "college", "library", "driving_school", "language_school", "music_school"].contains($0) }.map { "amenity=\($0)" }
+        }
+    }
 }

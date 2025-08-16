@@ -17,8 +17,8 @@ public final class LocationService: NSObject, @unchecked Sendable {
     /// Last time location was updated
     private var lastLocationUpdate: Date?
 
-    /// Minimum time between location updates (10 minutes)
-    private let locationUpdateInterval: TimeInterval = 600
+    /// Minimum time between location updates (3 minutes)
+    private let locationUpdateInterval: TimeInterval = 180
 
     /// Whether location services are available on the device
     public var isLocationServicesEnabled: Bool {
@@ -357,7 +357,7 @@ extension LocationService: CLLocationManagerDelegate {
 
         let coords = location.coordinate
         print("📍 Location updated: \(String(format: "%.6f", coords.latitude)), " +
-                "\(String(format: "%.6f", coords.longitude)) (cached for 10 minutes)")
+                "\(String(format: "%.6f", coords.longitude)) (cached for 3 minutes)")
 
         // If we were waiting for permission, complete the request
         if let completion = permissionCompletion {

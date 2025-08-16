@@ -111,11 +111,17 @@ struct AnchorMobileApp: App {
                 
                 // Validate session on app launch
                 await authStore.validateSessionOnAppLaunch()
+                
+                // Refresh location on app launch
+                await locationService.checkAndUpdateLocationForAppUsage()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 Task {
                     // Validate session when app becomes active (returns from background)
                     await authStore.validateSessionOnAppResume()
+                    
+                    // Refresh location when app becomes active (returns from background)
+                    await locationService.checkAndUpdateLocationForAppUsage()
                 }
             }
         }

@@ -82,6 +82,14 @@ identifier_name:
     - x
     - y
     - z
+    # OAuth 2.0 standard field names (snake_case per RFC 6749)
+    - access_token
+    - refresh_token
+    - expires_in
+    - token_type
+    - pds_url
+    - session_id
+    - display_name
 
 # Custom rules could go here if needed in the future
 

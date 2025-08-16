@@ -103,7 +103,10 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
     ///   - cursor: ISO timestamp for pagination
     /// - Returns: Following feed response with check-ins and cursor
     public func getFollowingFeed(userDid: String, limit: Int = 50, cursor: String? = nil) async throws -> AnchorFeedResponse {
-        var components = URLComponents(url: baseURL.appendingPathComponent("/following"), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("/following"),
+            resolvingAgainstBaseURL: false
+        )!
         components.queryItems = [
             URLQueryItem(name: "did", value: userDid),
             URLQueryItem(name: "limit", value: String(limit))

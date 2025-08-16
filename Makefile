@@ -1,7 +1,7 @@
 # Makefile for Anchor Project
 # Swift project with multiple targets: macOS menu bar app, iOS mobile app, and shared AnchorKit library
 
-.PHONY: help lint lint-fix lint-strict test test-swift test-ui build build-debug build-swift clean clean-derived install-deps setup check info
+.PHONY: help lint lint-fix lint-strict test test-swift test-ui build clean setup check info
 
 # Default target
 help: ## Show this help message
@@ -36,17 +36,7 @@ test-ui: ## Run Xcode project tests (Anchor + AnchorMobile)
 
 build: ## Build AnchorMobile iOS app
 	@echo "🏗️ Building AnchorMobile iOS app..."
-	xcodebuild build -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16' -configuration Release
-
-build-debug: ## Build all targets in Debug configuration
-	@echo "🏗️ Building Anchor macOS app (Debug)..."
-	xcodebuild build -project Anchor.xcodeproj -scheme Anchor -destination 'platform=macOS' -configuration Debug
-	@echo "🏗️ Building AnchorMobile iOS app (Debug)..."
 	xcodebuild build -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16' -configuration Debug
-
-build-swift: ## Build AnchorKit Swift package
-	@echo "🏗️ Building AnchorKit package..."
-	cd AnchorKit && swift build
 
 # Development Commands
 clean: ## Clean all build artifacts
@@ -56,9 +46,6 @@ clean: ## Clean all build artifacts
 	rm -rf build/
 	rm -rf .build/
 	rm -rf AnchorKit/.build/
-
-clean-derived: ## Clean Xcode derived data
-	@echo "🧹 Cleaning Xcode derived data..."
 	rm -rf ~/Library/Developer/Xcode/DerivedData
 
 # Quality Assurance Commands
@@ -73,7 +60,6 @@ info: ## Show project information
 	@echo "SwiftLint Version: $$(swiftlint --version 2>/dev/null || echo 'Not installed')"
 	@echo ""
 	@echo "Project Structure:"
-	@echo "- Anchor (macOS menu bar app)"
 	@echo "- AnchorMobile (iOS mobile app)"  
 	@echo "- AnchorKit (shared Swift package)"
 	@echo ""

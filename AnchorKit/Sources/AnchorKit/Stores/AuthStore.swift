@@ -162,7 +162,6 @@ public final class AuthStore: AuthStoreProtocol {
         }
     }
 
-
     public func handleOAuthCallback(_ callbackURL: URL) async throws -> Bool {
         print("🔐 AuthStore: Handling OAuth callback from URL: \(callbackURL)")
 

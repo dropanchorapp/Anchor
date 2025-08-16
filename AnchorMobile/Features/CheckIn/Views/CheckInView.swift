@@ -12,7 +12,6 @@ import AnchorKit
 struct CheckInView: View {
     @Environment(LocationService.self) private var locationService
     @State private var selectedPlace: Place?
-    @State private var showingNearbyPlaces = false
     
     var body: some View {
         NavigationStack {
@@ -22,9 +21,9 @@ struct CheckInView: View {
                     LocationPermissionView()
                 case .authorizedWhenInUse, .authorizedAlways:
                     if locationService.currentLocation != nil {
-                        CheckInMainView(onFindPlaces: {
-                            showingNearbyPlaces = true
-                        })
+                        NearbyPlacesContentView { place in
+                            selectedPlace = place
+                        }
                     } else {
                         LoadingLocationView()
                             .onAppear {
@@ -40,49 +39,10 @@ struct CheckInView: View {
                 }
             }
             .navigationTitle("Drop Anchor")
-            .sheet(isPresented: $showingNearbyPlaces) {
-                NearbyPlacesView { place in
-                    selectedPlace = place
-                    showingNearbyPlaces = false
-                }
-            }
             .sheet(item: $selectedPlace) { place in
                 CheckInComposeView(place: place)
             }
         }
-    }
-}
-
-struct CheckInMainView: View {
-    let onFindPlaces: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 30) {
-            // Header
-            VStack(spacing: 12) {
-                Text("Find nearby places where you can check in and share your location with friends.")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-            
-            // Actions
-            VStack(spacing: 16) {
-                Button(action: onFindPlaces) {
-                    Label("Find Nearby Places", systemImage: "location.magnifyingglass")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-            .padding(.horizontal)
-            
-            Spacer()
-        }
-        .padding()
     }
 }
 

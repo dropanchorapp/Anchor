@@ -1,7 +1,7 @@
 # 🧭 Anchor
 
 <p align="center">
-  <img src="Static/AnchorAppIcon-transparent.png" alt="Anchor App Icon" width="200"/>
+  <img src="Static/anchor-logo-transparent.png" alt="Anchor Logo" width="200"/>
 </p>
 
 <p align="center">
@@ -51,14 +51,14 @@
 
 ### System Requirements
 
-- **iOS**: iOS 18.6 or later  
+- **iOS**: iOS 17.0 or later  
 - Location Services enabled
 
 ### Installation
 
 1. **Download from App Store** 
 
-   Available now on the iOS App Store
+   Coming soon to the iOS App Store
 
 2. **Build from Source**
 
@@ -123,7 +123,7 @@ Check-ins reference address records via StrongRef with content integrity verific
 {
   "$type": "app.dropanchor.checkin",
   "text": "Great lunch session with the team!",
-  "createdAt": "2024-12-29T14:30:00Z",
+  "createdAt": "2025-01-30T14:30:00Z",
   "addressRef": {
     "uri": "at://did:plc:user123/community.lexicon.location.address/abc123",
     "cid": "bafyreigh2akiscaildc..."
@@ -153,7 +153,7 @@ Dropped anchor at Klimmuur Centraal 🧭
 {
   "$type": "app.bsky.feed.post",
   "text": "Dropped anchor at Klimmuur Centraal 🧭\n\"Great lunch session with the team!\" 🧗‍♂️",
-  "createdAt": "2024-12-29T14:30:00Z",
+  "createdAt": "2025-01-30T14:30:00Z",
   "facets": [
     {
       "index": { "byteStart": 17, "byteEnd": 35 },
@@ -268,37 +268,6 @@ Anchor AppView is a separate project that provides the global feed service. You 
 - **Privacy by Choice** - Decide for each check-in whether to share publicly or keep private
 - **Open Source** - Complete transparency with public source code
 
-## 🛣️ Roadmap
-
-### ✅ Completed (v1.0)
-
-- [x] **Native iOS App** - Full iOS app using SwiftUI with TabView navigation
-- [x] **App Store Release** - Available now on the iOS App Store
-- [x] **StrongRef Architecture** - Atomic address + checkin records with content integrity on home PDS
-- [x] **Optional Social Sharing** - Choose to share check-ins as Bluesky posts
-- [x] **Global Feed** - Discover check-ins from around the world via Anchor AppView
-- [x] **Community Lexicon Integration** - Uses AT Protocol standards for structured location data
-- [x] **Content Integrity** - CID verification prevents tampering and detects modifications
-- [x] Location services integration with proper iOS permissions
-- [x] Nearby place discovery via OpenStreetMap with distance-based sorting
-- [x] Modular AnchorKit architecture for future platform expansion
-
-### 🔄 In Progress (v1.1)
-
-- [ ] Check-in history view (personal timeline from your PDS)
-- [ ] Default message preferences and user settings
-- [ ] Feed filtering options (nearby, following, categories)
-- [ ] Enhanced place categorization and discovery
-
-### 🚀 Future (v2.0+)
-
-- [ ] **macOS App** - Native menubar app using shared AnchorKit
-- [ ] **Apple Watch App** - Quick drops from your wrist
-- [ ] **Rich Analytics** - Personal insights from StrongRef-structured check-in data
-- [ ] **Shortcuts Integration** - Automate check-ins
-- [ ] **Federation** - Connect with other Anchor instances
-- [ ] **Social Features** - Follow friends' check-ins across the AT Protocol network
-- [ ] **Unique Share URLs** - Migrate from rkey-only URLs to globally unique identifiers to prevent potential collisions at scale (current collision risk is negligible but not cryptographically guaranteed)
 
 ## 🤝 Contributing
 

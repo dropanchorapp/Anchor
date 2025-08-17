@@ -144,9 +144,16 @@ public final class AppStateStore {
             print("ℹ️ No stored credentials found - user needs to sign in")
         }
         
-        // Step 2: Check location permissions (non-blocking)
+        // Step 2: Fetch and cache categories (non-blocking for startup performance)
+        initializationStep = "Loading categories"
+        print("📱 Step 2: Loading POI categories...")
+        Task {
+            await loadCategories()
+        }
+        
+        // Step 3: Check location permissions (non-blocking)
         initializationStep = "Checking location permissions"
-        print("📱 Step 2: Checking location permissions...")
+        print("📱 Step 3: Checking location permissions...")
         
         // Check current permission status without triggering request
         // This avoids blocking the UI during app initialization
@@ -161,13 +168,45 @@ public final class AppStateStore {
         // Don't await permission request during initialization - let the user trigger it later
         // This prevents the "UI unresponsiveness" warning and improves app startup time
         
-        // Step 3: Mark app as initialized
+        // Step 4: Mark app as initialized
         initializationStep = "Completed"
-        print("📱 Step 3: Initialization complete")
+        print("📱 Step 4: Initialization complete")
         isInitialized = true
         
-        // Step 4: Record app launch
+        // Step 5: Record app launch
         recordAppLaunch()
+    }
+    
+    // MARK: - Category Loading
+    
+    /// Load POI categories from backend
+    private func loadCategories() async {
+        // Check if we already have cached categories
+        if let existingCache = CategoryCacheService.shared.getCachedCategories() {
+            if !CategoryCacheService.shared.isCacheExpired() {
+                return
+            }
+        }
+        
+        do {
+            let result = try await CategoryCacheService.shared.fetchAndCacheCategories()
+            print("✅ Successfully cached \(result.categories.count) categories")
+            
+        } catch {
+            print("❌ Failed to fetch categories from backend: \(error.localizedDescription)")
+            
+            // Check if we have cached categories as fallback
+            if let cached = CategoryCacheService.shared.getCachedCategories() {
+                if CategoryCacheService.shared.isCacheExpired() {
+                    print("⚠️ Using expired cached categories - app functionality may be limited")
+                } else {
+                    print("✅ Using valid cached categories from previous session")
+                }
+            } else {
+                print("❌ No cached categories available - places/category features will be unavailable")
+                print("ℹ️ The app requires a network connection for initial category loading")
+            }
+        }
     }
     
     // MARK: - App Launch

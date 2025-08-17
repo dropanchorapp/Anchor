@@ -30,15 +30,18 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
 
     private let session: URLSession
     private let baseURL: URL
+    private let categoryCache: CategoryCacheServiceProtocol
 
     // MARK: - Initialization
 
     public init(
         session: URLSession = .shared,
-        baseURL: URL = URL(string: "https://dropanchor.app/api")!
+        baseURL: URL = URL(string: "https://dropanchor.app/api")!,
+        categoryCache: CategoryCacheServiceProtocol = CategoryCacheService.shared
     ) {
         self.session = session
         self.baseURL = baseURL
+        self.categoryCache = categoryCache
     }
 
     // MARK: - Public Methods
@@ -157,8 +160,11 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         radiusMeters: Double = Double(AnchorConfig.shared.locationSearchRadius),
         group: String
     ) async throws -> [Place] {
-        // Map category group to specific OSM categories
-        let categories = PlaceCategorization.getCategoriesForGroup(group)
+        // Convert string to CategoryGroup enum and map to specific OSM categories
+        guard let categoryGroup = PlaceCategorization.CategoryGroup(rawValue: group) else {
+            throw AnchorPlacesError.invalidCategory(group)
+        }
+        let categories = categoryCache.getCategoriesForGroup(categoryGroup)
         return try await findPlacesByCategories(
             near: coordinate,
             radiusMeters: radiusMeters,
@@ -169,18 +175,18 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
     /// Get all available place categories
     /// - Returns: Array of all available OSM tag categories
     public func getAllAvailableCategories() -> [String] {
-        return PlaceCategorization.getAllCategories()
+        return categoryCache.getAllCategories()
     }
 
     /// Get prioritized/popular categories for UI display
     /// - Returns: Array of prioritized category tags
     public func getPrioritizedCategories() -> [String] {
-        return PlaceCategorization.getPrioritizedCategories()
+        return categoryCache.getPrioritizedCategories()
     }
 
     /// Clear any cached data
     public func clearCache() {
-        // Currently no caching implemented, but method provided for future use
+        categoryCache.clearCache()
     }
 
     // MARK: - Private Methods
@@ -301,6 +307,7 @@ public enum AnchorPlacesError: LocalizedError {
     case httpError(Int)
     case networkError(Error)
     case decodingError(Error)
+    case invalidCategory(String)
 
     public var errorDescription: String? {
         switch self {
@@ -314,6 +321,8 @@ public enum AnchorPlacesError: LocalizedError {
             return "Network error: \(error.localizedDescription)"
         case .decodingError(let error):
             return "Decoding error: \(error.localizedDescription)"
+        case .invalidCategory(let category):
+            return "Invalid category group: \(category)"
         }
     }
 }

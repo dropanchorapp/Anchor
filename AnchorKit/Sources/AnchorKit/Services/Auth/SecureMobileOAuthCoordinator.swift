@@ -60,16 +60,17 @@ public final class SecureMobileOAuthCoordinator {
         print("🔐 SecureMobileOAuthCoordinator: Code verifier length: \(pkce.codeVerifier.count)")
         
         // Call mobile OAuth start endpoint with code_challenge
-        let sessionId = try await initiateOAuthWithPKCE(handle: handle, codeChallenge: pkce.codeChallenge)
-        print("🔐 SecureMobileOAuthCoordinator: OAuth initiated with session ID: \(sessionId.prefix(8))...")
+        let response = try await initiateOAuthWithPKCE(handle: handle, codeChallenge: pkce.codeChallenge)
+        print("🔐 SecureMobileOAuthCoordinator: OAuth initiated with session ID: \(response.sessionId.prefix(8))...")
         
         // Store code verifier securely for token exchange
-        try await pkceStorage.storePKCEVerifier(pkce.codeVerifier, for: sessionId)
+        try await pkceStorage.storePKCEVerifier(pkce.codeVerifier, for: response.sessionId)
         print("🔐 SecureMobileOAuthCoordinator: Code verifier stored securely")
         
-        // Return mobile auth URL
-        let authURL = baseURL.appendingPathComponent("/mobile-auth")
+        // Return the actual OAuth URL from backend (bypasses web page)
+        let authURL = URL(string: response.authUrl)!
         print("✅ SecureMobileOAuthCoordinator: Secure OAuth flow started successfully")
+        print("🔗 SecureMobileOAuthCoordinator: OAuth URL: \(authURL)")
         
         return authURL
     }
@@ -133,7 +134,7 @@ public final class SecureMobileOAuthCoordinator {
     
     /// Initiate OAuth with PKCE by calling mobile start endpoint
     @MainActor
-    private func initiateOAuthWithPKCE(handle: String, codeChallenge: String) async throws -> String {
+    private func initiateOAuthWithPKCE(handle: String, codeChallenge: String) async throws -> MobileStartResponse {
         let url = baseURL.appendingPathComponent("/api/auth/mobile-start")
         
         // Create request with PKCE code challenge
@@ -165,9 +166,9 @@ public final class SecureMobileOAuthCoordinator {
                 throw SecureMobileOAuthError.serverError(httpResponse.statusCode, errorMessage)
             }
             
-            // Parse session ID from response
+            // Parse full response 
             let responseData = try JSONDecoder().decode(MobileStartResponse.self, from: data)
-            return responseData.sessionId
+            return responseData
             
         } catch {
             if error is SecureMobileOAuthError {

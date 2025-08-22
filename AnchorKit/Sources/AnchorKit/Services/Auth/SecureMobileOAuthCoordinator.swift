@@ -7,6 +7,24 @@
 
 import Foundation
 
+// MARK: - Base64URL Decoding Extension
+
+extension Data {
+    init?(base64URLEncoded string: String) {
+        var base64 = string
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        
+        // Add padding if needed
+        let padLength = 4 - (base64.count % 4)
+        if padLength < 4 {
+            base64 += String(repeating: "=", count: padLength)
+        }
+        
+        self.init(base64Encoded: base64)
+    }
+}
+
 /// Secure OAuth coordinator for mobile PKCE authentication flow
 /// 
 /// Coordinates the complete secure OAuth flow:
@@ -17,7 +35,7 @@ import Foundation
 ///
 /// This replaces the insecure flow that was vulnerable to protocol handler
 /// interception attacks.
-public final class SecureMobileOAuthCoordinator {
+public final class SecureMobileOAuthCoordinator: @unchecked Sendable {
     // MARK: - Properties
     
     private let authService: AnchorAuthServiceProtocol
@@ -88,28 +106,31 @@ public final class SecureMobileOAuthCoordinator {
         print("🔐 SecureMobileOAuthCoordinator: Completing secure OAuth flow")
         print("🔐 SecureMobileOAuthCoordinator: Callback URL: \(callbackURL)")
         
-        // Parse session ID from callback URL
+        // Parse session ID from callback URL (backend puts session ID in 'code' parameter)
         guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
               let codeQueryItem = components.queryItems?.first(where: { $0.name == "code" }),
               let sessionId = codeQueryItem.value else {
-            print("❌ SecureMobileOAuthCoordinator: No session ID found in callback URL")
+            print("❌ SecureMobileOAuthCoordinator: Missing session ID in callback URL")
             throw SecureMobileOAuthError.invalidCallback
         }
         
-        print("🔐 SecureMobileOAuthCoordinator: Found session ID: \(sessionId.prefix(8))...")
+        print("🔐 SecureMobileOAuthCoordinator: Found session ID from callback: \(sessionId.prefix(8))...")
         
-        // Retrieve stored code verifier
+        // Retrieve stored code verifier for PKCE validation
         guard let codeVerifier = try await pkceStorage.retrievePKCEVerifier(for: sessionId) else {
             print("❌ SecureMobileOAuthCoordinator: No code verifier found for session")
             throw SecureMobileOAuthError.missingCodeVerifier
         }
-        
+
         print("🔐 SecureMobileOAuthCoordinator: Retrieved code verifier for PKCE validation")
         print("🔐 SecureMobileOAuthCoordinator: Code verifier length: \(codeVerifier.count)")
-        
+
         do {
-            // Exchange authorization code with PKCE verification
-            let credentials = try await authService.exchangeAuthorizationCodeWithPKCE(sessionId, codeVerifier: codeVerifier)
+            // Use existing /api/auth/exchange endpoint with proper PKCE
+            let credentials = try await exchangeTokensWithPKCE(
+                sessionId: sessionId,
+                codeVerifier: codeVerifier
+            )
             print("✅ SecureMobileOAuthCoordinator: Token exchange successful with PKCE")
             
             // Clean up stored code verifier
@@ -120,20 +141,81 @@ public final class SecureMobileOAuthCoordinator {
             return credentials
             
         } catch {
-            print("❌ SecureMobileOAuthCoordinator: Token exchange failed: \(error)")
-            
-            // Clean up stored code verifier even on failure
-            try? await pkceStorage.clearPKCEVerifier(for: sessionId)
-            print("🧹 SecureMobileOAuthCoordinator: Code verifier cleaned up after failure")
-            
+            print("❌ SecureMobileOAuthCoordinator: Mobile OAuth completion failed: \(error)")
             throw error
         }
     }
     
     // MARK: - Private Methods
     
+    /// Exchange tokens with PKCE using the existing backend endpoint
+    private func exchangeTokensWithPKCE(sessionId: String, codeVerifier: String) async throws -> AuthCredentialsProtocol {
+        print("🔐 SecureMobileOAuthCoordinator: Exchanging tokens with PKCE verification")
+        
+        let baseURL = URL(string: "https://dropanchor.app")!
+        let url = baseURL.appendingPathComponent("/api/auth/exchange")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = [
+            "code": sessionId,
+            "code_verifier": codeVerifier
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        print("🔐 SecureMobileOAuthCoordinator: Sending PKCE token exchange request")
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ SecureMobileOAuthCoordinator: Invalid response type")
+            throw SecureMobileOAuthError.networkError
+        }
+        
+        print("🔐 SecureMobileOAuthCoordinator: Backend response status: \(httpResponse.statusCode)")
+        
+        guard httpResponse.statusCode == 200 else {
+            print("❌ SecureMobileOAuthCoordinator: Backend error: \(httpResponse.statusCode)")
+            throw SecureMobileOAuthError.authenticationFailed
+        }
+        
+        // Parse backend response to extract credentials
+        guard let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let handle = jsonResponse["handle"] as? String,
+              let did = jsonResponse["did"] as? String,
+              let accessToken = jsonResponse["access_token"] as? String,
+              let refreshToken = jsonResponse["refresh_token"] as? String,
+              let pdsUrl = jsonResponse["pds_url"] as? String else {
+            print("❌ SecureMobileOAuthCoordinator: Invalid backend response format")
+            if let jsonResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                print("🔍 SecureMobileOAuthCoordinator: Actual response keys: \(Array(jsonResponse.keys))")
+            }
+            throw SecureMobileOAuthError.authenticationFailed
+        }
+        
+        print("✅ SecureMobileOAuthCoordinator: Successfully parsed credentials from backend")
+        print("🔐 SecureMobileOAuthCoordinator: Handle: @\(handle)")
+        print("🔐 SecureMobileOAuthCoordinator: DID: \(did)")
+        print("🔐 SecureMobileOAuthCoordinator: PDS URL: \(pdsUrl)")
+        
+        // Create AuthCredentials from backend response
+        let credentials = AuthCredentials(
+            handle: handle,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            did: did,
+            pdsURL: pdsUrl,
+            expiresAt: Date().addingTimeInterval(3600 * 24), // 24 hours from now
+            sessionId: UUID().uuidString
+        )
+        
+        return credentials
+    }
+    
     /// Initiate OAuth with PKCE by calling mobile start endpoint
-    @MainActor
     private func initiateOAuthWithPKCE(handle: String, codeChallenge: String) async throws -> MobileStartResponse {
         let url = baseURL.appendingPathComponent("/api/auth/mobile-start")
         
@@ -205,6 +287,7 @@ public enum SecureMobileOAuthError: Error, LocalizedError {
     case invalidCallback
     case missingCodeVerifier
     case networkError
+    case authenticationFailed
     case serverError(Int, String)
     
     public var errorDescription: String? {
@@ -215,6 +298,8 @@ public enum SecureMobileOAuthError: Error, LocalizedError {
             return "PKCE code verifier not found - OAuth session may have expired"
         case .networkError:
             return "Network error during OAuth flow"
+        case .authenticationFailed:
+            return "Authentication failed"
         case .serverError(let code, let message):
             return "OAuth server error (\(code)): \(message)"
         }

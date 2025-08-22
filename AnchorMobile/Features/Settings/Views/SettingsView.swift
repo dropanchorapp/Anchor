@@ -17,7 +17,7 @@ struct SettingsView: View {
             List {
                 // Account Section
                 Section {
-                    NavigationLink(destination: AuthenticationView()) {
+                    NavigationLink(destination: SecureAuthenticationView()) {
                         HStack {
                             Image(systemName: authStore.isAuthenticated ? "checkmark.circle.fill" : "person.circle")
                                 .font(.title2)

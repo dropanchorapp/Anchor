@@ -44,40 +44,20 @@ struct AnchorMobileApp: App {
     }
     
     private func handleAuthCallback(_ url: URL) {
-        print("🔐 Handling OAuth callback: \(url)")
+        print("🔐 Handling secure OAuth callback: \(url)")
         
-        // Parse URL parameters
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let queryItems = components.queryItems else {
-            print("❌ Failed to parse URL components")
-            return
-        }
-        
-        let params = Dictionary(uniqueKeysWithValues: queryItems.map { ($0.name, $0.value ?? "") })
-        
-        print("🔐 OAuth callback parameters: \(params.keys.joined(separator: ", "))")
-        
-        // Validate authorization code parameter
-        guard let authorizationCode = params["code"] else {
-            print("❌ Missing authorization code parameter")
-            print("❌ Available parameters: \(params.keys.joined(separator: ", "))")
-            return
-        }
-        
-        print("✅ Received authorization code: \(authorizationCode.prefix(8))...")
-        
-        // Exchange authorization code for tokens
+        // Handle secure OAuth callback using PKCE-protected flow
         Task { @MainActor in
             do {
-                let success = try await authStore.exchangeAuthorizationCode(authorizationCode)
+                let success = try await authStore.handleSecureOAuthCallback(url)
                 
                 if success {
-                    print("🎉 OAuth token exchange completed successfully")
+                    print("🎉 Secure OAuth authentication completed successfully")
                 } else {
-                    print("❌ OAuth token exchange returned false")
+                    print("❌ Secure OAuth authentication returned false")
                 }
             } catch {
-                print("❌ OAuth token exchange failed: \(error.localizedDescription)")
+                print("❌ Secure OAuth authentication failed: \(error.localizedDescription)")
             }
         }
     }

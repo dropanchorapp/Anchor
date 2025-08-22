@@ -12,12 +12,6 @@ import Foundation
 /// Service protocol for Anchor authentication operations
 @MainActor
 public protocol AnchorAuthServiceProtocol {
-    /// Exchange authorization code for tokens (standard OAuth flow)
-    func exchangeAuthorizationCode(_ code: String) async throws -> AuthCredentialsProtocol
-
-    /// Exchange authorization code with state for tokens (for OAuth callback handling)
-    func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> AuthCredentialsProtocol
-
     /// Exchange authorization code with PKCE verification for secure mobile OAuth
     func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol
 
@@ -88,16 +82,6 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
     }
 
     // MARK: - OAuth Methods
-
-    /// Exchange authorization code for tokens (standard OAuth 2.1 flow)
-    public func exchangeAuthorizationCode(_ code: String) async throws -> AuthCredentialsProtocol {
-        return try await tokenExchanger.exchangeAuthorizationCode(code)
-    }
-
-    /// Exchange authorization code with state for tokens (for OAuth callback handling)
-    public func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> AuthCredentialsProtocol {
-        return try await tokenExchanger.exchangeAuthorizationCodeWithState(code, state: state)
-    }
 
     /// Exchange authorization code with PKCE verification for secure mobile OAuth
     public func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol {

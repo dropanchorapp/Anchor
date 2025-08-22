@@ -30,16 +30,6 @@ public final class OAuthTokenExchanger {
     
     // MARK: - Token Exchange Methods
     
-    /// Exchange authorization code for tokens (standard OAuth 2.1 flow)
-    public func exchangeAuthorizationCode(_ code: String) async throws -> AuthCredentialsProtocol {
-        return try await performTokenExchange(requestBody: ["code": code])
-    }
-    
-    /// Exchange authorization code with state for tokens (for OAuth callback handling)
-    public func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> AuthCredentialsProtocol {
-        return try await performTokenExchange(requestBody: ["code": code, "state": state])
-    }
-    
     /// Exchange authorization code with PKCE verification for secure mobile OAuth
     public func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol {
         return try await performTokenExchange(requestBody: ["code": code, "code_verifier": codeVerifier])

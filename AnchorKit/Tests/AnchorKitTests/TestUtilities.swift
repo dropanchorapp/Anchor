@@ -75,24 +75,6 @@ public final class MockAuthStore: AuthStoreProtocol {
         return credentials
     }
 
-    public func exchangeAuthorizationCode(_ code: String) async throws -> Bool {
-        if shouldThrowAuthError {
-            throw AuthStoreError.authenticationFailed
-        }
-        isAuthenticated = true
-        testCredentials = TestAuthCredentials.valid()
-        return true
-    }
-
-
-    public func handleOAuthCallback(_ callbackURL: URL) async throws -> Bool {
-        if shouldThrowAuthError {
-            throw AuthStoreError.authenticationFailed
-        }
-        isAuthenticated = true
-        testCredentials = TestAuthCredentials.valid()
-        return true
-    }
 
     public func startSecureOAuthFlow(handle: String) async throws -> URL {
         if shouldThrowAuthError {
@@ -118,11 +100,11 @@ public final class MockAuthStore: AuthStoreProtocol {
 
     public func getValidCredentials() async throws -> AuthCredentialsProtocol {
         if shouldThrowAuthError {
-            throw AuthStoreError.missingCredentials
+            throw AuthStoreError.notAuthenticated
         }
 
         guard let testCredentials = testCredentials else {
-            throw AuthStoreError.missingCredentials
+            throw AuthStoreError.notAuthenticated
         }
 
         return testCredentials

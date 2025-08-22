@@ -6,21 +6,18 @@
 //
 
 import SwiftUI
-import WebKit
+import AuthenticationServices
 import AnchorKit
 
-/// Secure authentication view with PKCE OAuth protection
-/// 
-/// Replaces the insecure OAuth flow with PKCE-protected authentication
-/// that prevents protocol handler interception attacks.
+/// Authentication view for Bluesky sign-in
 struct SecureAuthenticationView: View {
     @Environment(AuthStore.self) private var authStore
     @State private var handle: String = ""
     @State private var showingError = false
     @State private var isLoading = false
     @State private var lastError: String?
-    @State private var showingSecureOAuthWebView = false
-    @State private var oauthURL: URL?
+    @State private var authSession: ASWebAuthenticationSession?
+    private let presentationContextProvider = WebAuthPresentationContextProvider()
     
     var body: some View {
         mainContent
@@ -34,9 +31,6 @@ struct SecureAuthenticationView: View {
             }
             .onChange(of: lastError) { _, newError in
                 showingError = newError != nil
-            }
-            .sheet(isPresented: $showingSecureOAuthWebView) {
-                oauthWebViewSheet
             }
     }
     
@@ -57,42 +51,12 @@ struct SecureAuthenticationView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Secure Account")
+            .navigationTitle("Account")
             .navigationBarTitleDisplayMode(.large)
             .contentShape(Rectangle())
         }
     }
     
-    @ViewBuilder
-    private var oauthWebViewSheet: some View {
-        NavigationView {
-            if let oauthURL = oauthURL {
-                SecureOAuthWebView(
-                    url: oauthURL,
-                    onAuthComplete: handleSecureOAuthResult,
-                    onCancel: {
-                        self.showingSecureOAuthWebView = false
-                        self.isLoading = false
-                        self.oauthURL = nil
-                    }
-                )
-                .navigationTitle("Secure Sign in to Bluesky")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            self.showingSecureOAuthWebView = false
-                            self.isLoading = false
-                            self.oauthURL = nil
-                        }
-                    }
-                }
-            } else {
-                ProgressView("Initializing secure authentication...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-    }
     
     // MARK: - View Components
     
@@ -103,29 +67,16 @@ struct SecureAuthenticationView: View {
                 .font(.system(size: 60))
                 .foregroundStyle(authStore.isAuthenticated ? .green : .blue)
             
-            Text(authStore.isAuthenticated ? "Secure Connection" : "Secure Sign In")
+            Text(authStore.isAuthenticated ? "Connected" : "Sign In")
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            VStack(spacing: 8) {
-                Text(authStore.isAuthenticated 
-                     ? "Your Bluesky account is securely connected with PKCE protection"
-                     : "Sign in securely with PKCE protection against token theft")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                
-                if !authStore.isAuthenticated {
-                    HStack(spacing: 4) {
-                        Image(systemName: "shield.checkered")
-                            .font(.caption)
-                        Text("Protected by PKCE OAuth 2.1")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                    .foregroundStyle(.blue)
-                }
-            }
+            Text(authStore.isAuthenticated 
+                 ? "Your Bluesky account is connected to Anchor"
+                 : "Connect your Bluesky account to start posting check-ins")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
     
@@ -153,15 +104,8 @@ struct SecureAuthenticationView: View {
                             .font(.title3)
                     }
                     
-                    // Security features
-                    HStack(spacing: 16) {
-                        SecurityFeature(icon: "key.fill", text: "PKCE Protected")
-                        SecurityFeature(icon: "lock.shield.fill", text: "Token Secure")
-                        SecurityFeature(icon: "checkmark.seal.fill", text: "OAuth 2.1")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.green)
                 }
+                .padding()
                 .padding()
                 .background(.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
             }
@@ -198,21 +142,19 @@ struct SecureAuthenticationView: View {
                     .autocorrectionDisabled()
                     .keyboardType(.emailAddress)
                 
-                Text("Enter your full Bluesky handle (e.g., alice.bsky.social)")
+Text("Enter your Bluesky handle or custom domain")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             
-            // Secure OAuth sign in button
+            // Sign in button
             Button(action: startSecureOAuthFlow) {
                 HStack {
                     if isLoading {
                         ProgressView()
                             .scaleEffect(0.9)
-                    } else {
-                        Image(systemName: "shield.checkered")
                     }
-                    Text(isLoading ? "Initializing secure flow..." : "Sign in securely with PKCE")
+                    Text(isLoading ? "Connecting..." : "Connect to Bluesky")
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -220,41 +162,13 @@ struct SecureAuthenticationView: View {
             .controlSize(.large)
             .disabled(isLoading || handle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             
-            // Security info
-            VStack(spacing: 12) {
-                Text("🔐 Enhanced Security Features")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.blue)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    SecurityInfo(
-                        icon: "shield.checkered",
-                        title: "PKCE Protection",
-                        description: "Prevents token theft via protocol handler interception"
-                    )
-                    
-                    SecurityInfo(
-                        icon: "key.fill",
-                        title: "Secure Code Exchange",
-                        description: "Uses cryptographic verification for token exchange"
-                    )
-                    
-                    SecurityInfo(
-                        icon: "lock.shield",
-                        title: "OAuth 2.1 Compliant",
-                        description: "Follows latest OAuth security recommendations"
-                    )
-                }
-                
-                Text("Your credentials are never stored by Anchor. " +
-                     "All authentication is handled securely through Bluesky's OAuth servers.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding()
-            .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+            // Privacy note
+            Text("Your credentials are securely handled through Bluesky's servers. Anchor never stores your password.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding()
+                .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
         }
     }
     
@@ -286,156 +200,84 @@ struct SecureAuthenticationView: View {
         Task {
             do {
                 let oauthURL = try await authStore.startSecureOAuthFlow(handle: trimmedHandle)
-                self.oauthURL = oauthURL
-                showingSecureOAuthWebView = true
                 
-                print("✅ Secure OAuth flow started for @\(trimmedHandle)")
+                print("✅ Authentication started for @\(trimmedHandle)")
+                print("🔗 Opening authentication session")
                 
-            } catch {
-                lastError = "Failed to start secure authentication: \(error.localizedDescription)"
-                isLoading = false
-            }
-        }
-    }
-    
-    private func handleSecureOAuthResult(_ result: Result<URL, Error>) {
-        showingSecureOAuthWebView = false
-        oauthURL = nil
-        
-        switch result {
-        case .success(let callbackURL):
-            Task {
-                do {
-                    let success = try await authStore.handleSecureOAuthCallback(callbackURL)
-                    
-                    if success {
-                        // Clear handle field on successful auth
-                        handle = ""
-                        
-                        // Provide haptic feedback
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
-                        
-                        print("✅ Secure OAuth authentication completed successfully")
-                    } else {
-                        lastError = "Secure OAuth authentication failed"
-                    }
-                } catch {
-                    lastError = "Secure OAuth authentication failed: \(error.localizedDescription)"
+                await MainActor.run {
+                    startWebAuthenticationSession(with: oauthURL)
                 }
                 
+            } catch {
+                lastError = "Failed to connect: \(error.localizedDescription)"
                 isLoading = false
             }
-            
-        case .failure(let error):
-            lastError = "Secure OAuth authentication failed: \(error.localizedDescription)"
-            isLoading = false
         }
     }
-}
-
-// MARK: - Supporting Views
-
-private struct SecurityFeature: View {
-    let icon: String
-    let text: String
     
-    var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.title3)
-            Text(text)
-                .fontWeight(.medium)
-        }
-    }
-}
-
-private struct SecurityInfo: View {
-    let icon: String
-    let title: String
-    let description: String
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .foregroundStyle(.blue)
-                .frame(width: 16)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.primary)
+    private func startWebAuthenticationSession(with url: URL) {
+        // Create ASWebAuthenticationSession for secure OAuth
+        authSession = ASWebAuthenticationSession(
+            url: url,
+            callbackURLScheme: "anchor-app"
+        ) { callbackURL, error in
+            Task { @MainActor in
+                self.isLoading = false
                 
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if let error = error {
+                    if (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin {
+                        print("🔐 Authentication was cancelled by user")
+                    } else {
+                        print("❌ Authentication failed: \(error.localizedDescription)")
+                        self.lastError = "Authentication failed: \(error.localizedDescription)"
+                    }
+                    return
+                }
+                
+                guard let callbackURL = callbackURL else {
+                    print("❌ Authentication callback URL is nil")
+                    self.lastError = "Authentication failed: No callback URL received"
+                    return
+                }
+                
+                print("🔐 Received authentication callback")
+                
+                // Handle the OAuth callback
+                do {
+                    let success = try await self.authStore.handleSecureOAuthCallback(callbackURL)
+                    
+                    if success {
+                        print("🎉 Authentication completed successfully")
+                    } else {
+                        self.lastError = "Authentication failed: Invalid response"
+                    }
+                } catch {
+                    print("❌ Authentication failed: \(error.localizedDescription)")
+                    self.lastError = "Authentication failed: \(error.localizedDescription)"
+                }
             }
-            
-            Spacer()
         }
+        
+        // Configure session for better UX
+        authSession?.presentationContextProvider = presentationContextProvider
+        authSession?.prefersEphemeralWebBrowserSession = false
+        
+        // Start the authentication session
+        authSession?.start()
     }
+    
 }
 
-// MARK: - Secure OAuth WebView
+// MARK: - ASWebAuthenticationSession Support
 
-private struct SecureOAuthWebView: UIViewRepresentable {
-    let url: URL
-    let onAuthComplete: (Result<URL, Error>) -> Void
-    let onCancel: () -> Void
-    
-    func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        
-        // Set custom user agent to identify as mobile app
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.customUserAgent = "AnchorApp/1.0 (iOS; PKCE-Protected)"
-        webView.navigationDelegate = context.coordinator
-        
-        return webView
-    }
-    
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        if webView.url != url {
-            let request = URLRequest(url: url)
-            webView.load(request)
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, WKNavigationDelegate {
-        let parent: SecureOAuthWebView
-        
-        init(_ parent: SecureOAuthWebView) {
-            self.parent = parent
-        }
-        
-        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            guard let url = navigationAction.request.url else {
-                decisionHandler(.allow)
-                return
-            }
-            
-            // Check if this is our custom URL scheme callback
-            if url.scheme == "anchor-app" && url.host == "auth-callback" {
-                handleSecureAuthCallback(url: url)
-                decisionHandler(.cancel)
-                return
-            }
-            
-            decisionHandler(.allow)
-        }
-        
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            parent.onAuthComplete(.failure(error))
-        }
-        
-        private func handleSecureAuthCallback(url: URL) {
-            print("🔐 SecureOAuthWebView: Handling secure OAuth callback with PKCE protection")
-            parent.onAuthComplete(.success(url))
-        }
+/// Presentation context provider for ASWebAuthenticationSession
+private class WebAuthPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        // Return the current window scene's key window
+        return UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows
+            .first { $0.isKeyWindow } ?? UIWindow()
     }
 }
 

@@ -94,6 +94,22 @@ public final class MockAuthStore: AuthStoreProtocol {
         return true
     }
 
+    public func startSecureOAuthFlow(handle: String) async throws -> URL {
+        if shouldThrowAuthError {
+            throw AuthStoreError.authenticationFailed
+        }
+        return URL(string: "https://dropanchor.app/mobile-auth")!
+    }
+
+    public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
+        if shouldThrowAuthError {
+            throw AuthStoreError.authenticationFailed
+        }
+        isAuthenticated = true
+        testCredentials = TestAuthCredentials.valid()
+        return true
+    }
+
     public func signOut() async {
         credentials = nil
         testCredentials = nil

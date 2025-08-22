@@ -10,6 +10,8 @@ public protocol AuthStoreProtocol {
     func loadStoredCredentials() async -> AuthCredentials?
     func exchangeAuthorizationCode(_ code: String) async throws -> Bool
     func handleOAuthCallback(_ callbackURL: URL) async throws -> Bool
+    func startSecureOAuthFlow(handle: String) async throws -> URL
+    func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool
     func signOut() async
     func getValidCredentials() async throws -> AuthCredentialsProtocol
     func validateSessionOnAppLaunch() async
@@ -34,6 +36,7 @@ public final class AuthStore: AuthStoreProtocol {
 
     private let authService: AnchorAuthServiceProtocol
     private let storage: CredentialsStorageProtocol
+    private let secureOAuthCoordinator: SecureMobileOAuthCoordinator
 
     /// Whether the user is currently authenticated (observable for UI)
     public private(set) var isAuthenticated: Bool = false
@@ -58,19 +61,34 @@ public final class AuthStore: AuthStoreProtocol {
     public convenience init() {
         let storage = KeychainCredentialsStorage()
         let authService = AnchorAuthService(storage: storage)
-        self.init(storage: storage, authService: authService)
+        let pkceStorage = KeychainPKCEStorage()
+        let secureOAuthCoordinator = SecureMobileOAuthCoordinator(
+            authService: authService,
+            pkceStorage: pkceStorage
+        )
+        self.init(storage: storage, authService: authService, secureOAuthCoordinator: secureOAuthCoordinator)
     }
 
     /// Convenience initializer for testing with custom storage
     public convenience init(storage: CredentialsStorageProtocol) {
         let authService = AnchorAuthService(storage: storage)
-        self.init(storage: storage, authService: authService)
+        let pkceStorage = InMemoryPKCEStorage()
+        let secureOAuthCoordinator = SecureMobileOAuthCoordinator(
+            authService: authService,
+            pkceStorage: pkceStorage
+        )
+        self.init(storage: storage, authService: authService, secureOAuthCoordinator: secureOAuthCoordinator)
     }
 
     /// Dependency injection initializer  
-    public init(storage: CredentialsStorageProtocol, authService: AnchorAuthServiceProtocol) {
+    public init(
+        storage: CredentialsStorageProtocol,
+        authService: AnchorAuthServiceProtocol,
+        secureOAuthCoordinator: SecureMobileOAuthCoordinator
+    ) {
         self.storage = storage
         self.authService = authService
+        self.secureOAuthCoordinator = secureOAuthCoordinator
     }
 
     // MARK: - Authentication Methods
@@ -184,6 +202,68 @@ public final class AuthStore: AuthStoreProtocol {
 
         // Exchange authorization code for tokens using AnchorKit
         return try await exchangeAuthorizationCodeWithState(code, state: state)
+    }
+
+    // MARK: - Secure OAuth Methods (PKCE Protected)
+
+    /// Start secure OAuth flow with PKCE protection
+    /// 
+    /// Initiates OAuth flow with PKCE code challenge to prevent
+    /// protocol handler interception attacks.
+    ///
+    /// - Parameter handle: Bluesky handle to authenticate
+    /// - Returns: OAuth URL for WebView navigation
+    /// - Throws: OAuth errors if flow initialization fails
+    public func startSecureOAuthFlow(handle: String) async throws -> URL {
+        print("🔐 AuthStore: Starting secure OAuth flow for @\(handle)")
+        
+        do {
+            let oauthURL = try await secureOAuthCoordinator.startSecureOAuthFlow(handle: handle)
+            print("✅ AuthStore: Secure OAuth flow started successfully")
+            return oauthURL
+            
+        } catch {
+            print("❌ AuthStore: Secure OAuth flow start failed: \(error)")
+            throw error
+        }
+    }
+
+    /// Handle secure OAuth callback with PKCE verification
+    /// 
+    /// Completes OAuth flow using PKCE code verifier stored during
+    /// flow initiation for security against token theft.
+    ///
+    /// - Parameter callbackURL: OAuth callback URL from WebView
+    /// - Returns: True if authentication successful
+    /// - Throws: OAuth errors if token exchange fails
+    public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
+        print("🔐 AuthStore: Handling secure OAuth callback")
+        
+        do {
+            let credentials = try await secureOAuthCoordinator.completeSecureOAuthFlow(callbackURL: callbackURL)
+            print("🔐 AuthStore: Secure OAuth callback returned credentials")
+            
+            // Cast to AuthCredentials for storage
+            guard let authCredentials = credentials as? AuthCredentials else {
+                print("❌ AuthStore: Failed to cast credentials to AuthCredentials")
+                throw AuthStoreError.authenticationFailed
+            }
+            
+            print("🔐 AuthStore: Successfully cast credentials")
+            
+            _credentials = authCredentials
+            updateAuthenticationState()
+            
+            print("✅ AuthStore: Secure OAuth flow completed successfully")
+            print("✅ AuthStore: Authentication state updated - isAuthenticated: \(isAuthenticated)")
+            
+            return true
+            
+        } catch {
+            print("❌ AuthStore: Secure OAuth callback failed: \(error)")
+            print("❌ AuthStore: Error type: \(type(of: error))")
+            throw error
+        }
     }
 
     public func signOut() async {

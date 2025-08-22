@@ -40,6 +40,11 @@ public final class OAuthTokenExchanger {
         return try await performTokenExchange(requestBody: ["code": code, "state": state])
     }
     
+    /// Exchange authorization code with PKCE verification for secure mobile OAuth
+    public func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol {
+        return try await performTokenExchange(requestBody: ["code": code, "code_verifier": codeVerifier])
+    }
+    
     // MARK: - Private Methods
     
     /// Shared OAuth 2.1 compliant token exchange implementation

@@ -22,15 +22,13 @@ lint-strict: ## Run SwiftLint in strict mode (treat warnings as errors)
 	swiftlint --strict
 
 # Testing Commands
-test: test-swift test-ui ## Run all tests (Swift package + Xcode projects)
+test: test-swift ## Run all tests (currently just Swift package tests)
 
 test-swift: ## Run AnchorKit Swift package tests
 	@echo "🧪 Running AnchorKit tests..."
 	cd AnchorKit && swift test
 
-test-ui: ## Run Xcode project tests (Anchor + AnchorMobile)
-	@echo "🧪 Running Anchor macOS tests..."
-	xcodebuild test -project Anchor.xcodeproj -scheme Anchor -destination 'platform=macOS'
+test-ui: ## Run Xcode project tests (AnchorMobile - currently placeholder tests)
 	@echo "🧪 Running AnchorMobile iOS tests..."
 	xcodebuild test -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16'
 

@@ -18,6 +18,9 @@ public protocol AnchorAuthServiceProtocol {
     /// Exchange authorization code with state for tokens (for OAuth callback handling)
     func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> AuthCredentialsProtocol
 
+    /// Exchange authorization code with PKCE verification for secure mobile OAuth
+    func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol
+
     /// Validate current session and automatically refresh tokens if needed
     func validateSession(_ credentials: AuthCredentials) async throws -> AuthCredentials
 
@@ -94,6 +97,11 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
     /// Exchange authorization code with state for tokens (for OAuth callback handling)
     public func exchangeAuthorizationCodeWithState(_ code: String, state: String) async throws -> AuthCredentialsProtocol {
         return try await tokenExchanger.exchangeAuthorizationCodeWithState(code, state: state)
+    }
+
+    /// Exchange authorization code with PKCE verification for secure mobile OAuth
+    public func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol {
+        return try await tokenExchanger.exchangeAuthorizationCodeWithPKCE(code, codeVerifier: codeVerifier)
     }
 
     // MARK: - Session Validation Methods

@@ -57,7 +57,6 @@ struct SecureAuthenticationView: View {
         }
     }
     
-    
     // MARK: - View Components
     
     @ViewBuilder

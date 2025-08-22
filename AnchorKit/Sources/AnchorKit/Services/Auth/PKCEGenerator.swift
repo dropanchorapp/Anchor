@@ -64,7 +64,11 @@ public struct PKCEGenerator {
         var codeVerifier = ""
         for _ in 0..<length {
             let randomIndex = Int.random(in: 0..<allowedCharacters.count)
-            let character = allowedCharacters[allowedCharacters.index(allowedCharacters.startIndex, offsetBy: randomIndex)]
+            let index = allowedCharacters.index(
+                allowedCharacters.startIndex,
+                offsetBy: randomIndex
+            )
+            let character = allowedCharacters[index]
             codeVerifier.append(character)
         }
         

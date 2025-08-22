@@ -103,32 +103,21 @@ extension PlaceCategorization.CategoryGroup {
         // Handle both lowercase_underscore and UPPERCASE_UNDERSCORE formats
         let normalizedGroup = apiGroup.uppercased()
         
-        switch normalizedGroup {
-        case "FOOD_AND_DRINK":
-            return .foodAndDrink
-        case "ENTERTAINMENT":
-            return .entertainment
-        case "SPORTS":
-            return .sports
-        case "SHOPPING":
-            return .shopping
-        case "ACCOMMODATION":
-            return .accommodation
-        case "TRANSPORTATION":
-            return .transportation
-        case "SERVICES":
-            return .services
-        case "NATURE":
-            return .nature
-        case "CULTURE":
-            return .culture
-        case "HEALTH":
-            return .health
-        case "EDUCATION":
-            return .education
-        default:
-            return nil
-        }
+        let groupMapping: [String: PlaceCategorization.CategoryGroup] = [
+            "FOOD_AND_DRINK": .foodAndDrink,
+            "ENTERTAINMENT": .entertainment,
+            "SPORTS": .sports,
+            "SHOPPING": .shopping,
+            "ACCOMMODATION": .accommodation,
+            "TRANSPORTATION": .transportation,
+            "SERVICES": .services,
+            "NATURE": .nature,
+            "CULTURE": .culture,
+            "HEALTH": .health,
+            "EDUCATION": .education
+        ]
+        
+        return groupMapping[normalizedGroup]
     }
     
     /// Convert CategoryGroup enum to API string format (lowercase_underscore format)

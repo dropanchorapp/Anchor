@@ -38,11 +38,10 @@ struct SecureAuthenticationView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Header
-                    authenticationHeader
-                    
                     // Content based on authentication state
                     if authStore.isAuthenticated {
+                        // Header for authenticated state
+                        authenticationHeader
                         authenticatedContent
                     } else {
                         secureLoginForm
@@ -139,7 +138,7 @@ struct SecureAuthenticationView: View {
                     .font(.title3)
                     .fontWeight(.medium)
                 
-                Text("You'll enter your handle and password on Bluesky's secure servers")
+                Text("You'll enter your handle and password on Bluesky's secure servers or your personal PDS server")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -160,10 +159,9 @@ struct SecureAuthenticationView: View {
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
             }
             .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .controlSize(.regular)
             .disabled(isLoading)
             
             // Privacy note

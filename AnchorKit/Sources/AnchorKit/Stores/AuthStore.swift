@@ -9,6 +9,7 @@ public protocol AuthStoreProtocol {
     var handle: String? { get }
     func loadStoredCredentials() async -> AuthCredentials?
     func startSecureOAuthFlow(handle: String) async throws -> URL
+    func startDirectOAuthFlow() async throws -> URL
     func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool
     func signOut() async
     func getValidCredentials() async throws -> AuthCredentialsProtocol
@@ -34,7 +35,7 @@ public final class AuthStore: AuthStoreProtocol {
 
     private let authService: AnchorAuthServiceProtocol
     private let storage: CredentialsStorageProtocol
-    private let secureOAuthCoordinator: SecureMobileOAuthCoordinator
+    private let ironSessionCoordinator: IronSessionMobileOAuthCoordinator
 
     /// Whether the user is currently authenticated (observable for UI)
     public private(set) var isAuthenticated: Bool = false
@@ -59,34 +60,26 @@ public final class AuthStore: AuthStoreProtocol {
     public convenience init() {
         let storage = KeychainCredentialsStorage()
         let authService = AnchorAuthService(storage: storage)
-        let pkceStorage = KeychainPKCEStorage()
-        let secureOAuthCoordinator = SecureMobileOAuthCoordinator(
-            authService: authService,
-            pkceStorage: pkceStorage
-        )
-        self.init(storage: storage, authService: authService, secureOAuthCoordinator: secureOAuthCoordinator)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage)
+        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator)
     }
 
     /// Convenience initializer for testing with custom storage
     public convenience init(storage: CredentialsStorageProtocol) {
         let authService = AnchorAuthService(storage: storage)
-        let pkceStorage = InMemoryPKCEStorage()
-        let secureOAuthCoordinator = SecureMobileOAuthCoordinator(
-            authService: authService,
-            pkceStorage: pkceStorage
-        )
-        self.init(storage: storage, authService: authService, secureOAuthCoordinator: secureOAuthCoordinator)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage)
+        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator)
     }
 
     /// Dependency injection initializer  
     public init(
         storage: CredentialsStorageProtocol,
         authService: AnchorAuthServiceProtocol,
-        secureOAuthCoordinator: SecureMobileOAuthCoordinator
+        ironSessionCoordinator: IronSessionMobileOAuthCoordinator
     ) {
         self.storage = storage
         self.authService = authService
-        self.secureOAuthCoordinator = secureOAuthCoordinator
+        self.ironSessionCoordinator = ironSessionCoordinator
     }
 
     // MARK: - Secure Authentication Methods
@@ -111,17 +104,17 @@ public final class AuthStore: AuthStoreProtocol {
         return credentials
     }
 
-    /// Start secure OAuth flow with PKCE protection
+    /// Start secure OAuth flow with Iron Session
     /// 
     /// - Parameter handle: Bluesky handle to authenticate
     /// - Returns: OAuth URL for WebView navigation
     /// - Throws: OAuth errors if flow initialization fails
     public func startSecureOAuthFlow(handle: String) async throws -> URL {
-        print("🔐 AuthStore: Starting secure OAuth flow for @\(handle)")
+        print("🔐 AuthStore: Starting Iron Session OAuth flow for @\(handle)")
         
         do {
-            let oauthURL = try await secureOAuthCoordinator.startSecureOAuthFlow(handle: handle)
-            print("✅ AuthStore: Secure OAuth flow started successfully")
+            let oauthURL = try await ironSessionCoordinator.startIronSessionOAuthFlow(handle: handle)
+            print("✅ AuthStore: Iron Session OAuth flow started successfully")
             return oauthURL
             
         } catch {
@@ -130,17 +123,39 @@ public final class AuthStore: AuthStoreProtocol {
         }
     }
 
-    /// Handle secure OAuth callback with PKCE verification
+    /// Start direct OAuth flow without handle input
+    /// 
+    /// Opens OAuth flow directly on Bluesky where user enters their handle and password.
+    /// Uses Iron Session backend for simplified mobile authentication.
+    ///
+    /// - Returns: OAuth URL for WebView navigation
+    /// - Throws: OAuth errors if flow initialization fails
+    public func startDirectOAuthFlow() async throws -> URL {
+        print("🔐 AuthStore: Starting direct OAuth flow")
+        
+        do {
+            // Start OAuth without requiring handle upfront - backend will handle OAuth discovery
+            let oauthURL = try await ironSessionCoordinator.startDirectOAuthFlow()
+            print("✅ AuthStore: Direct OAuth flow started successfully")
+            return oauthURL
+            
+        } catch {
+            print("❌ AuthStore: Failed to start direct authentication: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    /// Handle secure OAuth callback with Iron Session
     /// 
     /// - Parameter callbackURL: OAuth callback URL from WebView
     /// - Returns: True if authentication successful
     /// - Throws: OAuth errors if token exchange fails
     public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
-        print("🔐 AuthStore: Handling secure OAuth callback")
+        print("🔐 AuthStore: Handling Iron Session OAuth callback")
         
         do {
-            let credentials = try await secureOAuthCoordinator.completeSecureOAuthFlow(callbackURL: callbackURL)
-            print("🔐 AuthStore: Secure OAuth flow completed successfully")
+            let credentials = try await ironSessionCoordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+            print("🔐 AuthStore: Iron Session OAuth flow completed successfully")
             
             // Cast to AuthCredentials for storage
             guard let authCredentials = credentials as? AuthCredentials else {
@@ -151,13 +166,13 @@ public final class AuthStore: AuthStoreProtocol {
             _credentials = authCredentials
             updateAuthenticationState()
             
-            print("✅ AuthStore: Secure authentication completed successfully")
+            print("✅ AuthStore: Iron Session authentication completed successfully")
             print("✅ AuthStore: Authentication state updated - isAuthenticated: \(isAuthenticated)")
             
             return true
             
         } catch {
-            print("❌ AuthStore: Secure OAuth callback failed: \(error)")
+            print("❌ AuthStore: Iron Session OAuth callback failed: \(error)")
             throw error
         }
     }

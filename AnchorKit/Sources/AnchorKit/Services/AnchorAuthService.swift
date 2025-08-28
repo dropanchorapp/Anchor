@@ -2,23 +2,20 @@
 //  AnchorAuthService.swift
 //  AnchorKit
 //
-//  Created by Tijs Teulings on 13/08/2025.
+//  Iron Session-based authentication service for Anchor
 //
 
 import Foundation
 
 // MARK: - Auth Service Protocol
 
-/// Service protocol for Anchor authentication operations
+/// Service protocol for Iron Session authentication operations
 @MainActor
 public protocol AnchorAuthServiceProtocol {
-    /// Exchange authorization code with PKCE verification for secure mobile OAuth
-    func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol
-
-    /// Validate current session and automatically refresh tokens if needed
+    /// Validate current session using Iron Session backend
     func validateSession(_ credentials: AuthCredentials) async throws -> AuthCredentials
 
-    /// Explicitly refresh tokens using refresh token
+    /// Refresh tokens using Iron Session backend
     func refreshTokens(_ credentials: AuthCredentials) async throws -> AuthCredentials
 
     /// Check if tokens should be refreshed (proactive refresh logic)
@@ -27,52 +24,33 @@ public protocol AnchorAuthServiceProtocol {
 
 // MARK: - Anchor Auth Service
 
-/// Authentication service for Anchor backend OAuth authentication
+/// Iron Session-based authentication service for Anchor
 ///
-/// Handles OAuth authentication flow completion by:
-/// - Converting OAuth tokens to authentication credentials
-/// - Storing credentials securely with session ID for backend API access
-/// - Session validation and automatic token refresh
-/// - Integrating with existing authentication flow
+/// Simplified service that works with Iron Session backend:
+/// - Session validation through sealed session tokens
+/// - Automatic token refresh via Iron Session endpoints
+/// - No complex OAuth token management (handled by backend)
 @Observable
 public final class AnchorAuthService: AnchorAuthServiceProtocol {
     // MARK: - Properties
 
     private let storage: CredentialsStorageProtocol
-    private let session: URLSessionProtocol
-    private let baseURL: URL
-    private let tokenExchanger: OAuthTokenExchanger
-    private let sessionValidator: SessionValidator
-    private let tokenRefresher: TokenRefresher
-    private let tokenLifecycleManager: TokenLifecycleManager
+    private let ironSessionCoordinator: IronSessionMobileOAuthCoordinator
 
     // MARK: - Initialization
 
-    /// Initialize auth service with storage and networking
+    /// Initialize auth service with Iron Session coordinator
     public init(
         storage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
         baseURL: String = "https://dropanchor.app"
     ) {
         self.storage = storage
-        self.session = session
-        self.baseURL = URL(string: baseURL)!
-        self.tokenExchanger = OAuthTokenExchanger(
-            storage: storage,
+        self.ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+            credentialsStorage: storage,
             session: session,
-            baseURL: self.baseURL
+            baseURL: baseURL
         )
-        self.sessionValidator = SessionValidator(
-            storage: storage,
-            session: session,
-            baseURL: self.baseURL
-        )
-        self.tokenRefresher = TokenRefresher(
-            storage: storage,
-            session: session,
-            baseURL: self.baseURL
-        )
-        self.tokenLifecycleManager = TokenLifecycleManager()
     }
 
     /// Convenience initializer for production use
@@ -81,28 +59,38 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
         self.init(storage: storage)
     }
 
-    // MARK: - OAuth Methods
+    // MARK: - Iron Session Methods
 
-    /// Exchange authorization code with PKCE verification for secure mobile OAuth
-    public func exchangeAuthorizationCodeWithPKCE(_ code: String, codeVerifier: String) async throws -> AuthCredentialsProtocol {
-        return try await tokenExchanger.exchangeAuthorizationCodeWithPKCE(code, codeVerifier: codeVerifier)
-    }
-
-    // MARK: - Session Validation Methods
-
-    /// Validate current session and automatically refresh tokens if needed
+    /// Validate current session using Iron Session backend
     public func validateSession(_ credentials: AuthCredentials) async throws -> AuthCredentials {
-        return try await sessionValidator.validateSession(credentials)
+        // For Iron Session, validation is implicit - if we have a session ID, we're valid
+        // The backend validates the sealed session token on each request
+        guard credentials.sessionId != nil else {
+            throw AnchorAuthError.invalidAuthData
+        }
+        
+        // Return the credentials as-is since validation happens on the backend
+        return credentials
     }
 
-    /// Explicitly refresh tokens using refresh token
+    /// Refresh tokens using Iron Session backend
     public func refreshTokens(_ credentials: AuthCredentials) async throws -> AuthCredentials {
-        return try await tokenRefresher.refreshTokens(credentials)
+        // Use Iron Session coordinator to refresh
+        let refreshedCredentials = try await ironSessionCoordinator.refreshIronSession()
+        
+        // Cast to AuthCredentials
+        guard let authCredentials = refreshedCredentials as? AuthCredentials else {
+            throw AnchorAuthError.invalidAuthData
+        }
+        
+        return authCredentials
     }
 
     /// Check if tokens should be refreshed (proactive refresh logic)
     public func shouldRefreshTokens(_ credentials: AuthCredentials) -> Bool {
-        return tokenLifecycleManager.shouldRefreshTokens(credentials)
+        // For Iron Session, we rely on server-side expiration
+        // Refresh if the session is close to expiring (within 1 hour)
+        let oneHourFromNow = Date().addingTimeInterval(60 * 60)
+        return credentials.expiresAt < oneHourFromNow
     }
-
 }

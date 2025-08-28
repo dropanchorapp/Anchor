@@ -12,7 +12,6 @@ import AnchorKit
 /// Authentication view for Bluesky sign-in
 struct SecureAuthenticationView: View {
     @Environment(AuthStore.self) private var authStore
-    @State private var handle: String = ""
     @State private var showingError = false
     @State private var isLoading = false
     @State private var lastError: String?
@@ -130,44 +129,60 @@ struct SecureAuthenticationView: View {
     @ViewBuilder
     private var secureLoginForm: some View {
         VStack(spacing: 24) {
-            // Handle input field
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Bluesky Handle")
-                    .font(.headline)
+            // Bluesky branding
+            VStack(spacing: 12) {
+                Image(systemName: "cloud.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.blue)
                 
-                TextField("your-handle.bsky.social", text: $handle)
-                    .textFieldStyle(.roundedBorder)
-                    .autocapitalization(.none)
-                    .autocorrectionDisabled()
-                    .keyboardType(.emailAddress)
+                Text("Sign in with Bluesky")
+                    .font(.title3)
+                    .fontWeight(.medium)
                 
-Text("Enter your Bluesky handle or custom domain")
-                    .font(.caption)
+                Text("You'll enter your handle and password on Bluesky's secure servers")
+                    .font(.body)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
+            .padding(.vertical, 8)
             
             // Sign in button
-            Button(action: startSecureOAuthFlow) {
-                HStack {
+            Button(action: startDirectOAuthFlow) {
+                HStack(spacing: 12) {
                     if isLoading {
                         ProgressView()
                             .scaleEffect(0.9)
+                    } else {
+                        Image(systemName: "person.circle.fill")
+                            .font(.title3)
                     }
-                    Text(isLoading ? "Connecting..." : "Connect to Bluesky")
+                    Text(isLoading ? "Connecting..." : "Login with Bluesky")
+                        .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
+                .frame(height: 50)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(isLoading || handle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(isLoading)
             
             // Privacy note
-            Text("Your credentials are securely handled through Bluesky's servers. Anchor never stores your password.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding()
-                .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            VStack(spacing: 8) {
+                HStack {
+                    Image(systemName: "lock.shield")
+                        .foregroundStyle(.green)
+                    Text("Secure Authentication")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                
+                Text("Your credentials are handled securely through Bluesky's official OAuth. Anchor never sees your password.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .background(.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
         }
     }
     
@@ -189,18 +204,16 @@ Text("Enter your Bluesky handle or custom domain")
         }
     }
     
-    private func startSecureOAuthFlow() {
+    private func startDirectOAuthFlow() {
         guard !isLoading else { return }
-        guard !handle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
         isLoading = true
-        let trimmedHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines)
         
         Task {
             do {
-                let oauthURL = try await authStore.startSecureOAuthFlow(handle: trimmedHandle)
+                let oauthURL = try await authStore.startDirectOAuthFlow()
                 
-                print("✅ Authentication started for @\(trimmedHandle)")
+                print("✅ Direct OAuth authentication started")
                 print("🔗 Opening authentication session")
                 
                 await MainActor.run {

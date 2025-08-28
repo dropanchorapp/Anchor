@@ -51,7 +51,10 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         
         // Build direct mobile login URL
         let redirectUri = "anchor-app://auth-callback"
-        var components = URLComponents(url: baseURL.appendingPathComponent("/mobile/login-direct"), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("/mobile/login-direct"), 
+            resolvingAgainstBaseURL: false
+        )!
         
         components.queryItems = [
             URLQueryItem(name: "redirect_uri", value: redirectUri)
@@ -59,32 +62,6 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         
         let authURL = components.url!
         print("✅ IronSessionMobileOAuthCoordinator: Direct OAuth flow URL generated")
-        print("🔗 IronSessionMobileOAuthCoordinator: OAuth URL: \(authURL)")
-        
-        return authURL
-    }
-    
-    /// Start Iron Session OAuth flow for mobile
-    ///
-    /// Returns the mobile login URL for WebView to navigate to.
-    /// The backend will handle all OAuth complexity and return a sealed session ID.
-    ///
-    /// - Parameter handle: Bluesky handle to authenticate
-    /// - Returns: Mobile OAuth URL for WebView navigation
-    public func startIronSessionOAuthFlow(handle: String) async throws -> URL {
-        print("🔐 IronSessionMobileOAuthCoordinator: Starting Iron Session OAuth flow for @\(handle)")
-        
-        // Build mobile login URL similar to BookHive
-        let redirectUri = "anchor-app://auth-callback"
-        var components = URLComponents(url: baseURL.appendingPathComponent("/mobile/login"), resolvingAgainstBaseURL: false)!
-        
-        components.queryItems = [
-            URLQueryItem(name: "handle", value: handle),
-            URLQueryItem(name: "redirect_uri", value: redirectUri)
-        ]
-        
-        let authURL = components.url!
-        print("✅ IronSessionMobileOAuthCoordinator: Iron Session OAuth flow URL generated")
         print("🔗 IronSessionMobileOAuthCoordinator: OAuth URL: \(authURL)")
         
         return authURL
@@ -227,7 +204,8 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
             }
             
             print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
-            print("🔄 IronSessionMobileOAuthCoordinator: New sealed session token length: \(newSealedSessionToken.count)")
+            print("🔄 IronSessionMobileOAuthCoordinator: New sealed session token length: " +
+                  "\(newSealedSessionToken.count)")
             
             // Update credentials with new sealed session token
             let updatedCredentials = AuthCredentials(

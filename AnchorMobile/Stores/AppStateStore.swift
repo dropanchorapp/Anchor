@@ -182,7 +182,7 @@ public final class AppStateStore {
     /// Load POI categories from backend
     private func loadCategories() async {
         // Check if we already have cached categories
-        if let existingCache = CategoryCacheService.shared.getCachedCategories() {
+        if CategoryCacheService.shared.getCachedCategories() != nil {
             if !CategoryCacheService.shared.isCacheExpired() {
                 return
             }
@@ -196,7 +196,7 @@ public final class AppStateStore {
             print("❌ Failed to fetch categories from backend: \(error.localizedDescription)")
             
             // Check if we have cached categories as fallback
-            if let cached = CategoryCacheService.shared.getCachedCategories() {
+            if CategoryCacheService.shared.getCachedCategories() != nil {
                 if CategoryCacheService.shared.isCacheExpired() {
                     print("⚠️ Using expired cached categories - app functionality may be limited")
                 } else {

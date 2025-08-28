@@ -76,7 +76,8 @@ public final class MockAuthStore: AuthStoreProtocol {
     }
 
 
-    public func startSecureOAuthFlow(handle: String) async throws -> URL {
+    
+    public func startDirectOAuthFlow() async throws -> URL {
         if shouldThrowAuthError {
             throw AuthStoreError.authenticationFailed
         }

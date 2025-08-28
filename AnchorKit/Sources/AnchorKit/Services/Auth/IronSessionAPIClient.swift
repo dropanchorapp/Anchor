@@ -91,7 +91,10 @@ public final class IronSessionAPIClient: @unchecked Sendable {
                 print("🔐 IronSessionAPIClient: Session expired, attempting refresh")
                 
                 // Try to refresh session
-                let coordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: credentialsStorage, session: session)
+                let coordinator = IronSessionMobileOAuthCoordinator(
+                    credentialsStorage: credentialsStorage,
+                    session: session
+                )
                 let refreshedCredentials = try await coordinator.refreshIronSession()
                 
                 // Save refreshed credentials

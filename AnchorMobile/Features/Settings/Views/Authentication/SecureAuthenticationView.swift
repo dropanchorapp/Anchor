@@ -174,7 +174,8 @@ struct SecureAuthenticationView: View {
                         .fontWeight(.medium)
                 }
                 
-                Text("Your credentials are handled securely through Bluesky's official OAuth. Anchor never sees your password.")
+                Text("Your credentials are handled securely through Bluesky's official OAuth. " +
+                     "Anchor never sees your password.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

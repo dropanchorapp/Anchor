@@ -8,7 +8,6 @@ public protocol AuthStoreProtocol {
     var credentials: AuthCredentials? { get }
     var handle: String? { get }
     func loadStoredCredentials() async -> AuthCredentials?
-    func startSecureOAuthFlow(handle: String) async throws -> URL
     func startDirectOAuthFlow() async throws -> URL
     func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool
     func signOut() async
@@ -102,25 +101,6 @@ public final class AuthStore: AuthStoreProtocol {
         _credentials = credentials
         updateAuthenticationState()
         return credentials
-    }
-
-    /// Start secure OAuth flow with Iron Session
-    /// 
-    /// - Parameter handle: Bluesky handle to authenticate
-    /// - Returns: OAuth URL for WebView navigation
-    /// - Throws: OAuth errors if flow initialization fails
-    public func startSecureOAuthFlow(handle: String) async throws -> URL {
-        print("🔐 AuthStore: Starting Iron Session OAuth flow for @\(handle)")
-        
-        do {
-            let oauthURL = try await ironSessionCoordinator.startIronSessionOAuthFlow(handle: handle)
-            print("✅ AuthStore: Iron Session OAuth flow started successfully")
-            return oauthURL
-            
-        } catch {
-            print("❌ AuthStore: Failed to start secure authentication: \(error.localizedDescription)")
-            throw error
-        }
     }
 
     /// Start direct OAuth flow without handle input

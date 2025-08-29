@@ -192,7 +192,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
                 throw IronSessionOAuthError.sessionRefreshFailed
             }
             
-            // Parse refresh response (updated format)
+            // Parse refresh response (enhanced format with optional AT Protocol tokens)
             guard let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let success = jsonResponse["success"] as? Bool,
                   success,
@@ -203,18 +203,31 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
                 throw IronSessionOAuthError.sessionRefreshFailed
             }
             
-            print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
-            print("🔄 IronSessionMobileOAuthCoordinator: New sealed session token length: " +
-                  "\(newSealedSessionToken.count)")
+            // Extract optional AT Protocol tokens (new backend implementation)
+            let newAccessToken = payload["access_token"] as? String
+            let newRefreshToken = payload["refresh_token"] as? String
+            let expiresAt = payload["expires_at"] as? TimeInterval
             
-            // Update credentials with new sealed session token
+            print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
+            print("🔄 IronSessionMobileOAuthCoordinator: New sealed session token length: \(newSealedSessionToken.count)")
+            print("🔄 IronSessionMobileOAuthCoordinator: AT Protocol tokens refreshed: \(newAccessToken != nil)")
+            
+            // Calculate expiry time from backend data or use default
+            let tokenExpiryDate: Date
+            if let serverExpiresAt = expiresAt {
+                tokenExpiryDate = Date(timeIntervalSince1970: serverExpiresAt / 1000) // Backend sends milliseconds
+            } else {
+                tokenExpiryDate = Date().addingTimeInterval(60 * 60 * 24) // 24 hours fallback
+            }
+            
+            // Update credentials with refreshed tokens
             let updatedCredentials = AuthCredentials(
                 handle: currentCredentials.handle,
-                accessToken: "iron-session-backend-managed", // Still backend-managed
-                refreshToken: "iron-session-backend-managed", // Still backend-managed
+                accessToken: newAccessToken ?? "iron-session-backend-managed", // Use new token if available
+                refreshToken: newRefreshToken ?? "iron-session-backend-managed", // Use new token if available
                 did: did,
                 pdsURL: currentCredentials.pdsURL,
-                expiresAt: Date().addingTimeInterval(60 * 60 * 24), // Extend session TTL
+                expiresAt: tokenExpiryDate, // Use calculated expiry
                 sessionId: newSealedSessionToken // Updated sealed session token
             )
             

@@ -38,6 +38,8 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     ///
     /// Automatically includes sealed session token as Bearer authorization header for backend authentication.
     /// The backend will validate and use the Iron Session for API calls.
+    /// 
+    /// **Proactive Token Refresh**: Automatically refreshes tokens before they expire to prevent 401 errors.
     ///
     /// - Parameters:
     ///   - path: API endpoint path
@@ -52,10 +54,32 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     ) async throws -> Data {
         
         // Load current credentials to get sealed session ID
-        guard let credentials = await credentialsStorage.load(),
+        guard var credentials = await credentialsStorage.load(),
               let sealedSessionId = credentials.sessionId else {
             print("❌ IronSessionAPIClient: No credentials or session ID found")
             throw IronSessionAPIError.notAuthenticated
+        }
+        
+        // **PROACTIVE TOKEN REFRESH**: Check if tokens need refresh before making request
+        if shouldRefreshTokensProactively(credentials) {
+            print("🔄 IronSessionAPIClient: Proactively refreshing tokens before request")
+            
+            do {
+                let coordinator = IronSessionMobileOAuthCoordinator(
+                    credentialsStorage: credentialsStorage,
+                    session: session
+                )
+                let refreshedCredentials = try await coordinator.refreshIronSession()
+                
+                // Update credentials and save to storage
+                credentials = refreshedCredentials as! AuthCredentials
+                try await credentialsStorage.save(credentials)
+                print("✅ IronSessionAPIClient: Proactive token refresh successful")
+                
+            } catch {
+                print("⚠️ IronSessionAPIClient: Proactive refresh failed, continuing with existing tokens: \(error)")
+                // Continue with existing tokens - reactive refresh will handle 401 if needed
+            }
         }
         
         // Build request URL
@@ -63,8 +87,9 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = method
         
-        // Add sealed session token as Bearer authorization header
-        request.setValue("Bearer \(sealedSessionId)", forHTTPHeaderField: "Authorization")
+        // Add sealed session token as Bearer authorization header (use updated credentials)
+        let currentSessionId = credentials.sessionId ?? sealedSessionId
+        request.setValue("Bearer \(currentSessionId)", forHTTPHeaderField: "Authorization")
         request.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         
@@ -185,6 +210,27 @@ public final class IronSessionAPIClient: @unchecked Sendable {
             return nil
         }
         return (handle: credentials.handle, did: credentials.did)
+    }
+    
+    // MARK: - Private Methods
+    
+    /// Check if tokens should be refreshed proactively
+    ///
+    /// Determines if tokens are close enough to expiry to warrant a proactive refresh.
+    /// Uses a 1-hour buffer to prevent 401 errors from occurring.
+    ///
+    /// - Parameter credentials: Current credentials to check
+    /// - Returns: True if tokens should be refreshed proactively
+    private func shouldRefreshTokensProactively(_ credentials: AuthCredentials) -> Bool {
+        // Refresh if the session will expire within 1 hour (3600 seconds)
+        let oneHourFromNow = Date().addingTimeInterval(60 * 60)
+        let shouldRefresh = credentials.expiresAt < oneHourFromNow
+        
+        if shouldRefresh {
+            print("🔄 IronSessionAPIClient: Token expires at \(credentials.expiresAt), current time + 1h = \(oneHourFromNow)")
+        }
+        
+        return shouldRefresh
     }
 }
 

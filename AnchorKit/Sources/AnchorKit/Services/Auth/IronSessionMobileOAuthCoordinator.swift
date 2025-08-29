@@ -192,46 +192,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
                 throw IronSessionOAuthError.sessionRefreshFailed
             }
             
-            // Parse refresh response (enhanced format with optional AT Protocol tokens)
-            guard let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let success = jsonResponse["success"] as? Bool,
-                  success,
-                  let payload = jsonResponse["payload"] as? [String: Any],
-                  let newSealedSessionToken = payload["session_token"] as? String,
-                  let did = payload["did"] as? String else {
-                print("❌ IronSessionMobileOAuthCoordinator: Invalid refresh response format")
-                throw IronSessionOAuthError.sessionRefreshFailed
-            }
-            
-            // Extract optional AT Protocol tokens (new backend implementation)
-            let newAccessToken = payload["access_token"] as? String
-            let newRefreshToken = payload["refresh_token"] as? String
-            let expiresAt = payload["expires_at"] as? TimeInterval
-            
-            print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
-            print("🔄 IronSessionMobileOAuthCoordinator: New sealed session token length: \(newSealedSessionToken.count)")
-            print("🔄 IronSessionMobileOAuthCoordinator: AT Protocol tokens refreshed: \(newAccessToken != nil)")
-            
-            // Calculate expiry time from backend data or use default
-            let tokenExpiryDate: Date
-            if let serverExpiresAt = expiresAt {
-                tokenExpiryDate = Date(timeIntervalSince1970: serverExpiresAt / 1000) // Backend sends milliseconds
-            } else {
-                tokenExpiryDate = Date().addingTimeInterval(60 * 60 * 24) // 24 hours fallback
-            }
-            
-            // Update credentials with refreshed tokens
-            let updatedCredentials = AuthCredentials(
-                handle: currentCredentials.handle,
-                accessToken: newAccessToken ?? "iron-session-backend-managed", // Use new token if available
-                refreshToken: newRefreshToken ?? "iron-session-backend-managed", // Use new token if available
-                did: did,
-                pdsURL: currentCredentials.pdsURL,
-                expiresAt: tokenExpiryDate, // Use calculated expiry
-                sessionId: newSealedSessionToken // Updated sealed session token
-            )
-            
-            return updatedCredentials
+            return try parseRefreshResponse(data: data, currentCredentials: currentCredentials)
             
         } catch {
             if error is IronSessionOAuthError {
@@ -241,6 +202,61 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
                 throw IronSessionOAuthError.networkError
             }
         }
+    }
+    
+    // MARK: - Private Methods
+    
+    /// Parse refresh response and create updated credentials
+    /// 
+    /// - Parameters:
+    ///   - data: Response data from refresh endpoint
+    ///   - currentCredentials: Current credentials to use as base for updates
+    /// - Returns: Updated credentials with refreshed tokens
+    /// - Throws: IronSessionOAuthError if parsing fails
+    private func parseRefreshResponse(
+        data: Data, 
+        currentCredentials: AuthCredentials
+    ) throws -> AuthCredentials {
+        // Parse refresh response (enhanced format with optional AT Protocol tokens)
+        guard let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let success = jsonResponse["success"] as? Bool,
+              success,
+              let payload = jsonResponse["payload"] as? [String: Any],
+              let newSealedSessionToken = payload["session_token"] as? String,
+              let did = payload["did"] as? String else {
+            print("❌ IronSessionMobileOAuthCoordinator: Invalid refresh response format")
+            throw IronSessionOAuthError.sessionRefreshFailed
+        }
+        
+        // Extract optional AT Protocol tokens (new backend implementation)
+        let newAccessToken = payload["access_token"] as? String
+        let newRefreshToken = payload["refresh_token"] as? String
+        let expiresAt = payload["expires_at"] as? TimeInterval
+        
+        print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
+        print("🔄 IronSessionMobileOAuthCoordinator: New sealed session token length: " +
+              "\(newSealedSessionToken.count)")
+        print("🔄 IronSessionMobileOAuthCoordinator: AT Protocol tokens refreshed: " +
+              "\(newAccessToken != nil)")
+        
+        // Calculate expiry time from backend data or use default
+        let tokenExpiryDate: Date
+        if let serverExpiresAt = expiresAt {
+            tokenExpiryDate = Date(timeIntervalSince1970: serverExpiresAt / 1000) // Backend sends milliseconds
+        } else {
+            tokenExpiryDate = Date().addingTimeInterval(60 * 60 * 24) // 24 hours fallback
+        }
+        
+        // Update credentials with refreshed tokens
+        return AuthCredentials(
+            handle: currentCredentials.handle,
+            accessToken: newAccessToken ?? "iron-session-backend-managed", // Use new token if available
+            refreshToken: newRefreshToken ?? "iron-session-backend-managed", // Use new token if available
+            did: did,
+            pdsURL: currentCredentials.pdsURL,
+            expiresAt: tokenExpiryDate, // Use calculated expiry
+            sessionId: newSealedSessionToken // Updated sealed session token
+        )
     }
 }
 

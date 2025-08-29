@@ -61,26 +61,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         }
         
         // **PROACTIVE TOKEN REFRESH**: Check if tokens need refresh before making request
-        if shouldRefreshTokensProactively(credentials) {
-            print("🔄 IronSessionAPIClient: Proactively refreshing tokens before request")
-            
-            do {
-                let coordinator = IronSessionMobileOAuthCoordinator(
-                    credentialsStorage: credentialsStorage,
-                    session: session
-                )
-                let refreshedCredentials = try await coordinator.refreshIronSession()
-                
-                // Update credentials and save to storage
-                credentials = refreshedCredentials as! AuthCredentials
-                try await credentialsStorage.save(credentials)
-                print("✅ IronSessionAPIClient: Proactive token refresh successful")
-                
-            } catch {
-                print("⚠️ IronSessionAPIClient: Proactive refresh failed, continuing with existing tokens: \(error)")
-                // Continue with existing tokens - reactive refresh will handle 401 if needed
-            }
-        }
+        credentials = await performProactiveTokenRefresh(credentials: credentials)
         
         // Build request URL
         let url = baseURL.appendingPathComponent(path)
@@ -214,6 +195,40 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     
     // MARK: - Private Methods
     
+    /// Perform proactive token refresh if needed
+    /// 
+    /// - Parameter credentials: Current credentials to check and potentially refresh
+    /// - Returns: Updated credentials (refreshed if needed, original if not needed or failed)
+    private func performProactiveTokenRefresh(credentials: AuthCredentials) async -> AuthCredentials {
+        guard shouldRefreshTokensProactively(credentials) else {
+            return credentials
+        }
+        
+        print("🔄 IronSessionAPIClient: Proactively refreshing tokens before request")
+        
+        do {
+            let coordinator = IronSessionMobileOAuthCoordinator(
+                credentialsStorage: credentialsStorage,
+                session: session
+            )
+            let refreshedCredentials = try await coordinator.refreshIronSession()
+            
+            // Update credentials and save to storage
+            guard let authCredentials = refreshedCredentials as? AuthCredentials else {
+                print("⚠️ IronSessionAPIClient: Failed to cast refreshed credentials")
+                return credentials // Continue with existing tokens
+            }
+            
+            try await credentialsStorage.save(authCredentials)
+            print("✅ IronSessionAPIClient: Proactive token refresh successful")
+            return authCredentials
+            
+        } catch {
+            print("⚠️ IronSessionAPIClient: Proactive refresh failed, continuing with existing tokens: \(error)")
+            return credentials // Continue with existing tokens - reactive refresh will handle 401 if needed
+        }
+    }
+    
     /// Check if tokens should be refreshed proactively
     ///
     /// Determines if tokens are close enough to expiry to warrant a proactive refresh.
@@ -227,7 +242,8 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         let shouldRefresh = credentials.expiresAt < oneHourFromNow
         
         if shouldRefresh {
-            print("🔄 IronSessionAPIClient: Token expires at \(credentials.expiresAt), current time + 1h = \(oneHourFromNow)")
+            print("🔄 IronSessionAPIClient: Token expires at \(credentials.expiresAt), " +
+                  "current time + 1h = \(oneHourFromNow)")
         }
         
         return shouldRefresh

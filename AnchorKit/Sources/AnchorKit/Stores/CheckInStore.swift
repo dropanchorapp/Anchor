@@ -31,7 +31,7 @@ public final class CheckInStore: CheckInStoreProtocol {
 
     /// Convenience initializer for production use with AuthStore
     public convenience init(authStore: AuthStoreProtocol, session: URLSessionProtocol = URLSession.shared) {
-        let checkinsService = AnchorCheckinsService(session: session, authStore: authStore)
+        let checkinsService = AnchorCheckinsService(session: session)
         self.init(authStore: authStore, checkinsService: checkinsService)
     }
 
@@ -45,27 +45,19 @@ public final class CheckInStore: CheckInStoreProtocol {
     public func createCheckin(place: Place, customMessage: String?) async throws -> CheckinResult {
         print("🔰 CheckInStore: Starting checkin creation for place: \(place.name)")
 
-        // Get valid credentials from AuthStore (handles refresh automatically)
-        print("🔰 CheckInStore: Getting valid credentials from AuthStore")
-        let activeCredentials = try await authStore.getValidCredentials()
-
-        print("🔰 CheckInStore: Got credentials for handle: \(activeCredentials.handle)")
-        print("🔰 CheckInStore: DID: \(activeCredentials.did)")
-        print("🔰 CheckInStore: Access token present: \(!activeCredentials.accessToken.isEmpty)")
-
-        // Use OAuth access token for Bearer authentication (OAuth 2.1 standard)
-        let accessToken = activeCredentials.accessToken
-        guard !accessToken.isEmpty else {
-            throw CheckInError.missingAccessToken
+        // Verify user is authenticated (Iron Session handles token management internally)
+        guard authStore.isAuthenticated else {
+            print("❌ CheckInStore: User not authenticated")
+            throw CheckInError.notAuthenticated
         }
-        print("🔰 CheckInStore: Using OAuth Bearer token: \(accessToken.prefix(8))...")
 
-        // Create checkin using OAuth Bearer token authentication
+        print("🔰 CheckInStore: User authenticated with handle: \(authStore.handle ?? "unknown")")
+
+        // Create checkin using Iron Session authentication (handles tokens automatically)
         print("🔰 CheckInStore: Calling checkins service to create checkin")
         let result = try await checkinsService.createCheckin(
             place: place,
-            message: customMessage,
-            accessToken: accessToken
+            message: customMessage
         )
 
         print("✅ CheckInStore: Checkin creation successful: \(result.success)")
@@ -80,13 +72,13 @@ public final class CheckInStore: CheckInStoreProtocol {
 
 /// Errors that can occur during check-in creation
 public enum CheckInError: Error, LocalizedError {
-    case missingAccessToken
+    case notAuthenticated
     case authenticationFailed
 
     public var errorDescription: String? {
         switch self {
-        case .missingAccessToken:
-            return "OAuth access token required for authentication"
+        case .notAuthenticated:
+            return "User not authenticated"
         case .authenticationFailed:
             return "Authentication failed"
         }

@@ -67,7 +67,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
             
             // Use Iron Session API client for authenticated request
             // This handles proactive token refresh, reactive 401 handling, and retries automatically
-            let responseData = try await apiClient.authenticatedJSONRequest<CheckinRequest, CheckinResponse>(
+            let responseData: CheckinResponse = try await apiClient.authenticatedJSONRequest(
                 path: "/api/checkins",
                 method: "POST",
                 requestBody: requestBody
@@ -137,9 +137,9 @@ private struct CheckinRequest: Codable {
         let tags: [String: String]
         
         // Additional fields that the backend expects from the reactivated endpoint
-        var category: String? = nil
-        var categoryGroup: String? = nil
-        var icon: String? = nil
+        var category: String?
+        var categoryGroup: String?
+        var icon: String?
     }
 
     init(place: Place, message: String?) {
@@ -149,7 +149,7 @@ private struct CheckinRequest: Codable {
             longitude: place.longitude,
             tags: place.tags,
             category: place.category,
-            categoryGroup: place.categoryGroup,
+            categoryGroup: place.categoryGroup?.rawValue,
             icon: place.icon
         )
         self.message = message

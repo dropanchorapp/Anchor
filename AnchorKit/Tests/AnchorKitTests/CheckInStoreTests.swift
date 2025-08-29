@@ -24,11 +24,11 @@ struct CheckInStoreTests {
     @Test("Create checkin without authentication fails")
     func createCheckinWithoutAuthentication() async {
         // Given: No authentication
-        mockAuthStore.shouldThrowAuthError = true
+        mockAuthStore.isAuthenticated = false
         let place = TestUtilities.createSamplePlace()
 
-        // When/Then: Creating check-in should fail with auth error
-        await #expect(throws: AuthStoreError.self) {
+        // When/Then: Creating check-in should fail with not authenticated error
+        await #expect(throws: CheckInError.notAuthenticated) {
             try await store.createCheckin(place: place, customMessage: "Test message")
         }
     }
@@ -49,7 +49,7 @@ struct CheckInStoreTests {
         #expect(mockCheckinsService.createCheckinCallCount == 1, "Should call checkins service once")
         #expect(mockCheckinsService.lastCreateCheckinPlace?.name == place.name, "Should pass correct place")
         #expect(mockCheckinsService.lastCreateCheckinMessage == customMessage, "Should pass correct message")
-        #expect(mockCheckinsService.lastCreateCheckinAccessToken == "test-access-token", "Should pass access token from credentials")
+        // Access token is now handled internally by Iron Session authentication
     }
 
     @Test("Create checkin - backend failure")
@@ -64,22 +64,14 @@ struct CheckInStoreTests {
         }
     }
 
-    @Test("Create checkin - missing access token fails")
-    func createCheckinMissingAccessToken() async {
-        // Given: Credentials without access token
-        mockAuthStore.testCredentials = TestAuthCredentials(
-            handle: "test.bsky.social",
-            accessToken: "", // Empty access token
-            refreshToken: "test-refresh",
-            did: "did:plc:test",
-            pdsURL: "https://bsky.social",
-            expiresAt: Date().addingTimeInterval(3600),
-            sessionId: "test-session"
-        )
+    @Test("Create checkin - unauthenticated user fails")
+    func createCheckinUnauthenticatedUser() async {
+        // Given: User is not authenticated (Iron Session manages tokens internally)
+        mockAuthStore.isAuthenticated = false
         let place = TestUtilities.createSamplePlace()
 
-        // When/Then: Creating check-in should fail with missing access token error
-        await #expect(throws: CheckInError.missingAccessToken) {
+        // When/Then: Creating check-in should fail with not authenticated error
+        await #expect(throws: CheckInError.notAuthenticated) {
             try await store.createCheckin(place: place, customMessage: "Test message")
         }
     }

@@ -42,25 +42,15 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     
     /// Start direct Iron Session OAuth flow for mobile
     ///
-    /// Opens OAuth directly on Bluesky where user enters their handle and password.
-    /// No handle required upfront - user enters it on Bluesky's secure servers.
+    /// Loads mobile auth page where user enters their handle and starts OAuth flow.
+    /// Uses the new dedicated mobile OAuth endpoint.
     ///
     /// - Returns: Mobile OAuth URL for WebView navigation
     public func startDirectOAuthFlow() async throws -> URL {
         print("🔐 IronSessionMobileOAuthCoordinator: Starting direct Iron Session OAuth flow")
         
-        // Build direct mobile login URL
-        let redirectUri = "anchor-app://auth-callback"
-        var components = URLComponents(
-            url: baseURL.appendingPathComponent("/mobile/login-direct"), 
-            resolvingAgainstBaseURL: false
-        )!
-        
-        components.queryItems = [
-            URLQueryItem(name: "redirect_uri", value: redirectUri)
-        ]
-        
-        let authURL = components.url!
+        // Load the mobile auth page
+        let authURL = baseURL.appendingPathComponent("/mobile-auth")
         print("✅ IronSessionMobileOAuthCoordinator: Direct OAuth flow URL generated")
         print("🔗 IronSessionMobileOAuthCoordinator: OAuth URL: \(authURL)")
         

@@ -21,7 +21,7 @@ struct CheckInView: View {
                     LocationPermissionView()
                 case .authorizedWhenInUse, .authorizedAlways:
                     if locationService.currentLocation != nil {
-                        NearbyPlacesContentView { place in
+                        NearbyPlacesView { place in
                             selectedPlace = place
                         }
                     } else {

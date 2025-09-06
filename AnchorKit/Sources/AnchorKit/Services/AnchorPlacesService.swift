@@ -16,6 +16,7 @@ public protocol AnchorPlacesServiceProtocol {
     func findNearbyPlacesWithDistance(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, categories: [String]) async throws -> [AnchorPlaceWithDistance]
     func findPlacesByCategories(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, categories: [String]) async throws -> [Place]
     func findPlacesByGroup(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, group: String) async throws -> [Place]
+    func searchPlaces(query: String, near coordinate: CLLocationCoordinate2D, limit: Int) async throws -> [AnchorPlaceWithDistance]
     func getAllAvailableCategories() -> [String]
     func getPrioritizedCategories() -> [String]
     func clearCache()
@@ -184,6 +185,69 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         return categoryCache.getPrioritizedCategories()
     }
 
+    /// Search for places using text query within vicinity
+    /// - Parameters:
+    ///   - query: Text query (e.g., "coffee shop", "sushi bar")
+    ///   - coordinate: Center coordinate for search
+    ///   - limit: Maximum number of results (default 10)
+    /// - Returns: Array of places matching the query, sorted by distance
+    public func searchPlaces(
+        query: String,
+        near coordinate: CLLocationCoordinate2D,
+        limit: Int = 10
+    ) async throws -> [AnchorPlaceWithDistance] {
+        
+        print("🔍 AnchorPlacesService: Searching for '\(query)' near (\(coordinate.latitude), \(coordinate.longitude))")
+        print("🔍 AnchorPlacesService: Limit: \(limit)")
+        
+        // Build request to /api/places/search
+        let request = try buildSearchRequest(
+            query: query,
+            coordinate: coordinate,
+            limit: limit
+        )
+        
+        print("🔍 AnchorPlacesService: Making search request to: \(request.url?.absoluteString ?? "unknown")")
+        
+        do {
+            let (data, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AnchorPlacesError.invalidResponse
+            }
+            
+            print("🔍 AnchorPlacesService: Search response status: \(httpResponse.statusCode)")
+            
+            guard httpResponse.statusCode == 200 else {
+                let errorString = String(data: data, encoding: .utf8) ?? "Unknown error"
+                print("❌ AnchorPlacesService: Search error response: \(errorString)")
+                throw AnchorPlacesError.httpError(httpResponse.statusCode)
+            }
+            
+            // Parse search response
+            let searchResponse = try JSONDecoder().decode(AnchorPlacesSearchResponse.self, from: data)
+            
+            print("✅ AnchorPlacesService: Found \(searchResponse.places.count) places for query '\(query)'")
+            
+            return searchResponse.places.map { apiPlace in
+                let elementType = Place.ElementType(rawValue: apiPlace.elementType) ?? .node
+                let place = Place(
+                    elementType: elementType,
+                    elementId: apiPlace.elementId,
+                    name: apiPlace.name,
+                    latitude: apiPlace.latitude,
+                    longitude: apiPlace.longitude,
+                    tags: apiPlace.tags
+                )
+                return AnchorPlaceWithDistance(place: place, distance: apiPlace.distanceMeters)
+            }
+            
+        } catch {
+            print("❌ AnchorPlacesService: Search network error: \(error)")
+            throw AnchorPlacesError.networkError(error)
+        }
+    }
+
     /// Clear any cached data
     public func clearCache() {
         categoryCache.clearCache()
@@ -221,6 +285,33 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
             throw AnchorPlacesError.invalidURL
         }
 
+        return URLRequest(url: url)
+    }
+    
+    /// Build HTTP request for places search API
+    private func buildSearchRequest(
+        query: String,
+        coordinate: CLLocationCoordinate2D,
+        limit: Int
+    ) throws -> URLRequest {
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("/places/search"),
+            resolvingAgainstBaseURL: false
+        )!
+        
+        let queryItems = [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "lat", value: String(coordinate.latitude)),
+            URLQueryItem(name: "lng", value: String(coordinate.longitude)),
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+        
+        components.queryItems = queryItems
+        
+        guard let url = components.url else {
+            throw AnchorPlacesError.invalidURL
+        }
+        
         return URLRequest(url: url)
     }
 }
@@ -296,6 +387,80 @@ public struct AnchorPlaceWithDistance: Sendable, Identifiable {
         } else {
             return String(format: "%.1fkm", distance / 1000)
         }
+    }
+}
+
+/// API response for places search
+public struct AnchorPlacesSearchResponse: Codable, Sendable {
+    public let places: [AnchorPlacesSearchAPIPlace]
+    public let query: String
+    public let center: AnchorPlacesCoordinates
+    public let radius: Double
+    public let count: Int
+
+    public init(places: [AnchorPlacesSearchAPIPlace], query: String, center: AnchorPlacesCoordinates, radius: Double, count: Int) {
+        self.places = places
+        self.query = query
+        self.center = center
+        self.radius = radius
+        self.count = count
+    }
+}
+
+/// API representation of a place from search endpoint
+public struct AnchorPlacesSearchAPIPlace: Codable, Sendable {
+    public let id: String
+    public let elementType: String
+    public let elementId: Int64
+    public let name: String
+    public let latitude: Double
+    public let longitude: Double
+    public let tags: [String: String]
+    public let address: SearchPlaceAddress?
+    public let category: String
+    public let icon: String
+    public let distanceMeters: Double
+    public let formattedDistance: String
+
+    public init(id: String, elementType: String, elementId: Int64, name: String, latitude: Double, longitude: Double, tags: [String: String], address: SearchPlaceAddress?, category: String, icon: String, distanceMeters: Double, formattedDistance: String) {
+        self.id = id
+        self.elementType = elementType
+        self.elementId = elementId
+        self.name = name
+        self.latitude = latitude
+        self.longitude = longitude
+        self.tags = tags
+        self.address = address
+        self.category = category
+        self.icon = icon
+        self.distanceMeters = distanceMeters
+        self.formattedDistance = formattedDistance
+    }
+}
+
+/// Address information from search API
+public struct SearchPlaceAddress: Codable, Sendable {
+    public let type: String // "$type": "community.lexicon.location.address"
+    public let name: String?
+    public let street: String?
+    public let locality: String?
+    public let region: String?
+    public let country: String?
+    public let postalCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type = "$type"
+        case name, street, locality, region, country, postalCode
+    }
+
+    public init(type: String, name: String?, street: String?, locality: String?, region: String?, country: String?, postalCode: String?) {
+        self.type = type
+        self.name = name
+        self.street = street
+        self.locality = locality
+        self.region = region
+        self.country = country
+        self.postalCode = postalCode
     }
 }
 

@@ -18,21 +18,13 @@ struct NearbyPlacesContentView: View {
     @State private var isLoading = false
     @State private var error: Error?
     @State private var searchText = ""
-    @State private var selectedCategory: PlaceCategorization.CategoryGroup?
     
     let onPlaceSelected: (Place) -> Void
     
     var filteredPlaces: [AnchorPlaceWithDistance] {
         var filtered = places
         
-        // Filter by category
-        if let selectedCategory = selectedCategory {
-            filtered = filtered.filter { placeWithDistance in
-                placeWithDistance.place.categoryGroup == selectedCategory
-            }
-        }
-        
-        // Filter by search text
+        // Filter by search text only
         if !searchText.isEmpty {
             filtered = filtered.filter { placeWithDistance in
                 placeWithDistance.place.name.localizedCaseInsensitiveContains(searchText)
@@ -44,26 +36,7 @@ struct NearbyPlacesContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Category filter
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    CategoryFilterButton(
-                        category: nil,
-                        isSelected: selectedCategory == nil,
-                        action: { selectedCategory = nil }
-                    )
-                    
-                    ForEach(PlaceCategorization.CategoryGroup.allCases, id: \.self) { category in
-                        CategoryFilterButton(
-                            category: category,
-                            isSelected: selectedCategory == category,
-                            action: { selectedCategory = category }
-                        )
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .padding(.vertical, 8)
+            // Category filter removed for simplified UI
             
             // Places list
             if isLoading {

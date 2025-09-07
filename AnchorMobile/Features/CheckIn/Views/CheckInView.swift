@@ -11,7 +11,7 @@ import AnchorKit
 
 struct CheckInView: View {
     @Environment(LocationService.self) private var locationService
-    @State private var selectedPlace: Place?
+    @State private var selectedPlace: AnchorPlaceWithDistance?
     
     var body: some View {
         NavigationStack {
@@ -39,8 +39,8 @@ struct CheckInView: View {
                 }
             }
             .navigationTitle("Drop Anchor")
-            .sheet(item: $selectedPlace) { place in
-                CheckInComposeView(place: place)
+            .sheet(item: $selectedPlace) { placeWithDistance in
+                CheckInComposeView(placeWithDistance: placeWithDistance)
             }
         }
     }

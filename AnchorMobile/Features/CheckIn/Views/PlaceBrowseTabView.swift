@@ -1,5 +1,5 @@
 //
-//  PlaceBrowseModeView.swift
+//  PlaceBrowseTabView.swift
 //  AnchorMobile
 //
 //  Created by Tijs Teulings on 06/07/2025.
@@ -9,31 +9,18 @@ import SwiftUI
 import CoreLocation
 import AnchorKit
 
-struct PlaceBrowseModeView: View {
-    let onPlaceSelected: (Place) -> Void
+struct PlaceBrowseTabView: View {
+    let onPlaceSelected: (AnchorPlaceWithDistance) -> Void
     
     @Environment(LocationService.self) private var locationService
     @State private var placesService = AnchorPlacesService()
     @State private var places: [AnchorPlaceWithDistance] = []
     @State private var isLoading = false
     @State private var error: Error?
-    @State private var selectedCategory: PlaceCategorization.CategoryGroup?
     @State private var searchText = ""
     
     var filteredPlaces: [AnchorPlaceWithDistance] {
         var filtered = places
-        
-        // Filter by category
-        if let selectedCategory = selectedCategory {
-            let categoryTags = CategoryCacheService.shared.getCategoriesForGroup(selectedCategory)
-            filtered = filtered.filter { place in
-                categoryTags.contains { tag in
-                    place.place.tags.contains { (key, value) in
-                        "\(key)=\(value)" == tag
-                    }
-                }
-            }
-        }
         
         // Filter by search text
         if !searchText.isEmpty {
@@ -47,41 +34,70 @@ struct PlaceBrowseModeView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Category filter removed for simplified UI
-            
-            // Places list
-            if isLoading {
-                Spacer()
-                ProgressView("Finding nearby places...")
-                Spacer()
-            } else if let error = error {
-                Spacer()
-                VStack(spacing: 12) {
-                    Text("⚠️ Unable to load places")
-                        .font(.headline)
-                    Text(error.localizedDescription)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                    
-                    Button("Try Again") {
-                        Task { await loadNearbyPlaces(forceFreshLocation: true) }
+            // Search bar for filtering nearby places
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                
+                TextField("Filter places by name...", text: $searchText)
+                    .submitLabel(.search)
+                
+                if !searchText.isEmpty {
+                    Button(action: { 
+                        searchText = ""
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
                     }
-                    .buttonStyle(.borderedProminent)
                 }
-                .padding()
-                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
+            .padding(.horizontal)
+            .padding(.bottom, 12)
+            
+            // Content
+            if isLoading {
+                VStack(spacing: 0) {
+                    ForEach(0..<5, id: \.self) { _ in
+                        SearchResultSkeleton()
+                    }
+                    Spacer()
+                }
+            } else if let error = error {
+                VStack(spacing: 0) {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Text("⚠️ Unable to load places")
+                            .font(.headline)
+                        Text(error.localizedDescription)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        Button("Try Again") {
+                            Task { await loadNearbyPlaces(forceFreshLocation: true) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
+                    Spacer()
+                }
             } else if filteredPlaces.isEmpty && !places.isEmpty {
-                Spacer()
-                VStack(spacing: 12) {
-                    Text("🔍 No places match your filters")
-                        .font(.headline)
-                    Text("Try adjusting your category or search")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                VStack(spacing: 0) {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Text("🔍 No places match your filter")
+                            .font(.headline)
+                        Text("Try adjusting your search")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    Spacer()
                 }
-                .padding()
-                Spacer()
             } else if places.isEmpty {
                 Spacer()
                 VStack(spacing: 12) {
@@ -97,15 +113,15 @@ struct PlaceBrowseModeView: View {
                 List(filteredPlaces) { placeWithDistance in
                     PlaceRowView(
                         placeWithDistance: placeWithDistance,
-                        onTap: { onPlaceSelected(placeWithDistance.place) }
+                        onTap: { onPlaceSelected(placeWithDistance) }
                     )
                 }
+                .listStyle(.plain)
                 .refreshable {
                     await loadNearbyPlaces(forceFreshLocation: true)
                 }
             }
         }
-        .searchable(text: $searchText, prompt: "Filter places by name...")
         .task {
             await loadNearbyPlaces()
         }
@@ -118,7 +134,7 @@ struct PlaceBrowseModeView: View {
         var location: CLLocation?
         
         if forceFreshLocation {
-            print("📍 Pull-to-refresh: requesting fresh location...")
+            debugPrint("📍 Pull-to-refresh: requesting fresh location...")
             if let freshCoordinates = await locationService.requestCurrentLocation() {
                 location = CLLocation(
                     latitude: freshCoordinates.latitude,
@@ -135,37 +151,20 @@ struct PlaceBrowseModeView: View {
             return
         }
         
-        print("📍 Loading nearby places for location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+        debugPrint("📍 Loading nearby places for location: \(location.coordinate.latitude), " +
+                   "\(location.coordinate.longitude)")
         
         do {
             places = try await placesService.findNearbyPlacesWithDistance(
                 near: location.coordinate,
                 radiusMeters: 400
             )
-            print("📍 Found \(places.count) nearby places")
+            debugPrint("📍 Found \(places.count) nearby places")
         } catch {
             self.error = error
-            print("❌ Error loading nearby places: \(error.localizedDescription)")
+            debugPrint("❌ Error loading nearby places: \(error.localizedDescription)")
         }
         
         isLoading = false
     }
-}
-
-enum LocationError: LocalizedError {
-    case locationNotAvailable
-    
-    var errorDescription: String? {
-        switch self {
-        case .locationNotAvailable:
-            return "Current location is not available"
-        }
-    }
-}
-
-#Preview {
-    PlaceBrowseModeView { place in
-        print("Selected place: \(place.name)")
-    }
-    .environment(LocationService())
 }

@@ -239,7 +239,12 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
                     longitude: apiPlace.longitude,
                     tags: apiPlace.tags
                 )
-                return AnchorPlaceWithDistance(place: place, distance: apiPlace.distanceMeters)
+                return AnchorPlaceWithDistance(
+                    place: place, 
+                    distance: apiPlace.distanceMeters,
+                    backendCategory: apiPlace.category,
+                    backendIcon: apiPlace.icon
+                )
             }
             
         } catch {
@@ -369,10 +374,16 @@ public struct AnchorPlacesCoordinates: Codable, Sendable {
 public struct AnchorPlaceWithDistance: Sendable, Identifiable {
     public let place: Place
     public let distance: Double
+    /// Category from backend API (for search results)
+    public let backendCategory: String?
+    /// Icon from backend API (for search results) 
+    public let backendIcon: String?
 
-    public init(place: Place, distance: Double) {
+    public init(place: Place, distance: Double, backendCategory: String? = nil, backendIcon: String? = nil) {
         self.place = place
         self.distance = distance
+        self.backendCategory = backendCategory
+        self.backendIcon = backendIcon
     }
 
     /// Unique identifier for SwiftUI lists

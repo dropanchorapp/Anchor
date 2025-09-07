@@ -9,7 +9,11 @@ import SwiftUI
 import AnchorKit
 
 struct CheckInComposeView: View {
-    let place: Place
+    let placeWithDistance: AnchorPlaceWithDistance
+    
+    private var place: Place {
+        placeWithDistance.place
+    }
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(\.dismiss) private var dismiss
@@ -24,11 +28,23 @@ struct CheckInComposeView: View {
         place.categoryGroup
     }
     
+    // Use backend category info when available (from search results)
+    private var displayIcon: String {
+        return placeWithDistance.backendIcon ?? categoryGroup?.icon ?? "📍"
+    }
+    
+    private var displayCategory: String? {
+        if let backendCategory = placeWithDistance.backendCategory {
+            return backendCategory
+        }
+        return categoryGroup?.rawValue
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    PlaceInfoSection(place: place, categoryGroup: categoryGroup)
+                    PlaceInfoSection(place: place, displayIcon: displayIcon, displayCategory: displayCategory)
                     MessageInputSection(message: $message)
                     
                     if !authStore.isAuthenticated {
@@ -109,7 +125,8 @@ struct CheckInComposeView: View {
 
 struct PlaceInfoSection: View {
     let place: Place
-    let categoryGroup: PlaceCategorization.CategoryGroup?
+    let displayIcon: String
+    let displayCategory: String?
     
     private var coordinatesText: String {
         String(format: "Latitude: %.4f, Longitude: %.4f", place.latitude, place.longitude)
@@ -122,7 +139,7 @@ struct PlaceInfoSection: View {
                 .fontWeight(.semibold)
             
             HStack(spacing: 12) {
-                Text(categoryGroup?.icon ?? "📍")
+                Text(displayIcon)
                     .font(.title)
                     .frame(width: 50, height: 50)
                     .background(Color.secondary.opacity(0.1))
@@ -132,6 +149,12 @@ struct PlaceInfoSection: View {
                     Text(place.name)
                         .font(.headline)
                         .fontWeight(.medium)
+                    
+                    if let displayCategory = displayCategory {
+                        Text(displayCategory)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
                     Text(coordinatesText)
                         .font(.caption)
@@ -295,7 +318,8 @@ struct CheckInSuccessView: View {
         tags: ["amenity": "cafe"]
     )
     
-    CheckInComposeView(place: place)
+    let placeWithDistance = AnchorPlaceWithDistance(place: place, distance: 150.0)
+    CheckInComposeView(placeWithDistance: placeWithDistance)
         .environment(authStore)
         .environment(CheckInStore(authStore: authStore))
 }

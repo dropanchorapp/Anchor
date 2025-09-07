@@ -42,7 +42,7 @@ enum PlaceDiscoveryMode: String, CaseIterable {
 }
 
 struct NearbyPlacesView: View {
-    let onPlaceSelected: (Place) -> Void
+    let onPlaceSelected: (AnchorPlaceWithDistance) -> Void
     
     @Environment(\.dismiss) private var dismiss
     
@@ -63,8 +63,8 @@ struct NearbyPlacesView: View {
 }
 
 #Preview("Default") {
-    NearbyPlacesView { place in
-        print("Selected place: \(place.name)")
+    NearbyPlacesView { placeWithDistance in
+        print("Selected place: \(placeWithDistance.place.name)")
     }
     .environment(LocationService())
 }

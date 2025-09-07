@@ -68,11 +68,24 @@ struct PlaceRowView: View {
         return nil
     }
     
+    private var displayIcon: String {
+        // Use backend icon from search results if available, otherwise use category group icon
+        return placeWithDistance.backendIcon ?? categoryGroup?.icon ?? "📍"
+    }
+    
+    private var displayCategory: String? {
+        // Use backend category from search results if available, otherwise use category group
+        if let backendCategory = placeWithDistance.backendCategory {
+            return backendCategory
+        }
+        return categoryGroup?.rawValue
+    }
+    
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
                 // Category icon
-                Text(categoryGroup?.icon ?? "📍")
+                Text(displayIcon)
                     .font(.title2)
                     .frame(width: 40, height: 40)
                     .background(
@@ -90,12 +103,12 @@ struct PlaceRowView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        if let categoryGroup = categoryGroup {
+                        if let displayCategory = displayCategory {
                             Text("•")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             
-                            Text(categoryGroup.rawValue)
+                            Text(displayCategory)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }

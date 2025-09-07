@@ -175,22 +175,62 @@ struct SearchResultSkeleton: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color(.systemGray5))
                 .frame(width: 40, height: 40)
+                .shimmer()
             
             VStack(alignment: .leading, spacing: 6) {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(Color(.systemGray5))
                     .frame(height: 16)
+                    .shimmer()
                 
                 RoundedRectangle(cornerRadius: 4)
                     .fill(Color(.systemGray6))
                     .frame(height: 12)
                     .frame(maxWidth: 120)
+                    .shimmer()
             }
             
             Spacer()
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
+    }
+}
+
+// MARK: - Shimmer Effect
+struct ShimmerEffect: ViewModifier {
+    @State private var phase: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                LinearGradient(
+                    colors: [
+                        .clear,
+                        Color.white.opacity(0.4),
+                        .clear
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .rotationEffect(.degrees(30))
+                .offset(x: phase)
+                .clipped()
+            )
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 1.5)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    phase = 400
+                }
+            }
+    }
+}
+
+extension View {
+    func shimmer() -> some View {
+        self.modifier(ShimmerEffect())
     }
 }
 

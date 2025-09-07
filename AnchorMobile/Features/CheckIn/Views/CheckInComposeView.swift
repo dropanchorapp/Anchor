@@ -91,6 +91,7 @@ struct CheckInComposeView: View {
                 CheckInSuccessView(
                     place: place, 
                     checkinId: result.checkinId,
+                    userMessage: message.isEmpty ? nil : message,
                     sharedToFollowers: false
                 ) {
                     dismiss()
@@ -254,6 +255,7 @@ struct LoadingOverlay: View {
 struct CheckInSuccessView: View {
     let place: Place
     let checkinId: String?
+    let userMessage: String?
     let sharedToFollowers: Bool
     let onDismiss: () -> Void
     
@@ -262,6 +264,14 @@ struct CheckInSuccessView: View {
             return "Your check-in at \(place.name) has been saved and shared with your followers."
         } else {
             return "Your check-in at \(place.name) has been saved to your personal feed."
+        }
+    }
+    
+    private func shareText(for checkinId: String) -> String {
+        if let userMessage = userMessage {
+            return "\(userMessage) https://dropanchor.app/checkin/\(checkinId)"
+        } else {
+            return "Dropped anchor at \(place.name) https://dropanchor.app/checkin/\(checkinId)"
         }
     }
     
@@ -283,7 +293,7 @@ struct CheckInSuccessView: View {
             VStack(spacing: 12) {
                 if let checkinId = checkinId {
                     ShareLink(
-                        item: "Dropped anchor at \(place.name) https://dropanchor.app/checkin/\(checkinId)",
+                        item: shareText(for: checkinId),
                         subject: Text("Check-in at \(place.name)")
                     ) {
                         HStack {
@@ -334,7 +344,7 @@ struct CheckInSuccessView: View {
         tags: ["amenity": "cafe"]
     )
     
-    CheckInSuccessView(place: place, checkinId: "3lw2aztgeua2o", sharedToFollowers: true) {
+    CheckInSuccessView(place: place, checkinId: "3lw2aztgeua2o", userMessage: "Great coffee here!", sharedToFollowers: true) {
         print("Dismissed")
     }
 }

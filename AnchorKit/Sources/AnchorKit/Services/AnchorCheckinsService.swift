@@ -101,6 +101,8 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
                 switch apiError {
                 case .notAuthenticated:
                     throw AnchorCheckinsError.authenticationRequired
+                case .authenticationFailed:
+                    throw AnchorCheckinsError.authenticationRequired
                 case .networkError:
                     throw AnchorCheckinsError.networkError(error)
                 case .apiError(let statusCode):

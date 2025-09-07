@@ -196,56 +196,43 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     
     // MARK: - Private Methods
     
-    /// Parse refresh response and create updated credentials
+    /// Parse refresh response and create updated credentials (BookHive pattern)
     /// 
     /// - Parameters:
     ///   - data: Response data from refresh endpoint
     ///   - currentCredentials: Current credentials to use as base for updates
-    /// - Returns: Updated credentials with refreshed tokens
+    /// - Returns: Updated credentials with refreshed sealed session ID
     /// - Throws: IronSessionOAuthError if parsing fails
     private func parseRefreshResponse(
         data: Data, 
         currentCredentials: AuthCredentials
     ) throws -> AuthCredentials {
-        // Parse refresh response (enhanced format with optional AT Protocol tokens)
+        // Parse refresh response (BookHive pattern - sealed session IDs only)
         guard let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let success = jsonResponse["success"] as? Bool,
               success,
               let payload = jsonResponse["payload"] as? [String: Any],
-              let newSealedSessionToken = payload["session_token"] as? String,
+              let newSealedSessionId = payload["sid"] as? String,
               let did = payload["did"] as? String else {
             print("❌ IronSessionMobileOAuthCoordinator: Invalid refresh response format")
             throw IronSessionOAuthError.sessionRefreshFailed
         }
         
-        // Extract optional AT Protocol tokens (new backend implementation)
-        let newAccessToken = payload["access_token"] as? String
-        let newRefreshToken = payload["refresh_token"] as? String
-        let expiresAt = payload["expires_at"] as? TimeInterval
-        
         print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
-        print("🔄 IronSessionMobileOAuthCoordinator: New sealed session token length: " +
-              "\(newSealedSessionToken.count)")
-        print("🔄 IronSessionMobileOAuthCoordinator: AT Protocol tokens refreshed: " +
-              "\(newAccessToken != nil)")
+        print("🔄 IronSessionMobileOAuthCoordinator: New sealed session ID length: " +
+              "\(newSealedSessionId.count)")
+        print("🔄 IronSessionMobileOAuthCoordinator: Using BookHive pattern - OAuth tokens managed server-side")
         
-        // Calculate expiry time from backend data or use default
-        let tokenExpiryDate: Date
-        if let serverExpiresAt = expiresAt {
-            tokenExpiryDate = Date(timeIntervalSince1970: serverExpiresAt / 1000) // Backend sends milliseconds
-        } else {
-            tokenExpiryDate = Date().addingTimeInterval(60 * 60 * 24) // 24 hours fallback
-        }
-        
-        // Update credentials with refreshed tokens
+        // Update credentials with new sealed session ID (BookHive pattern)
+        // OAuth tokens are managed server-side and never sent to mobile client
         return AuthCredentials(
             handle: currentCredentials.handle,
-            accessToken: newAccessToken ?? "iron-session-backend-managed", // Use new token if available
-            refreshToken: newRefreshToken ?? "iron-session-backend-managed", // Use new token if available
+            accessToken: "iron-session-backend-managed", // Tokens managed server-side
+            refreshToken: "iron-session-backend-managed", // Tokens managed server-side
             did: did,
             pdsURL: currentCredentials.pdsURL,
-            expiresAt: tokenExpiryDate, // Use calculated expiry
-            sessionId: newSealedSessionToken // Updated sealed session token
+            expiresAt: Date().addingTimeInterval(60 * 60 * 24 * 7), // 7 days session TTL
+            sessionId: newSealedSessionId // Updated sealed session ID for API calls
         )
     }
 }

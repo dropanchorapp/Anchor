@@ -130,7 +130,7 @@ struct PlaceSearchModeView: View {
                 }
             }
         }
-        .onChange(of: searchText) { oldValue, newValue in
+        .onChange(of: searchText) { _, newValue in
             if newValue.isEmpty {
                 searchResults = []
                 hasSearched = false

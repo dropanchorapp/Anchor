@@ -52,6 +52,16 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         method: String = "GET",
         body: Data? = nil
     ) async throws -> Data {
+        return try await authenticatedRequest(path: path, method: method, body: body, retryCount: 0)
+    }
+    
+    /// Internal method with retry counting to prevent infinite loops
+    private func authenticatedRequest(
+        path: String,
+        method: String = "GET",
+        body: Data? = nil,
+        retryCount: Int = 0
+    ) async throws -> Data {
         
         // Load current credentials to get sealed session ID
         guard var credentials = await credentialsStorage.load(),
@@ -94,21 +104,46 @@ public final class IronSessionAPIClient: @unchecked Sendable {
             
             // Handle authentication failure
             if httpResponse.statusCode == 401 {
-                print("🔐 IronSessionAPIClient: Session expired, attempting refresh")
+                // Check retry limit to prevent infinite loops
+                let maxRetries = 3
+                if retryCount >= maxRetries {
+                    debugPrint("❌ IronSessionAPIClient: Maximum retry attempts (\(maxRetries)) exceeded for \(path)")
+                    throw IronSessionAPIError.authenticationFailed
+                }
+                
+                debugPrint("🔐 IronSessionAPIClient: Session expired, attempting refresh (attempt \(retryCount + 1)/\(maxRetries))")
+                
+                // Exponential backoff: wait before retry
+                let backoffDelay = min(pow(2.0, Double(retryCount)), 8.0) // Cap at 8 seconds
+                try await Task.sleep(nanoseconds: UInt64(backoffDelay * 1_000_000_000))
                 
                 // Try to refresh session
                 let coordinator = IronSessionMobileOAuthCoordinator(
                     credentialsStorage: credentialsStorage,
                     session: session
                 )
-                let refreshedCredentials = try await coordinator.refreshIronSession()
                 
-                // Save refreshed credentials
-                try await credentialsStorage.save(refreshedCredentials)
-                print("✅ IronSessionAPIClient: Session refreshed, retrying request")
-                
-                // Retry with refreshed session
-                return try await authenticatedRequest(path: path, method: method, body: body)
+                do {
+                    let refreshedCredentials = try await coordinator.refreshIronSession()
+                    
+                    // Save refreshed credentials
+                    try await credentialsStorage.save(refreshedCredentials)
+                    debugPrint("✅ IronSessionAPIClient: Session refreshed, retrying request")
+                    
+                    // Retry with refreshed session and incremented counter
+                    return try await authenticatedRequest(path: path, method: method, body: body, retryCount: retryCount + 1)
+                    
+                } catch {
+                    debugPrint("❌ IronSessionAPIClient: Token refresh failed: \(error)")
+                    
+                    // If this was our last retry, throw authentication failed
+                    if retryCount >= maxRetries - 1 {
+                        throw IronSessionAPIError.authenticationFailed
+                    }
+                    
+                    // Otherwise, try again with incremented counter
+                    return try await authenticatedRequest(path: path, method: method, body: body, retryCount: retryCount + 1)
+                }
             }
             
             // Handle other errors
@@ -257,6 +292,7 @@ public enum IronSessionAPIError: Error, LocalizedError {
     case notAuthenticated
     case networkError
     case apiError(Int)
+    case authenticationFailed
     
     public var errorDescription: String? {
         switch self {
@@ -266,6 +302,8 @@ public enum IronSessionAPIError: Error, LocalizedError {
             return "Network error during API call"
         case .apiError(let statusCode):
             return "API error: HTTP \(statusCode)"
+        case .authenticationFailed:
+            return "Authentication failed after maximum retry attempts"
         }
     }
 }

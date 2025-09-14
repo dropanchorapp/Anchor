@@ -13,7 +13,7 @@ struct ATProtoRecordTests {
 
         #expect(record.formattedText == text)
         #expect(record.text == text)
-        #expect(record.facets.count == 0)
+        #expect(record.facets.isEmpty)
     }
 
     @Test("Single link facet converts to markdown")
@@ -162,7 +162,7 @@ struct ATProtoRecordTests {
 
         #expect(record.text == "Simple text post")
         #expect(record.formattedText == "Simple text post")
-        #expect(record.facets.count == 0)
+        #expect(record.facets.isEmpty)
     }
 
     @Test("Timeline record with invalid date uses current date fallback")

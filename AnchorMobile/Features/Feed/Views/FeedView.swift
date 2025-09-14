@@ -14,10 +14,10 @@ struct FeedView: View {
     @Environment(AppStateStore.self) private var appStateStore
     @State private var feedStore = FeedStore()
     @State private var selectedPost: FeedPost?
-    @State private var selectedFeed: FeedType = .global
+    @State private var selectedFeed: FeedType = .following
 
     enum FeedType: String, CaseIterable {
-        case global = "Global"
+        case following = "Following"
         case timeline = "Timeline"
     }
 
@@ -55,25 +55,54 @@ struct FeedView: View {
                                 }
                             }
                         } else {
-                            let groupedPosts = feedStore.posts.groupedByDate()
-                            
-                            List(groupedPosts) { section in
-                                Section {
-                                    ForEach(section.posts, id: \.id) { post in
-                                        FeedPostView(post: post) {
-                                            selectedPost = post
-                                        }
-                                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                        .listRowSeparator(.visible, edges: .bottom)
-                                        .listRowBackground(Color.clear)
+                            // Different UI based on feed type
+                            switch selectedFeed {
+                            case .following:
+                                // Following feed: compact, no date grouping
+                                List(feedStore.posts, id: \.id) { post in
+                                    FeedPostFollowingView(post: post) {
+                                        selectedPost = post
                                     }
-                                } header: {
-                                    FeedDateHeaderView(date: section.date)
-                                        .listRowInsets(EdgeInsets())
+                                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                    .listRowSeparator(.visible, edges: .bottom)
+                                    .listRowBackground(Color.clear)
+                                }
+                                .listStyle(.plain)
+                                .scrollContentBackground(.hidden)
+
+                            case .timeline:
+                                // Timeline feed: date-grouped sections for personal log feel
+                                let groupedPosts = feedStore.posts.groupedByDate()
+
+                                ZStack {
+                                    // Background timeline line that spans the entire feed
+                                    HStack {
+                                        Rectangle()
+                                            .fill(.orange.opacity(0.3))
+                                            .frame(width: 2)
+                                            .padding(.leading, 19)
+                                        Spacer()
+                                    }
+
+                                    List(groupedPosts) { section in
+                                        Section {
+                                            ForEach(section.posts, id: \.id) { post in
+                                                FeedPostTimelineView(post: post) {
+                                                    selectedPost = post
+                                                }
+                                                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                                .listRowSeparator(.hidden)
+                                                .listRowBackground(Color.clear)
+                                            }
+                                        } header: {
+                                            FeedDateHeaderView(date: section.date)
+                                                .listRowInsets(EdgeInsets())
+                                        }
+                                    }
+                                    .listStyle(.plain)
+                                    .scrollContentBackground(.hidden)
                                 }
                             }
-                            .listStyle(.plain)
-                            .scrollContentBackground(.hidden)
                         }
                     }
                     .refreshable {
@@ -131,8 +160,14 @@ struct FeedView: View {
     private func loadFeed() async {
         do {
             switch selectedFeed {
-            case .global:
-                _ = try await feedStore.fetchGlobalFeed()
+            case .following:
+                // Use the authenticated user's DID for following feed
+                guard let userDid = authStore.credentials?.did else {
+                    // If not authenticated, fall back to global feed
+                    _ = try await feedStore.fetchGlobalFeed()
+                    return
+                }
+                _ = try await feedStore.fetchFollowingFeed(for: userDid)
             case .timeline:
                 // Use the authenticated user's DID for timeline feed
                 guard let userDid = authStore.credentials?.did else {
@@ -178,13 +213,13 @@ struct FeedView: View {
     NavigationStack {
         ScrollView {
             LazyVStack(spacing: 8) {
-                FeedPostView(post: sampleCoffeeShopPost) { }
+                FeedPostFollowingView(post: sampleCoffeeShopPost) { }
                     .padding(.horizontal)
-                
-                FeedPostView(post: sampleRestaurantPost) { }
+
+                FeedPostFollowingView(post: sampleRestaurantPost) { }
                     .padding(.horizontal)
-                
-                FeedPostView(post: sampleClimbingPost) { }
+
+                FeedPostFollowingView(post: sampleClimbingPost) { }
                     .padding(.horizontal)
             }
             .padding(.top)

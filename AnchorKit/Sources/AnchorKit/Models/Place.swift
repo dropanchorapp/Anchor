@@ -161,3 +161,36 @@ extension PlaceWithDistance: Hashable {
         lhs.place.id == rhs.place.id && lhs.distanceMeters == rhs.distanceMeters
     }
 }
+
+// MARK: - Place with Distance (from AnchorPlacesService)
+
+/// Place with distance information
+public struct AnchorPlaceWithDistance: Sendable, Identifiable {
+    public let place: Place
+    public let distance: Double
+    /// Category from backend API (for search results)
+    public let backendCategory: String?
+    /// Icon from backend API (for search results)
+    public let backendIcon: String?
+
+    public init(place: Place, distance: Double, backendCategory: String? = nil, backendIcon: String? = nil) {
+        self.place = place
+        self.distance = distance
+        self.backendCategory = backendCategory
+        self.backendIcon = backendIcon
+    }
+
+    /// Unique identifier for SwiftUI lists
+    public var id: String {
+        place.id
+    }
+
+    /// Formatted distance string (e.g., "150m" or "1.2km")
+    public var formattedDistance: String {
+        if distance < 1000 {
+            return String(format: "%.0fm", distance)
+        } else {
+            return String(format: "%.1fkm", distance / 1000)
+        }
+    }
+}

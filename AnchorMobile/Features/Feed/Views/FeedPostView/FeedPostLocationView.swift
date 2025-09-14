@@ -44,24 +44,35 @@ struct FeedPostLocationView: View {
     
     var body: some View {
         if post.coordinates != nil {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading) {
                 // Place name - primary content
                 Text(locationDisplayName)
-                    .font(.title3)
-                    .fontWeight(.bold)
+                    .font(.headline)
+                    .fontWeight(.medium)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 // Address - secondary location info
                 if !formattedAddress.isEmpty {
                     Text(formattedAddress)
-                        .font(.subheadline)
+                        .font(.caption)
+                        .fontWeight(.regular)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
         }
     }
+}
+
+#Preview {
+    VStack(spacing: 20) {
+        FeedPostLocationView(post: sampleCoffeeShopPost)
+        Divider()
+        FeedPostLocationView(post: sampleRestaurantPost)
+        Divider()
+        FeedPostLocationView(post: sampleClimbingPost)
+        Spacer()
+    }
+    .padding()
 } 

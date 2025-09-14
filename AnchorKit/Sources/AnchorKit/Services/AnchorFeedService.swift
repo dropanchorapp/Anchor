@@ -108,7 +108,7 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
             resolvingAgainstBaseURL: false
         )!
         components.queryItems = [
-            URLQueryItem(name: "did", value: userDid),
+            URLQueryItem(name: "user", value: userDid),
             URLQueryItem(name: "limit", value: String(limit))
         ]
         if let cursor = cursor {

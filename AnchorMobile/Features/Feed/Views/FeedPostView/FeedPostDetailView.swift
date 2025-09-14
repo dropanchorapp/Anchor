@@ -85,10 +85,12 @@ struct FeedPostDetailView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(post.author.displayName ?? post.author.handle)
                                 .font(.headline)
-                                .fontWeight(.semibold)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
 
                             Text("@\(post.author.handle)")
-                                .font(.subheadline)
+                                .font(.caption)
+                                .fontWeight(.regular)
                                 .foregroundStyle(.secondary)
                         }
 
@@ -103,10 +105,11 @@ struct FeedPostDetailView: View {
                     if post.coordinates != nil {
                         VStack(alignment: .leading, spacing: 12) {
                             // Place name
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text(post.address?.name ?? "Location")
-                                    .font(.title)
-                                    .fontWeight(.bold)
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.primary)
 
                                 let address: String = {
                                     if let addressObj = post.address {
@@ -117,7 +120,8 @@ struct FeedPostDetailView: View {
                                 }()
                                 if !address.isEmpty {
                                     Text(address)
-                                        .font(.body)
+                                        .font(.callout)
+                                        .fontWeight(.regular)
                                         .foregroundStyle(.secondary)
                                 }
                             }
@@ -133,11 +137,17 @@ struct FeedPostDetailView: View {
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Message")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                                .tracking(0.5)
+
                             Text(personalMessage)
-                                .font(.body)
+                                .font(.system(.body, design: .serif))
+                                .fontWeight(.regular)
+                                .foregroundStyle(.primary)
+                                .lineSpacing(2)
                         }
                     }
                     

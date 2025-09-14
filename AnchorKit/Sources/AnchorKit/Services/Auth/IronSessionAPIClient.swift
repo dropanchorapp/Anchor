@@ -62,107 +62,142 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         body: Data? = nil,
         retryCount: Int = 0
     ) async throws -> Data {
-        
-        // Load current credentials to get sealed session ID
-        guard var credentials = await credentialsStorage.load(),
-              let sealedSessionId = credentials.sessionId else {
-            print("❌ IronSessionAPIClient: No credentials or session ID found")
-            throw IronSessionAPIError.notAuthenticated
-        }
-        
-        // **PROACTIVE TOKEN REFRESH**: Check if tokens need refresh before making request
-        credentials = await performProactiveTokenRefresh(credentials: credentials)
-        
-        // Build request URL
-        let url = baseURL.appendingPathComponent(path)
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        
-        // Add sealed session token as Bearer authorization header (use updated credentials)
-        let currentSessionId = credentials.sessionId ?? sealedSessionId
-        request.setValue("Bearer \(currentSessionId)", forHTTPHeaderField: "Authorization")
-        request.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
-        // Add body if provided
-        if let body = body {
-            request.httpBody = body
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        }
-        
-        print("🌐 IronSessionAPIClient: Making authenticated request to \(path)")
-        
+
+        // Load and refresh credentials
+        let credentials = try await loadAndRefreshCredentials()
+
+        // Build and execute request
+        let request = buildAuthenticatedRequest(path: path, method: method, body: body, credentials: credentials)
+
         do {
             let (data, response) = try await session.data(for: request)
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("❌ IronSessionAPIClient: Invalid response type")
                 throw IronSessionAPIError.networkError
             }
-            
+
             print("🌐 IronSessionAPIClient: Response status: \(httpResponse.statusCode)")
-            
-            // Handle authentication failure
+
+            // Handle authentication failure with retry
             if httpResponse.statusCode == 401 {
-                // Check retry limit to prevent infinite loops
-                let maxRetries = 3
-                if retryCount >= maxRetries {
-                    debugPrint("❌ IronSessionAPIClient: Maximum retry attempts (\(maxRetries)) exceeded for \(path)")
-                    throw IronSessionAPIError.authenticationFailed
-                }
-                
-                debugPrint("🔐 IronSessionAPIClient: Session expired, attempting refresh (attempt \(retryCount + 1)/\(maxRetries))")
-                
-                // Exponential backoff: wait before retry
-                let backoffDelay = min(pow(2.0, Double(retryCount)), 8.0) // Cap at 8 seconds
-                try await Task.sleep(nanoseconds: UInt64(backoffDelay * 1_000_000_000))
-                
-                // Try to refresh session
-                let coordinator = IronSessionMobileOAuthCoordinator(
-                    credentialsStorage: credentialsStorage,
-                    session: session
+                return try await handleAuthenticationFailure(
+                    path: path,
+                    method: method,
+                    body: body,
+                    retryCount: retryCount
                 )
-                
-                do {
-                    let refreshedCredentials = try await coordinator.refreshIronSession()
-                    
-                    // Save refreshed credentials
-                    try await credentialsStorage.save(refreshedCredentials)
-                    debugPrint("✅ IronSessionAPIClient: Session refreshed, retrying request")
-                    
-                    // Retry with refreshed session and incremented counter
-                    return try await authenticatedRequest(path: path, method: method, body: body, retryCount: retryCount + 1)
-                    
-                } catch {
-                    debugPrint("❌ IronSessionAPIClient: Token refresh failed: \(error)")
-                    
-                    // If this was our last retry, throw authentication failed
-                    if retryCount >= maxRetries - 1 {
-                        throw IronSessionAPIError.authenticationFailed
-                    }
-                    
-                    // Otherwise, try again with incremented counter
-                    return try await authenticatedRequest(path: path, method: method, body: body, retryCount: retryCount + 1)
-                }
             }
-            
+
             // Handle other errors
             guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 300 else {
                 print("❌ IronSessionAPIClient: API error: \(httpResponse.statusCode)")
                 throw IronSessionAPIError.apiError(httpResponse.statusCode)
             }
-            
+
             print("✅ IronSessionAPIClient: Request completed successfully")
             return data
-            
+
         } catch {
-            if error is IronSessionAPIError {
-                throw error
-            } else {
-                print("❌ IronSessionAPIClient: Network error: \(error)")
-                throw IronSessionAPIError.networkError
+            throw error is IronSessionAPIError ? error : IronSessionAPIError.networkError
+        }
+    }
+
+    /// Load credentials and perform proactive token refresh if needed
+    private func loadAndRefreshCredentials() async throws -> AuthCredentials {
+        guard var credentials = await credentialsStorage.load(),
+              credentials.sessionId != nil else {
+            print("❌ IronSessionAPIClient: No credentials or session ID found")
+            throw IronSessionAPIError.notAuthenticated
+        }
+
+        // **PROACTIVE TOKEN REFRESH**: Check if tokens need refresh before making request
+        credentials = await performProactiveTokenRefresh(credentials: credentials)
+        return credentials
+    }
+
+    /// Build authenticated URLRequest with headers
+    private func buildAuthenticatedRequest(
+        path: String,
+        method: String,
+        body: Data?,
+        credentials: AuthCredentials
+    ) -> URLRequest {
+        print("🌐 IronSessionAPIClient: Making authenticated request to \(path)")
+
+        let url = baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+
+        // Add headers
+        request.setValue("Bearer \(credentials.sessionId!)", forHTTPHeaderField: "Authorization")
+        request.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        // Add body if provided
+        if let body = body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+
+        return request
+    }
+
+    /// Handle 401 authentication failure with exponential backoff and retry
+    private func handleAuthenticationFailure(
+        path: String,
+        method: String,
+        body: Data?,
+        retryCount: Int
+    ) async throws -> Data {
+        let maxRetries = 3
+
+        // Check retry limit
+        guard retryCount < maxRetries else {
+            debugPrint("❌ IronSessionAPIClient: Maximum retry attempts (\(maxRetries)) exceeded for \(path)")
+            throw IronSessionAPIError.authenticationFailed
+        }
+
+        debugPrint(
+            "🔐 IronSessionAPIClient: Session expired, attempting refresh " +
+            "(attempt \(retryCount + 1)/\(maxRetries))"
+        )
+
+        // Exponential backoff
+        let backoffDelay = min(pow(2.0, Double(retryCount)), 8.0) // Cap at 8 seconds
+        try await Task.sleep(nanoseconds: UInt64(backoffDelay * 1_000_000_000))
+
+        // Attempt session refresh
+        do {
+            try await refreshSession()
+            debugPrint("✅ IronSessionAPIClient: Session refreshed, retrying request")
+        } catch {
+            debugPrint("❌ IronSessionAPIClient: Token refresh failed: \(error)")
+
+            // If this was our last retry, throw authentication failed
+            if retryCount >= maxRetries - 1 {
+                throw IronSessionAPIError.authenticationFailed
             }
         }
+
+        // Retry with incremented counter
+        return try await authenticatedRequest(
+            path: path,
+            method: method,
+            body: body,
+            retryCount: retryCount + 1
+        )
+    }
+
+    /// Refresh session using OAuth coordinator
+    private func refreshSession() async throws {
+        let coordinator = IronSessionMobileOAuthCoordinator(
+            credentialsStorage: credentialsStorage,
+            session: session
+        )
+
+        let refreshedCredentials = try await coordinator.refreshIronSession()
+        try await credentialsStorage.save(refreshedCredentials)
     }
     
     /// Make authenticated JSON request without request body

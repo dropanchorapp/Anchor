@@ -327,4 +327,3 @@ final class CategoryCacheServiceTests: XCTestCase {
         )
     }
 }
-

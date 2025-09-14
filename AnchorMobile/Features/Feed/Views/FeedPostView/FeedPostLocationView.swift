@@ -46,15 +46,12 @@ struct FeedPostLocationView: View {
         if post.coordinates != nil {
             VStack(alignment: .leading, spacing: 8) {
                 // Place name - primary content
-                HStack(alignment: .center, spacing: 10) {
-                    Text(FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
-                        .font(.title3)
-                    Text(locationDisplayName)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.leading)
-                }
+                Text(locationDisplayName)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 // Address - secondary location info
                 if !formattedAddress.isEmpty {
                     Text(formattedAddress)

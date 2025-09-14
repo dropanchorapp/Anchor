@@ -46,8 +46,9 @@ struct FeedPostDetailView: View {
                             coordinate: CLLocationCoordinate2D(latitude: coords.latitude, longitude: coords.longitude)
                         ) {
                             VStack {
-                                Text(FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
+                                Image(systemName: "mappin.and.ellipse")
                                     .font(.title2)
+                                    .foregroundStyle(.primary)
                                     .padding(8)
                                     .background(.regularMaterial, in: Circle())
                                     .shadow(radius: 2)
@@ -101,28 +102,23 @@ struct FeedPostDetailView: View {
                     // Location details
                     if post.coordinates != nil {
                         VStack(alignment: .leading, spacing: 12) {
-                            // Place name with icon
-                            HStack(spacing: 12) {
-                                Text(FeedTextProcessor.shared.extractCategoryIcon(from: post.record.text))
-                                    .font(.largeTitle)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(post.address?.name ?? "Location")
-                                        .font(.title)
-                                        .fontWeight(.bold)
-                                    
-                                    let address: String = {
-                                        if let addressObj = post.address {
-                                            // Use ATProtoAddress if available, or create a struct conforming to LocationRepresentable
-                                            return LocationFormatter.shared.getLocationAddress([addressObj])
-                                        }
-                                        return ""
-                                    }()
-                                    if !address.isEmpty {
-                                        Text(address)
-                                            .font(.body)
-                                            .foregroundStyle(.secondary)
+                            // Place name
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(post.address?.name ?? "Location")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+
+                                let address: String = {
+                                    if let addressObj = post.address {
+                                        // Use ATProtoAddress if available, or create a struct conforming to LocationRepresentable
+                                        return LocationFormatter.shared.getLocationAddress([addressObj])
                                     }
+                                    return ""
+                                }()
+                                if !address.isEmpty {
+                                    Text(address)
+                                        .font(.body)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }

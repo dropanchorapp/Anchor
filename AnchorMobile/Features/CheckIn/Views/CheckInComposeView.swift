@@ -41,16 +41,16 @@ struct CheckInComposeView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     PlaceInfoSection(place: place, displayIcon: displayIcon, displayCategory: displayCategory)
                     MessageInputSection(message: $message)
-                    
+
                     if !authStore.isAuthenticated {
                         AuthenticationPromptSection()
                     }
-                    
+
                     Spacer()
                 }
                 .padding()
@@ -58,10 +58,6 @@ struct CheckInComposeView: View {
             .navigationTitle("Drop Anchor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    CancelButton()
-                }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     SubmitButton(
                         isDisabled: !authStore.isAuthenticated || isPosting,
@@ -344,7 +340,12 @@ struct CheckInSuccessView: View {
         tags: ["amenity": "cafe"]
     )
     
-    CheckInSuccessView(place: place, checkinId: "3lw2aztgeua2o", userMessage: "Great coffee here!", sharedToFollowers: true) {
+    CheckInSuccessView(
+        place: place, 
+        checkinId: "3lw2aztgeua2o", 
+        userMessage: "Great coffee here!", 
+        sharedToFollowers: true
+    ) {
         print("Dismissed")
     }
 }

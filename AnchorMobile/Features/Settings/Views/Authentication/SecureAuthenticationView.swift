@@ -284,11 +284,34 @@ struct SecureAuthenticationView: View {
 /// Presentation context provider for ASWebAuthenticationSession
 private class WebAuthPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        // Return the current window scene's key window
-        return UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first?.windows
-            .first { $0.isKeyWindow } ?? UIWindow()
+        // First try to find the key window in any connected window scene
+        for scene in UIApplication.shared.connectedScenes {
+            if let windowScene = scene as? UIWindowScene {
+                if let keyWindow = windowScene.windows.first(where: { $0.isKeyWindow }) {
+                    return keyWindow
+                }
+            }
+        }
+
+        // If no key window found, try to find any window in any scene
+        for scene in UIApplication.shared.connectedScenes {
+            if let windowScene = scene as? UIWindowScene {
+                if let window = windowScene.windows.first {
+                    return window
+                }
+            }
+        }
+
+        // If no existing windows, create a new window with the first available scene
+        for scene in UIApplication.shared.connectedScenes {
+            if let windowScene = scene as? UIWindowScene {
+                return UIWindow(windowScene: windowScene)
+            }
+        }
+
+        // This should never happen in a normal iOS app, but if it does,
+        // we'll crash with a more descriptive error rather than using deprecated API
+        fatalError("No UIWindowScene available for ASWebAuthenticationSession presentation anchor")
     }
 }
 

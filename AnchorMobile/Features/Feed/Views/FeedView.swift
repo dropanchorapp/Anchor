@@ -14,13 +14,30 @@ struct FeedView: View {
     @Environment(AppStateStore.self) private var appStateStore
     @State private var feedStore = FeedStore()
     @State private var selectedPost: FeedPost?
+    @State private var selectedFeed: FeedType = .global
+
+    enum FeedType: String, CaseIterable {
+        case global = "Global"
+        case timeline = "Timeline"
+    }
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(spacing: 0) {
                 if authStore.isAuthenticated &&
                    authStore.credentials != nil &&
                    authStore.credentials?.accessToken.isEmpty == false {
+
+                    // Segmented control for feed selection
+                    Picker("Feed Type", selection: $selectedFeed) {
+                        ForEach(FeedType.allCases, id: \.self) { feedType in
+                            Text(feedType.rawValue).tag(feedType)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+                    .padding(.bottom, 12)
+
                     // Feed content
                     Group {
                         if feedStore.isLoading {
@@ -92,6 +109,12 @@ struct FeedView: View {
                     }
                 }
             }
+            .onChange(of: selectedFeed) { _, _ in
+                // Feed type changed - reload feed
+                Task {
+                    await loadFeed()
+                }
+            }
         }
     }
 
@@ -107,8 +130,19 @@ struct FeedView: View {
     /// Force load feed regardless of timing (used for manual refresh and auth changes)
     private func loadFeed() async {
         do {
-            _ = try await feedStore.fetchGlobalFeed()
-            
+            switch selectedFeed {
+            case .global:
+                _ = try await feedStore.fetchGlobalFeed()
+            case .timeline:
+                // Use the authenticated user's DID for timeline feed
+                guard let userDid = authStore.credentials?.did else {
+                    // If not authenticated, fall back to global feed
+                    _ = try await feedStore.fetchGlobalFeed()
+                    return
+                }
+                _ = try await feedStore.fetchUserFeed(for: userDid)
+            }
+
             // Record successful fetch
             appStateStore.recordFeedFetch()
         } catch is CancellationError {

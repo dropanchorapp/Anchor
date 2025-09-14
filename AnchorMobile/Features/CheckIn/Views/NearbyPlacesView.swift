@@ -12,9 +12,9 @@ import AnchorKit
 
 // MARK: - Discovery Mode Enum
 enum PlaceDiscoveryMode: String, CaseIterable {
-    case none = "none"
-    case browse = "browse"
-    case search = "search"
+    case none
+    case browse
+    case search
     
     var title: String {
         switch self {
@@ -51,13 +51,6 @@ struct NearbyPlacesView: View {
             PlaceBrowseView(onPlaceSelected: onPlaceSelected)
                 .navigationTitle("Nearby Places")
                 .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                    }
-                }
         }
     }
 }

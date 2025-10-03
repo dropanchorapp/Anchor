@@ -132,6 +132,21 @@ Check-ins reference address records via StrongRef with content integrity verific
     "$type": "community.lexicon.location.geo",
     "latitude": "52.0705",
     "longitude": "4.3007"
+  },
+  "image": {
+    "thumb": {
+      "$type": "blob",
+      "ref": { "$link": "bafkreiabcdef..." },
+      "mimeType": "image/jpeg",
+      "size": 125000
+    },
+    "fullsize": {
+      "$type": "blob",
+      "ref": { "$link": "bafkreighijk..." },
+      "mimeType": "image/jpeg",
+      "size": 450000
+    },
+    "alt": "Photo of the team at lunch"
   }
 }
 ```

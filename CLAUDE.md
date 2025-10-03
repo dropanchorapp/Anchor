@@ -397,7 +397,7 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 
 ### Backend Integration
 
-- **OAuth backend**: Uses `/Users/tijs/projects/Anchor/location-feed-generator` for web-based OAuth
+- **OAuth backend**: Uses `/Users/tijs/projects/atproto/anchor-appview` for web-based OAuth
 - **Mobile flow**: iOS app loads `https://dropanchor.app/mobile-auth` in WebView
 - **Callback handling**: Custom URL scheme `anchor-app://auth-callback` with auth parameters
 - **PDS URL resolution**: Backend resolves user's actual PDS URL from DID document and includes it in mobile callback
@@ -427,13 +427,13 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 
 ### Backend Management
 
-- **Deploy backend changes**: `cd /Users/tijs/projects/Anchor/location-feed-generator && deno task deploy`
+- **Deploy backend changes**: `cd /Users/tijs/projects/atproto/anchor-appview && deno task deploy`
 - **Backend URL**: All API endpoints at `https://dropanchor.app`
 - **AT Protocol browser**: View records at `https://atproto-browser.vercel.app/at/{did}/{collection}/{rkey}`
 
 ### Known Dependencies Between Projects
 
-- iOS app depends on location-feed-generator for OAuth and feed APIs
+- iOS app depends on anchor-appview for OAuth and feed APIs
 - OAuth session management happens in backend, credentials stored in iOS app
 - Feed timestamps require consistent ISO8601 parsing between backend API and iOS client
 - the current year is 2025

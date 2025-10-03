@@ -9,6 +9,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
     public let coordinates: FeedCoordinates?
     public let address: FeedAddress?
     public let distance: Double? // Only present in nearby feeds
+    public let image: FeedImage? // Optional image attachment
 
     // Public initializer for testing and previews
     public init(
@@ -17,7 +18,8 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         record: ATProtoRecord,
         coordinates: FeedCoordinates? = nil,
         address: FeedAddress? = nil,
-        distance: Double? = nil
+        distance: Double? = nil,
+        image: FeedImage? = nil
     ) {
         self.id = id
         self.author = author
@@ -25,6 +27,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         self.coordinates = coordinates
         self.address = address
         self.distance = distance
+        self.image = image
     }
 
     // New initializer for Feed Service API responses
@@ -58,6 +61,13 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
             )
         }
         distance = checkin.distance
+        image = checkin.image.map {
+            FeedImage(
+                thumbUrl: $0.thumbUrl,
+                fullsizeUrl: $0.fullsizeUrl,
+                alt: $0.alt
+            )
+        }
     }
 }
 
@@ -88,7 +98,7 @@ public struct FeedCoordinates: Sendable, Hashable, Codable {
     }
 }
 
-/// Address information for feeds  
+/// Address information for feeds
 public struct FeedAddress: Sendable, Hashable, Codable {
     public let name: String?
     public let streetAddress: String?
@@ -108,6 +118,23 @@ public struct FeedAddress: Sendable, Hashable, Codable {
         self.locality = locality
         self.region = region
         self.country = country
+    }
+}
+
+/// Image attachment for feeds
+public struct FeedImage: Sendable, Hashable, Codable {
+    public let thumbUrl: String
+    public let fullsizeUrl: String
+    public let alt: String?
+
+    public init(
+        thumbUrl: String,
+        fullsizeUrl: String,
+        alt: String? = nil
+    ) {
+        self.thumbUrl = thumbUrl
+        self.fullsizeUrl = fullsizeUrl
+        self.alt = alt
     }
 }
 

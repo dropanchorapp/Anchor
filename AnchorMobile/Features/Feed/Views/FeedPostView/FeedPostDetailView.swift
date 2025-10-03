@@ -106,6 +106,51 @@ struct FeedPostDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                     
+                    // Image attachment
+                    if let image = post.image, let fullsizeURL = URL(string: image.fullsizeUrl) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            AsyncImage(url: fullsizeURL) { phase in
+                                switch phase {
+                                case .empty:
+                                    Rectangle()
+                                        .fill(Color.secondary.opacity(0.1))
+                                        .frame(height: 300)
+                                        .overlay {
+                                            ProgressView()
+                                        }
+                                case .success(let displayImage):
+                                    displayImage
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                case .failure:
+                                    Rectangle()
+                                        .fill(Color.secondary.opacity(0.1))
+                                        .frame(height: 300)
+                                        .overlay {
+                                            VStack {
+                                                Image(systemName: "photo")
+                                                    .font(.largeTitle)
+                                                    .foregroundStyle(.secondary)
+                                                Text("Failed to load image")
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+
+                            if let alt = image.alt, !alt.isEmpty {
+                                Text(alt)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .italic()
+                            }
+                        }
+                    }
+
                     // Location details
                     if post.coordinates != nil {
                         VStack(alignment: .leading, spacing: 12) {

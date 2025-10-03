@@ -4,7 +4,12 @@ import Foundation
 
 @MainActor
 public protocol CheckInStoreProtocol {
-    func createCheckin(place: Place, customMessage: String?) async throws -> CheckinResult
+    func createCheckin(
+        place: Place,
+        customMessage: String?,
+        imageData: Data?,
+        imageAlt: String?
+    ) async throws -> CheckinResult
 }
 
 // MARK: - Check-In Store
@@ -42,27 +47,38 @@ public final class CheckInStore: CheckInStoreProtocol {
 
     // MARK: - Check-ins
 
-    public func createCheckin(place: Place, customMessage: String?) async throws -> CheckinResult {
-        print("🔰 CheckInStore: Starting checkin creation for place: \(place.name)")
+    public func createCheckin(
+        place: Place,
+        customMessage: String?,
+        imageData: Data? = nil,
+        imageAlt: String? = nil
+    ) async throws -> CheckinResult {
+        debugPrint("🔰 CheckInStore: Starting checkin creation for place: \(place.name)")
 
         // Verify user is authenticated (Iron Session handles token management internally)
         guard authStore.isAuthenticated else {
-            print("❌ CheckInStore: User not authenticated")
+            debugPrint("❌ CheckInStore: User not authenticated")
             throw CheckInError.notAuthenticated
         }
 
-        print("🔰 CheckInStore: User authenticated with handle: \(authStore.handle ?? "unknown")")
+        debugPrint("🔰 CheckInStore: User authenticated with handle: \(authStore.handle ?? "unknown")")
+
+        if imageData != nil {
+            debugPrint("🔰 CheckInStore: Including image attachment")
+        }
 
         // Create checkin using Iron Session authentication (handles tokens automatically)
-        print("🔰 CheckInStore: Calling checkins service to create checkin")
+        debugPrint("🔰 CheckInStore: Calling checkins service to create checkin")
         let result = try await checkinsService.createCheckin(
             place: place,
-            message: customMessage
+            message: customMessage,
+            imageData: imageData,
+            imageAlt: imageAlt
         )
 
-        print("✅ CheckInStore: Checkin creation successful: \(result.success)")
+        debugPrint("✅ CheckInStore: Checkin creation successful: \(result.success)")
         if let checkinId = result.checkinId {
-            print("✅ CheckInStore: Checkin ID: \(checkinId)")
+            debugPrint("✅ CheckInStore: Checkin ID: \(checkinId)")
         }
         return result
     }

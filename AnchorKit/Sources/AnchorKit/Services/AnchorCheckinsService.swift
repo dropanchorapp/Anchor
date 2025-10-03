@@ -13,7 +13,12 @@ import Foundation
 @MainActor
 public protocol AnchorCheckinsServiceProtocol {
     /// Create a checkin using the backend API with Iron Session authentication
-    func createCheckin(place: Place, message: String?) async throws -> CheckinResult
+    func createCheckin(
+        place: Place,
+        message: String?,
+        imageData: Data?,
+        imageAlt: String?
+    ) async throws -> CheckinResult
 }
 
 // MARK: - Anchor Checkins Service
@@ -48,38 +53,60 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
     // MARK: - Checkin Methods
 
     /// Create a checkin using the backend API with Iron Session authentication
-    /// 
+    ///
     /// Automatically handles authentication using stored Iron Session credentials.
     /// Includes proactive token refresh and reactive 401 handling.
+    /// Supports optional image attachments via multipart/form-data.
     ///
     /// - Parameters:
     ///   - place: The place/location for the checkin
     ///   - message: Optional text message for the checkin
+    ///   - imageData: Optional image data (JPEG, already processed and <5MB)
+    ///   - imageAlt: Optional alt text for image accessibility
     /// - Returns: Result indicating success and optional checkin ID
     /// - Throws: AnchorCheckinsError for various failure scenarios
-    public func createCheckin(place: Place, message: String?) async throws -> CheckinResult {
-        print("🏁 CheckinsService: Creating checkin for place: \(place.name)")
-        print("🏁 CheckinsService: Location: (\(place.latitude), \(place.longitude))")
+    public func createCheckin(
+        place: Place,
+        message: String?,
+        imageData: Data? = nil,
+        imageAlt: String? = nil
+    ) async throws -> CheckinResult {
+        debugPrint("🏁 CheckinsService: Creating checkin for place: \(place.name)")
+        debugPrint("🏁 CheckinsService: Location: (\(place.latitude), \(place.longitude))")
+        if imageData != nil {
+            debugPrint("🏁 CheckinsService: Including image attachment")
+        }
 
         do {
-            // Create request body
-            let requestBody = CheckinRequest(place: place, message: message)
+            let responseData: CheckinResponse
 
-            // Use Iron Session API client for authenticated request
-            // This handles proactive token refresh, reactive 401 handling, and retries automatically
-            let responseData: CheckinResponse = try await apiClient.authenticatedJSONRequest(
-                path: "/api/checkins",
-                method: "POST",
-                requestBody: requestBody
-            )
+            // Use multipart if we have an image, otherwise use JSON
+            if let imageData = imageData {
+                responseData = try await createCheckinWithImage(
+                    place: place,
+                    message: message,
+                    imageData: imageData,
+                    imageAlt: imageAlt
+                )
+            } else {
+                // Create request body for JSON request
+                let requestBody = CheckinRequest(place: place, message: message)
 
-            print("🏁 CheckinsService: Response - Success: \(responseData.success)")
+                // Use Iron Session API client for authenticated JSON request
+                responseData = try await apiClient.authenticatedJSONRequest(
+                    path: "/api/checkins",
+                    method: "POST",
+                    requestBody: requestBody
+                )
+            }
+
+            debugPrint("🏁 CheckinsService: Response - Success: \(responseData.success)")
             if let checkinUri = responseData.checkinUri {
-                print("🏁 CheckinsService: Checkin URI: \(checkinUri)")
+                debugPrint("🏁 CheckinsService: Checkin URI: \(checkinUri)")
             }
 
             if responseData.success {
-                print("✅ CheckinsService: Checkin creation successful")
+                debugPrint("✅ CheckinsService: Checkin creation successful")
 
                 // Extract rkey from checkinUri to create shareable ID
                 let checkinId = responseData.checkinUri.flatMap { uri in
@@ -89,12 +116,12 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
                 return CheckinResult(success: true, checkinId: checkinId)
             } else {
                 let errorMessage = responseData.error ?? "Unknown error"
-                print("❌ CheckinsService: Server error: \(errorMessage)")
+                debugPrint("❌ CheckinsService: Server error: \(errorMessage)")
                 throw AnchorCheckinsError.serverError(errorMessage)
             }
 
         } catch {
-            print("❌ CheckinsService: Checkin creation failed: \(error)")
+            debugPrint("❌ CheckinsService: Checkin creation failed: \(error)")
 
             // Map Iron Session errors to Checkin errors
             if let apiError = error as? IronSessionAPIError {
@@ -115,6 +142,85 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
     }
 
     // MARK: - Private Methods
+
+    /// Create checkin with image attachment using multipart/form-data
+    private func createCheckinWithImage(
+        place: Place,
+        message: String?,
+        imageData: Data,
+        imageAlt: String?
+    ) async throws -> CheckinResponse {
+        // Get authenticated credentials for Bearer token
+        guard let credentials = try? await apiClient.credentialsStorage.load(),
+              let sessionId = credentials.sessionId else {
+            throw AnchorCheckinsError.authenticationRequired
+        }
+
+        // Build multipart request
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: URL(string: "\(apiClient.baseURL)/api/checkins")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(sessionId)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        // Build multipart body
+        var body = Data()
+
+        // Add place field
+        let placeData = CheckinRequest(place: place, message: message)
+        if let placeJSON = try? JSONEncoder().encode(placeData.place),
+           let placeString = String(data: placeJSON, encoding: .utf8) {
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"place\"\r\n\r\n".utf8))
+            body.append(Data(placeString.utf8))
+            body.append(Data("\r\n".utf8))
+        }
+
+        // Add message field if present
+        if let message = message {
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"message\"\r\n\r\n".utf8))
+            body.append(Data(message.utf8))
+            body.append(Data("\r\n".utf8))
+        }
+
+        // Add image field
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"photo.jpg\"\r\n".utf8))
+        body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
+        body.append(imageData)
+        body.append(Data("\r\n".utf8))
+
+        // Add imageAlt field if present
+        if let imageAlt = imageAlt, !imageAlt.isEmpty {
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"imageAlt\"\r\n\r\n".utf8))
+            body.append(Data(imageAlt.utf8))
+            body.append(Data("\r\n".utf8))
+        }
+
+        // Close boundary
+        body.append(Data("--\(boundary)--\r\n".utf8))
+
+        request.httpBody = body
+
+        debugPrint("🏁 CheckinsService: Sending multipart request, body size: \(body.count) bytes")
+
+        // Send request
+        let (data, response) = try await apiClient.session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AnchorCheckinsError.invalidResponse
+        }
+
+        guard 200...299 ~= httpResponse.statusCode else {
+            throw AnchorCheckinsError.httpError(httpResponse.statusCode)
+        }
+
+        // Decode response
+        let decoder = JSONDecoder()
+        return try decoder.decode(CheckinResponse.self, from: data)
+    }
 
     /// Extract rkey from AT Protocol URI (at://did:plc:abc/collection/rkey)
     /// - Parameter uri: AT Protocol URI string

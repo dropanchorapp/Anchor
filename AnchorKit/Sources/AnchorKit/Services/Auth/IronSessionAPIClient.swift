@@ -16,9 +16,9 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
     // MARK: - Properties
 
-    private let credentialsStorage: CredentialsStorageProtocol
-    private let session: URLSessionProtocol
-    private let baseURL: URL
+    internal let credentialsStorage: CredentialsStorageProtocol
+    internal let session: URLSessionProtocol
+    internal let baseURL: URL
 
     // MARK: - Initialization
 

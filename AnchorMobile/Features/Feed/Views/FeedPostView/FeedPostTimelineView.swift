@@ -18,7 +18,41 @@ struct FeedPostTimelineView: View {
         } label: {
             VStack(alignment: .leading, spacing: 16) {
                 FeedPostTimelineHeaderView(post: post)
-                
+
+                // Image thumbnail
+                if let image = post.image, let thumbURL = URL(string: image.thumbUrl) {
+                    AsyncImage(url: thumbURL) { phase in
+                        switch phase {
+                        case .empty:
+                            Rectangle()
+                                .fill(Color.secondary.opacity(0.1))
+                                .frame(height: 200)
+                                .overlay {
+                                    ProgressView()
+                                }
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 200)
+                                .clipped()
+                        case .failure:
+                            Rectangle()
+                                .fill(Color.secondary.opacity(0.1))
+                                .frame(height: 200)
+                                .overlay {
+                                    Image(systemName: "photo")
+                                        .foregroundStyle(.secondary)
+                                }
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal, 16)
+                }
+
                 if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(
                     from: post.record.text,
                     locations: nil

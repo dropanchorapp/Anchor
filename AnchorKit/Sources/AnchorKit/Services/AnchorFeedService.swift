@@ -144,6 +144,7 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
     public let coordinates: AnchorFeedCoordinates?
     public let address: AnchorFeedAddress?
     public let distance: Double? // Only present in nearby responses
+    public let image: AnchorFeedImage? // Optional image attachment
 
     public init(
         id: String,
@@ -153,7 +154,8 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         createdAt: String,
         coordinates: AnchorFeedCoordinates? = nil,
         address: AnchorFeedAddress? = nil,
-        distance: Double? = nil
+        distance: Double? = nil,
+        image: AnchorFeedImage? = nil
     ) {
         self.id = id
         self.uri = uri
@@ -163,6 +165,7 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         self.coordinates = coordinates
         self.address = address
         self.distance = distance
+        self.image = image
     }
 
     // Custom decoder to handle null id values by using uri as fallback
@@ -180,10 +183,11 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         coordinates = try container.decodeIfPresent(AnchorFeedCoordinates.self, forKey: .coordinates)
         address = try container.decodeIfPresent(AnchorFeedAddress.self, forKey: .address)
         distance = try container.decodeIfPresent(Double.self, forKey: .distance)
+        image = try container.decodeIfPresent(AnchorFeedImage.self, forKey: .image)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, uri, author, text, createdAt, coordinates, address, distance
+        case id, uri, author, text, createdAt, coordinates, address, distance, image
     }
 }
 
@@ -284,6 +288,23 @@ public struct AnchorFeedAddress: Codable, Sendable {
         self.locality = locality
         self.region = region
         self.country = country
+    }
+}
+
+/// Image attachment information
+public struct AnchorFeedImage: Codable, Sendable {
+    public let thumbUrl: String
+    public let fullsizeUrl: String
+    public let alt: String?
+
+    public init(
+        thumbUrl: String,
+        fullsizeUrl: String,
+        alt: String? = nil
+    ) {
+        self.thumbUrl = thumbUrl
+        self.fullsizeUrl = fullsizeUrl
+        self.alt = alt
     }
 }
 

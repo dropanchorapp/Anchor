@@ -13,5 +13,9 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Anchor needs access to your photo library to attach photos to your check-ins.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Anchor needs camera access to take photos for your check-ins.</string>
 </dict>
 </plist>

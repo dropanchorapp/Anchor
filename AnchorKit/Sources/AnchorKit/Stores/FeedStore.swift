@@ -124,6 +124,38 @@ public final class FeedStore {
         feedPostCache.removeAllObjects()
     }
 
+    /// Delete a check-in from the feed
+    /// - Parameters:
+    ///   - post: The post to delete
+    ///   - sessionId: User's session ID for authentication
+    /// - Throws: FeedError if deletion fails
+    @MainActor
+    public func deleteCheckin(_ post: FeedPost, sessionId: String) async throws {
+        debugPrint("🗑️ FeedStore: Deleting check-in \(post.id)...")
+
+        do {
+            // Delete from backend
+            try await feedService.deleteCheckin(
+                did: post.author.did,
+                rkey: post.id,
+                sessionId: sessionId
+            )
+
+            // Remove from local posts array
+            posts.removeAll { $0.id == post.id }
+
+            // Remove from cache
+            let cacheKey = NSString(string: post.id)
+            feedPostCache.removeObject(forKey: cacheKey)
+
+            debugPrint("✅ FeedStore: Successfully deleted check-in \(post.id)")
+
+        } catch {
+            debugPrint("❌ FeedStore: Failed to delete check-in: \(error)")
+            throw FeedError.networkError(error)
+        }
+    }
+
     // MARK: - Private Methods
 
     /// Get cached post or create new one from checkin data

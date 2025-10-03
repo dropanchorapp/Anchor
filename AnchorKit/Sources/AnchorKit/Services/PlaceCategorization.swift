@@ -1,9 +1,9 @@
 import Foundation
 
 public struct PlaceCategorization {
-    
+
     // MARK: - Category Cache Integration
-    
+
     /// Shared category cache for backend categories
     private static let categoryCache: CategoryCacheServiceProtocol = CategoryCacheService.shared
 
@@ -75,7 +75,7 @@ public struct PlaceCategorization {
         guard let group = group else {
             return getPrioritizedCategories()
         }
-        
+
         return categoryCache.getCategoriesForGroup(group)
     }
 }

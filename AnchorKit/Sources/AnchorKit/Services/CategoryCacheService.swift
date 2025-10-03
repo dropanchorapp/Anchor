@@ -21,20 +21,20 @@ public protocol CategoryCacheServiceProtocol: Sendable {
 /// Service for caching and retrieving POI categories from backend API
 /// Provides local caching with fallback to hardcoded categories
 public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecked Sendable {
-    
+
     // MARK: - Properties
-    
+
     private let session: URLSessionProtocol
     private let baseURL: URL
     private let userDefaults: UserDefaults
     private let cacheKey = "AnchorCachedCategories"
     private let cacheExpiryHours: TimeInterval = 24 // 24 hours
-    
+
     private var memoryCache: CachedCategories?
     private let cacheQueue = DispatchQueue(label: "com.anchor.category-cache", qos: .utility)
-    
+
     // MARK: - Initialization
-    
+
     public init(
         session: URLSessionProtocol = URLSession.shared,
         baseURL: URL = URL(string: "https://dropanchor.app/api")!,
@@ -43,13 +43,13 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
         self.session = session
         self.baseURL = baseURL
         self.userDefaults = userDefaults
-        
+
         // Load cache from disk on init
         loadCacheFromDisk()
     }
-    
+
     // MARK: - Cache Management
-    
+
     /// Get cached categories (memory first, then disk, then fallback)
     public func getCachedCategories() -> CachedCategories? {
         return cacheQueue.sync {
@@ -58,20 +58,20 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
                     return memoryCache
                 }
             }
-            
+
             // Try to load from disk
             loadCacheFromDisk()
-            
+
             if let memoryCache = memoryCache {
                 if !isCacheExpired(memoryCache) {
                     return memoryCache
                 }
             }
-            
+
             return nil
         }
     }
-    
+
     /// Set cached categories (saves to both memory and disk)
     public func setCachedCategories(_ categories: CachedCategories) {
         cacheQueue.async {
@@ -79,58 +79,58 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
             self.saveCacheToDisk(categories)
         }
     }
-    
+
     /// Fetch categories from API and cache them
     public func fetchAndCacheCategories() async throws -> CachedCategories {
         print("🗂️ DEBUG: fetchAndCacheCategories() method started")
         print("🗂️ CategoryCacheService: Fetching categories from API...")
-        
+
         let request = try buildCategoriesRequest()
         print("🗂️ DEBUG: Built request for URL: \(request.url?.absoluteString ?? "nil")")
-        
+
         do {
             print("🗂️ DEBUG: About to make network request")
             let (data, response) = try await session.data(for: request)
             print("🗂️ DEBUG: Received response, data size: \(data.count) bytes")
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("❌ DEBUG: Response is not HTTPURLResponse: \(response)")
                 throw CategoryCacheError.invalidResponse
             }
-            
+
             print("🗂️ CategoryCacheService: Response status: \(httpResponse.statusCode)")
-            
+
             guard httpResponse.statusCode == 200 else {
                 let errorString = String(data: data, encoding: .utf8) ?? "Unknown error"
                 print("❌ CategoryCacheService: Error response: \(errorString)")
                 throw CategoryCacheError.httpError(httpResponse.statusCode)
             }
-            
+
             let apiResponse = try JSONDecoder().decode(CategoriesAPIResponse.self, from: data)
-            
+
             guard let cachedCategories = CachedCategories(from: apiResponse) else {
                 throw CategoryCacheError.conversionFailed
             }
-            
+
             print("✅ CategoryCacheService: Successfully fetched \(cachedCategories.categories.count) categories")
-            
+
             // Cache the results
             setCachedCategories(cachedCategories)
-            
+
             return cachedCategories
-            
+
         } catch {
             print("❌ CategoryCacheService: Network error: \(error)")
             throw CategoryCacheError.networkError(error)
         }
     }
-    
+
     /// Check if cache is expired
     public func isCacheExpired() -> Bool {
         guard let cached = getCachedCategories() else { return true }
         return isCacheExpired(cached)
     }
-    
+
     /// Clear all cached data
     public func clearCache() {
         cacheQueue.async {
@@ -138,55 +138,55 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
             self.userDefaults.removeObject(forKey: self.cacheKey)
         }
     }
-    
+
     // MARK: - Category Lookup Methods
-    
+
     /// Get category group for tag/value pair
     public func getCategoryGroup(for tag: String, value: String) -> PlaceCategorization.CategoryGroup? {
         return getCachedCategories()?.getCategoryGroup(for: tag, value: value)
     }
-    
+
     /// Get icon for tag/value pair
     public func getIcon(for tag: String, value: String) -> String {
         return getCachedCategories()?.getIcon(for: tag, value: value) ?? "📍"
     }
-    
+
     /// Get all categories as OSM tag strings
     public func getAllCategories() -> [String] {
         return getCachedCategories()?.getAllCategories() ?? []
     }
-    
+
     /// Get prioritized categories
     public func getPrioritizedCategories() -> [String] {
         return getCachedCategories()?.getPrioritizedCategories() ?? []
     }
-    
+
     /// Get categories for specific group
     public func getCategoriesForGroup(_ group: PlaceCategorization.CategoryGroup) -> [String] {
         return getCachedCategories()?.getCategoriesForGroup(group) ?? []
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Build HTTP request for categories API
     private func buildCategoriesRequest() throws -> URLRequest {
         let url = baseURL.appendingPathComponent("places/categories")
         return URLRequest(url: url)
     }
-    
+
     /// Check if specific cached categories are expired
     private func isCacheExpired(_ cached: CachedCategories) -> Bool {
         let expiryDate = cached.lastUpdated.addingTimeInterval(cacheExpiryHours * 3600)
         return Date() > expiryDate
     }
-    
+
     /// Load cache from disk storage
     private func loadCacheFromDisk() {
         guard let data = userDefaults.data(forKey: cacheKey) else {
             print("🗂️ CategoryCacheService: No cached data found on disk")
             return
         }
-        
+
         do {
             let cached = try JSONDecoder().decode(CachedCategories.self, from: data)
             memoryCache = cached
@@ -196,7 +196,7 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
             userDefaults.removeObject(forKey: cacheKey)
         }
     }
-    
+
     /// Save cache to disk storage
     private func saveCacheToDisk(_ categories: CachedCategories) {
         do {
@@ -217,7 +217,7 @@ public enum CategoryCacheError: LocalizedError {
     case networkError(Error)
     case conversionFailed
     case decodingError(Error)
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidResponse:

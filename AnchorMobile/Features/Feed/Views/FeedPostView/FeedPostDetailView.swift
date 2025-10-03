@@ -12,7 +12,12 @@ import AnchorKit
 struct FeedPostDetailView: View {
     let post: FeedPost
     @State private var cameraPosition: MapCameraPosition
+    @State private var showDeleteConfirmation = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthStore.self) private var authStore
+    @Environment(FeedStore.self) private var feedStore
     
     init(post: FeedPost) {
         self.post = post
@@ -169,7 +174,7 @@ struct FeedPostDetailView: View {
                             }
                             .buttonStyle(.bordered)
                         }
-                        
+
                         Button(action: {
                             ExternalAppService.shared.openBlueskyProfile(handle: post.author.handle)
                         }) {
@@ -178,8 +183,38 @@ struct FeedPostDetailView: View {
                                 .fontWeight(.medium)
                         }
                         .buttonStyle(.bordered)
-                        
+
                         Spacer()
+                    }
+
+                    // Delete button (only show if user is the author)
+                    if authStore.credentials?.did == post.author.did {
+                        Divider()
+                            .padding(.vertical, 8)
+
+                        Button(role: .destructive, action: {
+                            showDeleteConfirmation = true
+                        }) {
+                            if isDeleting {
+                                HStack {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Deleting...")
+                                }
+                            } else {
+                                Label("Delete Check-in", systemImage: "trash")
+                            }
+                        }
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .disabled(isDeleting)
+
+                        if let error = deleteError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .padding(.top, 4)
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -219,6 +254,40 @@ struct FeedPostDetailView: View {
             }
         }
         .navigationBarHidden(true)
+        .confirmationDialog(
+            "Delete this check-in?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                Task {
+                    await handleDelete()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action cannot be undone.")
+        }
+    }
+
+    // MARK: - Delete Handler
+
+    private func handleDelete() async {
+        guard let sessionId = authStore.credentials?.sessionId else {
+            deleteError = "Not authenticated"
+            return
+        }
+
+        isDeleting = true
+        deleteError = nil
+
+        do {
+            try await feedStore.deleteCheckin(post, sessionId: sessionId)
+            dismiss()
+        } catch {
+            isDeleting = false
+            deleteError = "Failed to delete: \(error.localizedDescription)"
+        }
     }
 }
 

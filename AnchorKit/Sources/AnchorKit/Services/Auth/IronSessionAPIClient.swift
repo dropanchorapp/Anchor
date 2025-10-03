@@ -13,15 +13,15 @@ import Foundation
 /// Similar to BookHive's mobile client approach where session IDs are sent as cookies.
 @MainActor
 public final class IronSessionAPIClient: @unchecked Sendable {
-    
+
     // MARK: - Properties
-    
+
     private let credentialsStorage: CredentialsStorageProtocol
     private let session: URLSessionProtocol
     private let baseURL: URL
-    
+
     // MARK: - Initialization
-    
+
     public init(
         credentialsStorage: CredentialsStorageProtocol = KeychainCredentialsStorage(),
         session: URLSessionProtocol = URLSession.shared,
@@ -31,9 +31,9 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         self.session = session
         self.baseURL = URL(string: baseURL)!
     }
-    
+
     // MARK: - Authenticated API Calls
-    
+
     /// Make authenticated API request using sealed session token
     ///
     /// Automatically includes sealed session token as Bearer authorization header for backend authentication.
@@ -54,7 +54,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     ) async throws -> Data {
         return try await authenticatedRequest(path: path, method: method, body: body, retryCount: 0)
     }
-    
+
     /// Internal method with retry counting to prevent infinite loops
     private func authenticatedRequest(
         path: String,
@@ -199,7 +199,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         let refreshedCredentials = try await coordinator.refreshIronSession()
         try await credentialsStorage.save(refreshedCredentials)
     }
-    
+
     /// Make authenticated JSON request without request body
     ///
     /// Convenience method for JSON API calls with automatic response decoding.
@@ -216,7 +216,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         let responseData = try await authenticatedRequest(path: path, method: method, body: nil)
         return try JSONDecoder().decode(R.self, from: responseData)
     }
-    
+
     /// Make authenticated JSON request with request body
     ///
     /// Convenience method for JSON API calls with automatic encoding/decoding.
@@ -236,7 +236,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         let responseData = try await authenticatedRequest(path: path, method: method, body: bodyData)
         return try JSONDecoder().decode(R.self, from: responseData)
     }
-    
+
     /// Check if user is currently authenticated
     ///
     /// Validates that we have credentials with a sealed session ID.
@@ -249,7 +249,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         }
         return true
     }
-    
+
     /// Get current user info from session
     ///
     /// Returns basic user information from stored credentials.
@@ -262,9 +262,9 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         }
         return (handle: credentials.handle, did: credentials.did)
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Perform proactive token refresh if needed
     /// 
     /// - Parameter credentials: Current credentials to check and potentially refresh
@@ -273,32 +273,32 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         guard shouldRefreshTokensProactively(credentials) else {
             return credentials
         }
-        
+
         print("🔄 IronSessionAPIClient: Proactively refreshing tokens before request")
-        
+
         do {
             let coordinator = IronSessionMobileOAuthCoordinator(
                 credentialsStorage: credentialsStorage,
                 session: session
             )
             let refreshedCredentials = try await coordinator.refreshIronSession()
-            
+
             // Update credentials and save to storage
             guard let authCredentials = refreshedCredentials as? AuthCredentials else {
                 print("⚠️ IronSessionAPIClient: Failed to cast refreshed credentials")
                 return credentials // Continue with existing tokens
             }
-            
+
             try await credentialsStorage.save(authCredentials)
             print("✅ IronSessionAPIClient: Proactive token refresh successful")
             return authCredentials
-            
+
         } catch {
             print("⚠️ IronSessionAPIClient: Proactive refresh failed, continuing with existing tokens: \(error)")
             return credentials // Continue with existing tokens - reactive refresh will handle 401 if needed
         }
     }
-    
+
     /// Check if tokens should be refreshed proactively
     ///
     /// Determines if tokens are close enough to expiry to warrant a proactive refresh.
@@ -310,12 +310,12 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         // Refresh if the session will expire within 1 hour (3600 seconds)
         let oneHourFromNow = Date().addingTimeInterval(60 * 60)
         let shouldRefresh = credentials.expiresAt < oneHourFromNow
-        
+
         if shouldRefresh {
             print("🔄 IronSessionAPIClient: Token expires at \(credentials.expiresAt), " +
                   "current time + 1h = \(oneHourFromNow)")
         }
-        
+
         return shouldRefresh
     }
 }
@@ -328,7 +328,7 @@ public enum IronSessionAPIError: Error, LocalizedError {
     case networkError
     case apiError(Int)
     case authenticationFailed
-    
+
     public var errorDescription: String? {
         switch self {
         case .notAuthenticated:

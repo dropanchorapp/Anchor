@@ -112,13 +112,13 @@ public final class AuthStore: AuthStoreProtocol {
     /// - Throws: OAuth errors if flow initialization fails
     public func startDirectOAuthFlow() async throws -> URL {
         print("🔐 AuthStore: Starting direct OAuth flow")
-        
+
         do {
             // Start OAuth without requiring handle upfront - backend will handle OAuth discovery
             let oauthURL = try await ironSessionCoordinator.startDirectOAuthFlow()
             print("✅ AuthStore: Direct OAuth flow started successfully")
             return oauthURL
-            
+
         } catch {
             print("❌ AuthStore: Failed to start direct authentication: \(error.localizedDescription)")
             throw error
@@ -132,25 +132,25 @@ public final class AuthStore: AuthStoreProtocol {
     /// - Throws: OAuth errors if token exchange fails
     public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
         print("🔐 AuthStore: Handling Iron Session OAuth callback")
-        
+
         do {
             let credentials = try await ironSessionCoordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
             print("🔐 AuthStore: Iron Session OAuth flow completed successfully")
-            
+
             // Cast to AuthCredentials for storage
             guard let authCredentials = credentials as? AuthCredentials else {
                 print("❌ AuthStore: Failed to cast credentials to AuthCredentials")
                 throw AuthStoreError.authenticationFailed
             }
-            
+
             _credentials = authCredentials
             updateAuthenticationState()
-            
+
             print("✅ AuthStore: Iron Session authentication completed successfully")
             print("✅ AuthStore: Authentication state updated - isAuthenticated: \(isAuthenticated)")
-            
+
             return true
-            
+
         } catch {
             print("❌ AuthStore: Iron Session OAuth callback failed: \(error)")
             throw error
@@ -161,10 +161,10 @@ public final class AuthStore: AuthStoreProtocol {
 
     public func signOut() async {
         print("🔓 AuthStore: Signing out...")
-        
+
         _credentials = nil
         updateAuthenticationState()
-        
+
         do {
             try await storage.clear()
             print("✅ AuthStore: Sign out completed successfully")
@@ -175,42 +175,42 @@ public final class AuthStore: AuthStoreProtocol {
 
     public func getValidCredentials() async throws -> AuthCredentialsProtocol {
         print("🔑 AuthStore: Getting valid credentials...")
-        
+
         // Check if we have loaded credentials
         guard let credentials = _credentials else {
             print("❌ AuthStore: No credentials loaded")
             throw AuthStoreError.notAuthenticated
         }
-        
+
         // Check if credentials are still valid
         guard credentials.isValid else {
             print("🔄 AuthStore: Credentials expired, attempting refresh...")
             return try await refreshExpiredCredentials(credentials)
         }
-        
+
         print("✅ AuthStore: Returning valid credentials for @\(credentials.handle)")
         return credentials
     }
 
     public func validateSessionOnAppLaunch() async {
         print("🔍 AuthStore: Validating session on app launch...")
-        
+
         guard let credentials = _credentials else {
             print("🔍 AuthStore: No credentials to validate on launch")
             return
         }
-        
+
         await validateSessionInternal(credentials, reason: "app launch")
     }
 
     public func validateSessionOnAppResume() async {
         print("🔍 AuthStore: Validating session on app resume...")
-        
+
         guard let credentials = _credentials else {
             print("🔍 AuthStore: No credentials to validate on resume")
             return
         }
-        
+
         await validateSessionInternal(credentials, reason: "app resume")
     }
 
@@ -218,7 +218,7 @@ public final class AuthStore: AuthStoreProtocol {
 
     private func refreshExpiredCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials {
         print("🔄 AuthStore: Refreshing expired credentials...")
-        
+
         do {
             let refreshedCredentials = try await authService.refreshTokens(credentials)
             _credentials = refreshedCredentials
@@ -247,7 +247,7 @@ public final class AuthStore: AuthStoreProtocol {
 
     private func attemptTokenRefresh(_ credentials: AuthCredentials, reason: String) async {
         print("🔄 AuthStore: Attempting token refresh as fallback for \(reason)...")
-        
+
         do {
             let refreshedCredentials = try await authService.refreshTokens(credentials)
             _credentials = refreshedCredentials
@@ -267,7 +267,7 @@ public final class AuthStore: AuthStoreProtocol {
 
     private func updateAuthenticationState() {
         isAuthenticated = _credentials?.isValid ?? false
-        
+
         if isAuthenticated {
             Task {
                 do {
@@ -286,7 +286,7 @@ public enum AuthStoreError: Error, LocalizedError {
     case notAuthenticated
     case authenticationFailed
     case sessionExpired
-    
+
     public var errorDescription: String? {
         switch self {
         case .notAuthenticated:

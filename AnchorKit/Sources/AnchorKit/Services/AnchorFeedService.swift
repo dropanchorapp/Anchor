@@ -14,6 +14,7 @@ import Foundation
 @MainActor
 public protocol AnchorFeedServiceProtocol {
     func getUserCheckins(did: String, limit: Int, cursor: String?) async throws -> AnchorFeedResponse
+    func deleteCheckin(did: String, rkey: String, sessionId: String) async throws
 }
 
 // MARK: - Anchor Feed Service
@@ -43,9 +44,16 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
     ///   - limit: Number of check-ins to return (default: 50)
     ///   - cursor: ISO timestamp for pagination
     /// - Returns: User feed response with check-ins and cursor
-    public func getUserCheckins(did: String, limit: Int = 50, cursor: String? = nil) async throws -> AnchorFeedResponse {
+    public func getUserCheckins(
+        did: String,
+        limit: Int = 50,
+        cursor: String? = nil
+    ) async throws -> AnchorFeedResponse {
         // Use new REST-style endpoint: /api/checkins/:did
-        var components = URLComponents(url: baseURL.appendingPathComponent("/checkins/\(did)"), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("/checkins/\(did)"),
+            resolvingAgainstBaseURL: false
+        )!
         components.queryItems = [
             URLQueryItem(name: "limit", value: String(limit))
         ]
@@ -55,6 +63,22 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
 
         let request = URLRequest(url: components.url!)
         return try await performRequest(request, responseType: AnchorFeedResponse.self)
+    }
+
+    /// Delete a check-in (only the author can delete their own check-ins)
+    /// Uses REST endpoint: DELETE /api/checkins/:did/:rkey
+    /// - Parameters:
+    ///   - did: User's DID identifier
+    ///   - rkey: Record key of the check-in to delete
+    ///   - sessionId: User's session ID for authentication
+    /// - Throws: AnchorFeedError if deletion fails
+    public func deleteCheckin(did: String, rkey: String, sessionId: String) async throws {
+        let url = baseURL.appendingPathComponent("/checkins/\(did)/\(rkey)")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(sessionId)", forHTTPHeaderField: "Authorization")
+
+        _ = try await performRequest(request, responseType: AnchorFeedDeleteResponse.self)
     }
 
     // MARK: - Private Methods
@@ -290,6 +314,15 @@ public struct AnchorFeedStats: Codable, Sendable {
         self.uniqueUsers = uniqueUsers
         self.uniquePlaces = uniquePlaces
         self.lastUpdate = lastUpdate
+    }
+}
+
+/// Delete response from the Feed API
+public struct AnchorFeedDeleteResponse: Codable, Sendable {
+    public let success: Bool
+
+    public init(success: Bool) {
+        self.success = success
     }
 }
 

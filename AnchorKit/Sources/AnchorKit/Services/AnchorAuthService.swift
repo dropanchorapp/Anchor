@@ -68,7 +68,7 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
         guard credentials.sessionId != nil else {
             throw AnchorAuthError.invalidAuthData
         }
-        
+
         // Return the credentials as-is since validation happens on the backend
         return credentials
     }
@@ -77,12 +77,12 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
     public func refreshTokens(_ credentials: AuthCredentials) async throws -> AuthCredentials {
         // Use Iron Session coordinator to refresh
         let refreshedCredentials = try await ironSessionCoordinator.refreshIronSession()
-        
+
         // Cast to AuthCredentials
         guard let authCredentials = refreshedCredentials as? AuthCredentials else {
             throw AnchorAuthError.invalidAuthData
         }
-        
+
         return authCredentials
     }
 

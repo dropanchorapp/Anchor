@@ -39,7 +39,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
             baseURL: baseURL
         )
     }
-    
+
     /// Convenience initializer for testing with custom API client
     public init(apiClient: IronSessionAPIClient) {
         self.apiClient = apiClient
@@ -60,11 +60,11 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
     public func createCheckin(place: Place, message: String?) async throws -> CheckinResult {
         print("🏁 CheckinsService: Creating checkin for place: \(place.name)")
         print("🏁 CheckinsService: Location: (\(place.latitude), \(place.longitude))")
-        
+
         do {
             // Create request body
             let requestBody = CheckinRequest(place: place, message: message)
-            
+
             // Use Iron Session API client for authenticated request
             // This handles proactive token refresh, reactive 401 handling, and retries automatically
             let responseData: CheckinResponse = try await apiClient.authenticatedJSONRequest(
@@ -72,7 +72,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
                 method: "POST",
                 requestBody: requestBody
             )
-            
+
             print("🏁 CheckinsService: Response - Success: \(responseData.success)")
             if let checkinUri = responseData.checkinUri {
                 print("🏁 CheckinsService: Checkin URI: \(checkinUri)")
@@ -92,10 +92,10 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
                 print("❌ CheckinsService: Server error: \(errorMessage)")
                 throw AnchorCheckinsError.serverError(errorMessage)
             }
-            
+
         } catch {
             print("❌ CheckinsService: Checkin creation failed: \(error)")
-            
+
             // Map Iron Session errors to Checkin errors
             if let apiError = error as? IronSessionAPIError {
                 switch apiError {
@@ -137,7 +137,7 @@ private struct CheckinRequest: Codable {
         let latitude: Double
         let longitude: Double
         let tags: [String: String]
-        
+
         // Additional fields that the backend expects from the reactivated endpoint
         var category: String?
         var categoryGroup: String?

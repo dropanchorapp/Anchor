@@ -196,39 +196,39 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         near coordinate: CLLocationCoordinate2D,
         limit: Int = 10
     ) async throws -> [AnchorPlaceWithDistance] {
-        
+
         print("🔍 AnchorPlacesService: Searching for '\(query)' near (\(coordinate.latitude), \(coordinate.longitude))")
         print("🔍 AnchorPlacesService: Limit: \(limit)")
-        
+
         // Build request to /api/places/search
         let request = try buildSearchRequest(
             query: query,
             coordinate: coordinate,
             limit: limit
         )
-        
+
         print("🔍 AnchorPlacesService: Making search request to: \(request.url?.absoluteString ?? "unknown")")
-        
+
         do {
             let (data, response) = try await session.data(for: request)
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw AnchorPlacesError.invalidResponse
             }
-            
+
             print("🔍 AnchorPlacesService: Search response status: \(httpResponse.statusCode)")
-            
+
             guard httpResponse.statusCode == 200 else {
                 let errorString = String(data: data, encoding: .utf8) ?? "Unknown error"
                 print("❌ AnchorPlacesService: Search error response: \(errorString)")
                 throw AnchorPlacesError.httpError(httpResponse.statusCode)
             }
-            
+
             // Parse search response
             let searchResponse = try JSONDecoder().decode(AnchorPlacesSearchResponse.self, from: data)
-            
+
             print("✅ AnchorPlacesService: Found \(searchResponse.places.count) places for query '\(query)'")
-            
+
             return searchResponse.places.map { apiPlace in
                 let elementType = Place.ElementType(rawValue: apiPlace.elementType) ?? .node
                 let place = Place(
@@ -240,13 +240,13 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
                     tags: apiPlace.tags
                 )
                 return AnchorPlaceWithDistance(
-                    place: place, 
+                    place: place,
                     distance: apiPlace.distanceMeters,
                     backendCategory: apiPlace.category,
                     backendIcon: apiPlace.icon
                 )
             }
-            
+
         } catch {
             print("❌ AnchorPlacesService: Search network error: \(error)")
             throw AnchorPlacesError.networkError(error)
@@ -292,7 +292,7 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
 
         return URLRequest(url: url)
     }
-    
+
     /// Build HTTP request for places search API
     private func buildSearchRequest(
         query: String,
@@ -303,20 +303,20 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
             url: baseURL.appendingPathComponent("/places/search"),
             resolvingAgainstBaseURL: false
         )!
-        
+
         let queryItems = [
             URLQueryItem(name: "q", value: query),
             URLQueryItem(name: "lat", value: String(coordinate.latitude)),
             URLQueryItem(name: "lng", value: String(coordinate.longitude)),
             URLQueryItem(name: "limit", value: String(limit))
         ]
-        
+
         components.queryItems = queryItems
-        
+
         guard let url = components.url else {
             throw AnchorPlacesError.invalidURL
         }
-        
+
         return URLRequest(url: url)
     }
 }

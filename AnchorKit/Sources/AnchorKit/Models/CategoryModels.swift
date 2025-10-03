@@ -8,7 +8,7 @@ public struct CategoriesAPIResponse: Codable, Sendable {
     public let defaultSearch: [String]
     public let sociallyRelevant: [String]
     public let metadata: CategoryMetadata
-    
+
     public init(
         categories: [CategoryAPI],
         defaultSearch: [String],
@@ -29,7 +29,7 @@ public struct CategoryAPI: Codable, Sendable, Identifiable {
     public let icon: String
     public let group: String
     public let osmTag: String
-    
+
     public init(id: String, name: String, icon: String, group: String, osmTag: String) {
         self.id = id
         self.name = name
@@ -44,7 +44,7 @@ public struct CategoryMetadata: Codable, Sendable {
     public let totalCategories: Int
     public let defaultSearchCount: Int
     public let sociallyRelevantCount: Int
-    
+
     public init(totalCategories: Int, defaultSearchCount: Int, sociallyRelevantCount: Int) {
         self.totalCategories = totalCategories
         self.defaultSearchCount = defaultSearchCount
@@ -63,7 +63,7 @@ public struct CachedCategory: Codable, Sendable, Identifiable {
     public let osmTag: String
     public let tag: String
     public let value: String
-    
+
     public init(
         id: String,
         name: String,
@@ -81,23 +81,23 @@ public struct CachedCategory: Codable, Sendable, Identifiable {
         self.tag = tag
         self.value = value
     }
-    
+
     /// Convert from API category to cached category
     public init?(from apiCategory: CategoryAPI) {
         // Parse OSM tag (e.g., "amenity=restaurant" -> tag="amenity", value="restaurant")
         let components = apiCategory.osmTag.split(separator: "=")
-        guard components.count == 2 else { 
-            return nil 
+        guard components.count == 2 else {
+            return nil
         }
-        
+
         let tag = String(components[0])
         let value = String(components[1])
-        
+
         // Convert group string to enum
         guard let group = PlaceCategorization.CategoryGroup.fromAPIString(apiCategory.group) else {
             return nil
         }
-        
+
         self.id = apiCategory.id
         self.name = apiCategory.name
         self.icon = apiCategory.icon
@@ -115,7 +115,7 @@ extension PlaceCategorization.CategoryGroup {
     static func fromAPIString(_ apiGroup: String) -> PlaceCategorization.CategoryGroup? {
         // Handle both lowercase_underscore and UPPERCASE_UNDERSCORE formats
         let normalizedGroup = apiGroup.uppercased()
-        
+
         let groupMapping: [String: PlaceCategorization.CategoryGroup] = [
             "FOOD_AND_DRINK": .foodAndDrink,
             "ENTERTAINMENT": .entertainment,
@@ -129,10 +129,10 @@ extension PlaceCategorization.CategoryGroup {
             "HEALTH": .health,
             "EDUCATION": .education
         ]
-        
+
         return groupMapping[normalizedGroup]
     }
-    
+
     /// Convert CategoryGroup enum to API string format (lowercase_underscore format)
     var apiString: String {
         switch self {
@@ -171,7 +171,7 @@ public struct CachedCategories: Codable, Sendable {
     public let sociallyRelevant: [String]
     public let metadata: CategoryMetadata
     public let lastUpdated: Date
-    
+
     public init(
         categories: [CachedCategory],
         defaultSearch: [String],
@@ -185,45 +185,45 @@ public struct CachedCategories: Codable, Sendable {
         self.metadata = metadata
         self.lastUpdated = lastUpdated
     }
-    
+
     /// Convert from API response to cached categories
     public init?(from apiResponse: CategoriesAPIResponse) {
         let cachedCategories = apiResponse.categories.compactMap { CachedCategory(from: $0) }
-        
+
         // Ensure we got all categories successfully
         guard cachedCategories.count == apiResponse.categories.count else {
             return nil
         }
-        
+
         self.categories = cachedCategories
         self.defaultSearch = apiResponse.defaultSearch
         self.sociallyRelevant = apiResponse.sociallyRelevant
         self.metadata = apiResponse.metadata
         self.lastUpdated = Date()
     }
-    
+
     // MARK: - Lookup Methods
-    
+
     /// Get category group for tag/value pair
     public func getCategoryGroup(for tag: String, value: String) -> PlaceCategorization.CategoryGroup? {
         return categories.first { $0.tag == tag && $0.value == value }?.group
     }
-    
+
     /// Get icon for tag/value pair
     public func getIcon(for tag: String, value: String) -> String {
         return categories.first { $0.tag == tag && $0.value == value }?.icon ?? "📍"
     }
-    
+
     /// Get all categories as OSM tag strings
     public func getAllCategories() -> [String] {
         return categories.map { $0.osmTag }.sorted()
     }
-    
+
     /// Get prioritized categories (maps to defaultSearch)
     public func getPrioritizedCategories() -> [String] {
         return defaultSearch
     }
-    
+
     /// Get categories for a specific group
     public func getCategoriesForGroup(_ group: PlaceCategorization.CategoryGroup) -> [String] {
         return categories

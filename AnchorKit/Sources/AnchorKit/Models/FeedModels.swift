@@ -11,7 +11,14 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
     public let distance: Double? // Only present in nearby feeds
 
     // Public initializer for testing and previews
-    public init(id: String, author: FeedAuthor, record: ATProtoRecord, coordinates: FeedCoordinates? = nil, address: FeedAddress? = nil, distance: Double? = nil) {
+    public init(
+        id: String,
+        author: FeedAuthor,
+        record: ATProtoRecord,
+        coordinates: FeedCoordinates? = nil,
+        address: FeedAddress? = nil,
+        distance: Double? = nil
+    ) {
         self.id = id
         self.author = author
         self.record = record
@@ -89,7 +96,13 @@ public struct FeedAddress: Sendable, Hashable, Codable {
     public let region: String?
     public let country: String?
 
-    public init(name: String? = nil, streetAddress: String? = nil, locality: String? = nil, region: String? = nil, country: String? = nil) {
+    public init(
+        name: String? = nil,
+        streetAddress: String? = nil,
+        locality: String? = nil,
+        region: String? = nil,
+        country: String? = nil
+    ) {
         self.name = name
         self.streetAddress = streetAddress
         self.locality = locality

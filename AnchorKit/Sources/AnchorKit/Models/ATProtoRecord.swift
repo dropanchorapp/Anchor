@@ -8,7 +8,12 @@ public struct ATProtoRecord: Sendable, Hashable {
     public let createdAt: Date
     public let type: String
 
-    public init(text: String, facets: [ATProtoFacet] = [], createdAt: Date = Date(), type: String = "app.bsky.feed.post") {
+    public init(
+        text: String,
+        facets: [ATProtoFacet] = [],
+        createdAt: Date = Date(),
+        type: String = "app.bsky.feed.post"
+    ) {
         self.text = text
         self.facets = facets
         self.createdAt = createdAt

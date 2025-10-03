@@ -10,18 +10,16 @@ import Foundation
 // MARK: - Feed Service Protocol
 
 /// Service protocol for Anchor feed operations
+/// **PDS-Only Architecture**: Focuses on personal location logging, not social feeds
 @MainActor
 public protocol AnchorFeedServiceProtocol {
-    func getGlobalFeed(limit: Int, cursor: String?) async throws -> AnchorFeedResponse
-    func getNearbyCheckins(latitude: Double, longitude: Double, radius: Double, limit: Int) async throws -> AnchorNearbyFeedResponse
     func getUserCheckins(did: String, limit: Int, cursor: String?) async throws -> AnchorFeedResponse
-    func getFollowingFeed(userDid: String, limit: Int, cursor: String?) async throws -> AnchorFeedResponse
 }
 
 // MARK: - Anchor Feed Service
 
 /// Service for reading feed data from the Anchor backend
-/// Provides read-only access to global, nearby, user, and following feeds
+/// **PDS-Only Architecture**: Provides read-only access to user's personal timeline
 @MainActor
 public final class AnchorFeedService: AnchorFeedServiceProtocol {
     // MARK: - Properties
@@ -38,77 +36,17 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
 
     // MARK: - Feed Methods
 
-    /// Get recent check-ins from all users with pagination support
-    /// - Parameters:
-    ///   - limit: Number of check-ins to return (default: 50, max: 100)
-    ///   - cursor: ISO timestamp for pagination
-    /// - Returns: Global feed response with check-ins and cursor
-    public func getGlobalFeed(limit: Int = 50, cursor: String? = nil) async throws -> AnchorFeedResponse {
-        var components = URLComponents(url: baseURL.appendingPathComponent("/global"), resolvingAgainstBaseURL: false)!
-        components.queryItems = [
-            URLQueryItem(name: "limit", value: String(limit))
-        ]
-        if let cursor = cursor {
-            components.queryItems?.append(URLQueryItem(name: "cursor", value: cursor))
-        }
-
-        let request = URLRequest(url: components.url!)
-        return try await performRequest(request, responseType: AnchorFeedResponse.self)
-    }
-
-    /// Get nearby check-ins within a geographic radius
-    /// - Parameters:
-    ///   - latitude: Center latitude for search
-    ///   - longitude: Center longitude for search
-    ///   - radius: Search radius in kilometers (default: 5km)
-    ///   - limit: Number of check-ins to return (default: 50)
-    /// - Returns: Nearby feed response with spatial information
-    public func getNearbyCheckins(latitude: Double, longitude: Double, radius: Double = 5.0, limit: Int = 50) async throws -> AnchorNearbyFeedResponse {
-        var components = URLComponents(url: baseURL.appendingPathComponent("/nearby"), resolvingAgainstBaseURL: false)!
-        components.queryItems = [
-            URLQueryItem(name: "lat", value: String(latitude)),
-            URLQueryItem(name: "lng", value: String(longitude)),
-            URLQueryItem(name: "radius", value: String(radius)),
-            URLQueryItem(name: "limit", value: String(limit))
-        ]
-
-        let request = URLRequest(url: components.url!)
-        return try await performRequest(request, responseType: AnchorNearbyFeedResponse.self)
-    }
-
     /// Get check-ins for a specific user with pagination support
+    /// Uses new REST-style endpoint: GET /api/checkins/:did
     /// - Parameters:
     ///   - did: User's DID identifier
     ///   - limit: Number of check-ins to return (default: 50)
     ///   - cursor: ISO timestamp for pagination
     /// - Returns: User feed response with check-ins and cursor
     public func getUserCheckins(did: String, limit: Int = 50, cursor: String? = nil) async throws -> AnchorFeedResponse {
-        var components = URLComponents(url: baseURL.appendingPathComponent("/user"), resolvingAgainstBaseURL: false)!
+        // Use new REST-style endpoint: /api/checkins/:did
+        var components = URLComponents(url: baseURL.appendingPathComponent("/checkins/\(did)"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
-            URLQueryItem(name: "did", value: did),
-            URLQueryItem(name: "limit", value: String(limit))
-        ]
-        if let cursor = cursor {
-            components.queryItems?.append(URLQueryItem(name: "cursor", value: cursor))
-        }
-
-        let request = URLRequest(url: components.url!)
-        return try await performRequest(request, responseType: AnchorFeedResponse.self)
-    }
-
-    /// Get check-ins from users that the specified user follows
-    /// - Parameters:
-    ///   - userDid: DID of the user whose following feed to retrieve
-    ///   - limit: Number of check-ins to return (default: 50)
-    ///   - cursor: ISO timestamp for pagination
-    /// - Returns: Following feed response with check-ins and cursor
-    public func getFollowingFeed(userDid: String, limit: Int = 50, cursor: String? = nil) async throws -> AnchorFeedResponse {
-        var components = URLComponents(
-            url: baseURL.appendingPathComponent("/following"),
-            resolvingAgainstBaseURL: false
-        )!
-        components.queryItems = [
-            URLQueryItem(name: "user", value: userDid),
             URLQueryItem(name: "limit", value: String(limit))
         ]
         if let cursor = cursor {
@@ -159,7 +97,7 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
 
 // MARK: - Response Models
 
-/// Response format for global, user, and following feeds
+/// Response format for user feed (personal timeline)
 public struct AnchorFeedResponse: Codable, Sendable {
     public let checkins: [AnchorFeedCheckin]
     public let cursor: String?
@@ -169,19 +107,6 @@ public struct AnchorFeedResponse: Codable, Sendable {
         self.checkins = checkins
         self.cursor = cursor
         self.user = user
-    }
-}
-
-/// Response format for nearby queries with spatial information
-public struct AnchorNearbyFeedResponse: Codable, Sendable {
-    public let checkins: [AnchorFeedCheckin]
-    public let center: AnchorFeedCoordinates
-    public let radius: Double
-
-    public init(checkins: [AnchorFeedCheckin], center: AnchorFeedCoordinates, radius: Double) {
-        self.checkins = checkins
-        self.center = center
-        self.radius = radius
     }
 }
 
@@ -196,7 +121,16 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
     public let address: AnchorFeedAddress?
     public let distance: Double? // Only present in nearby responses
 
-    public init(id: String, uri: String, author: AnchorFeedAuthor, text: String, createdAt: String, coordinates: AnchorFeedCoordinates? = nil, address: AnchorFeedAddress? = nil, distance: Double? = nil) {
+    public init(
+        id: String,
+        uri: String,
+        author: AnchorFeedAuthor,
+        text: String,
+        createdAt: String,
+        coordinates: AnchorFeedCoordinates? = nil,
+        address: AnchorFeedAddress? = nil,
+        distance: Double? = nil
+    ) {
         self.id = id
         self.uri = uri
         self.author = author
@@ -253,6 +187,57 @@ public struct AnchorFeedCoordinates: Codable, Sendable {
         self.latitude = latitude
         self.longitude = longitude
     }
+
+    // Custom decoder to handle both string and number values from API
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Try to decode as Double first, then as String and convert
+        if let lat = try? container.decode(Double.self, forKey: .latitude) {
+            latitude = lat
+        } else if let latString = try? container.decode(String.self, forKey: .latitude),
+                  let lat = Double(latString) {
+            latitude = lat
+        } else {
+            throw DecodingError.typeMismatchWithInfo(
+                Double.self,
+                DecodingError.Context(
+                    codingPath: container.codingPath + [CodingKeys.latitude],
+                    debugDescription: "Expected Double or String for latitude"
+                )
+            )
+        }
+
+        if let lng = try? container.decode(Double.self, forKey: .longitude) {
+            longitude = lng
+        } else if let lngString = try? container.decode(String.self, forKey: .longitude),
+                  let lng = Double(lngString) {
+            longitude = lng
+        } else {
+            throw DecodingError.typeMismatchWithInfo(
+                Double.self,
+                DecodingError.Context(
+                    codingPath: container.codingPath + [CodingKeys.longitude],
+                    debugDescription: "Expected Double or String for longitude"
+                )
+            )
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case latitude
+        case longitude
+    }
+}
+
+// Helper extension for better error messages
+extension DecodingError {
+    static func typeMismatchWithInfo(
+        _ type: Any.Type,
+        _ context: Context
+    ) -> DecodingError {
+        return .typeMismatch(type, context)
+    }
 }
 
 /// Address/location information
@@ -263,7 +248,13 @@ public struct AnchorFeedAddress: Codable, Sendable {
     public let region: String?
     public let country: String?
 
-    public init(name: String? = nil, streetAddress: String? = nil, locality: String? = nil, region: String? = nil, country: String? = nil) {
+    public init(
+        name: String? = nil,
+        streetAddress: String? = nil,
+        locality: String? = nil,
+        region: String? = nil,
+        country: String? = nil
+    ) {
         self.name = name
         self.streetAddress = streetAddress
         self.locality = locality

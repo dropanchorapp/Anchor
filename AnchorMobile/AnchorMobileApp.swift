@@ -13,6 +13,7 @@ struct AnchorMobileApp: App {
     // Shared services
     @State private var authStore = AuthStore()
     @State private var checkInStore: CheckInStore
+    @State private var feedStore = FeedStore()
     @State private var appStateStore = AppStateStore()
     @State private var locationService = LocationService()
 
@@ -69,6 +70,7 @@ struct AnchorMobileApp: App {
                     ContentView()
                         .environment(authStore)
                         .environment(checkInStore)
+                        .environment(feedStore)
                         .environment(appStateStore)
                         .environment(locationService)
                 } else {

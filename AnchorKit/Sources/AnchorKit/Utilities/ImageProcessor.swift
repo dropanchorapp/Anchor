@@ -6,6 +6,7 @@
 //  Handles EXIF stripping (preserving orientation), resizing, and compression
 //
 
+#if canImport(UIKit)
 import UIKit
 import ImageIO
 
@@ -239,3 +240,5 @@ public enum ImageProcessor {
         return formatter.string(fromByteCount: Int64(bytes))
     }
 }
+
+#endif

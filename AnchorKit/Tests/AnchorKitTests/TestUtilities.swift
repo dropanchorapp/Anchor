@@ -126,12 +126,21 @@ public class MockAnchorCheckinsService: AnchorCheckinsServiceProtocol {
     public var createCheckinCallCount = 0
     public var lastCreateCheckinPlace: Place?
     public var lastCreateCheckinMessage: String?
+    public var lastCreateCheckinImageData: Data?
+    public var lastCreateCheckinImageAlt: String?
     // lastCreateCheckinAccessToken removed - no longer needed with Iron Session auth
 
-    public func createCheckin(place: Place, message: String?) async throws -> CheckinResult {
+    public func createCheckin(
+        place: Place,
+        message: String?,
+        imageData: Data? = nil,
+        imageAlt: String? = nil
+    ) async throws -> CheckinResult {
         createCheckinCallCount += 1
         lastCreateCheckinPlace = place
         lastCreateCheckinMessage = message
+        lastCreateCheckinImageData = imageData
+        lastCreateCheckinImageAlt = imageAlt
 
         if shouldThrowError {
             throw NSError(domain: "MockCheckinsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock checkins service error"])

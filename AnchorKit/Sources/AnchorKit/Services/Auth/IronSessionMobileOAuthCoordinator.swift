@@ -204,7 +204,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     /// - Returns: Updated credentials with refreshed sealed session ID
     /// - Throws: IronSessionOAuthError if parsing fails
     private func parseRefreshResponse(
-        data: Data, 
+        data: Data,
         currentCredentials: AuthCredentials
     ) throws -> AuthCredentials {
         // Parse refresh response (BookHive pattern - sealed session IDs only)

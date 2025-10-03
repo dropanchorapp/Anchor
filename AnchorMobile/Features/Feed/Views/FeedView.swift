@@ -12,14 +12,8 @@ struct FeedView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(AppStateStore.self) private var appStateStore
-    @State private var feedStore = FeedStore()
+    @Environment(FeedStore.self) private var feedStore
     @State private var selectedPost: FeedPost?
-    @State private var selectedFeed: FeedType = .following
-
-    enum FeedType: String, CaseIterable {
-        case following = "Following"
-        case timeline = "Timeline"
-    }
 
     var body: some View {
         NavigationStack {
@@ -28,17 +22,7 @@ struct FeedView: View {
                    authStore.credentials != nil &&
                    authStore.credentials?.accessToken.isEmpty == false {
 
-                    // Segmented control for feed selection
-                    Picker("Feed Type", selection: $selectedFeed) {
-                        ForEach(FeedType.allCases, id: \.self) { feedType in
-                            Text(feedType.rawValue).tag(feedType)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .padding(.bottom, 12)
-
-                    // Feed content
+                    // Personal timeline view (date-grouped sections for personal log feel)
                     Group {
                         if feedStore.isLoading {
                             FeedLoadingView()
@@ -55,53 +39,35 @@ struct FeedView: View {
                                 }
                             }
                         } else {
-                            // Different UI based on feed type
-                            switch selectedFeed {
-                            case .following:
-                                // Following feed: compact, no date grouping
-                                List(feedStore.posts, id: \.id) { post in
-                                    FeedPostFollowingView(post: post) {
-                                        selectedPost = post
+                            let groupedPosts = feedStore.posts.groupedByDate()
+
+                            ZStack {
+                                // Background timeline line that spans the entire feed
+                                HStack {
+                                    Rectangle()
+                                        .fill(.orange.opacity(0.3))
+                                        .frame(width: 2)
+                                        .padding(.leading, 19)
+                                    Spacer()
+                                }
+
+                                List(groupedPosts) { section in
+                                    Section {
+                                        ForEach(section.posts, id: \.id) { post in
+                                            FeedPostTimelineView(post: post) {
+                                                selectedPost = post
+                                            }
+                                            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                            .listRowSeparator(.hidden)
+                                            .listRowBackground(Color.clear)
+                                        }
+                                    } header: {
+                                        FeedDateHeaderView(date: section.date)
+                                            .listRowInsets(EdgeInsets())
                                     }
-                                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                    .listRowSeparator(.visible, edges: .bottom)
-                                    .listRowBackground(Color.clear)
                                 }
                                 .listStyle(.plain)
                                 .scrollContentBackground(.hidden)
-
-                            case .timeline:
-                                // Timeline feed: date-grouped sections for personal log feel
-                                let groupedPosts = feedStore.posts.groupedByDate()
-
-                                ZStack {
-                                    // Background timeline line that spans the entire feed
-                                    HStack {
-                                        Rectangle()
-                                            .fill(.orange.opacity(0.3))
-                                            .frame(width: 2)
-                                            .padding(.leading, 19)
-                                        Spacer()
-                                    }
-
-                                    List(groupedPosts) { section in
-                                        Section {
-                                            ForEach(section.posts, id: \.id) { post in
-                                                FeedPostTimelineView(post: post) {
-                                                    selectedPost = post
-                                                }
-                                                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                                                .listRowSeparator(.hidden)
-                                                .listRowBackground(Color.clear)
-                                            }
-                                        } header: {
-                                            FeedDateHeaderView(date: section.date)
-                                                .listRowInsets(EdgeInsets())
-                                        }
-                                    }
-                                    .listStyle(.plain)
-                                    .scrollContentBackground(.hidden)
-                                }
                             }
                         }
                     }
@@ -138,12 +104,6 @@ struct FeedView: View {
                     }
                 }
             }
-            .onChange(of: selectedFeed) { _, _ in
-                // Feed type changed - reload feed
-                Task {
-                    await loadFeed()
-                }
-            }
         }
     }
 
@@ -152,31 +112,19 @@ struct FeedView: View {
         guard appStateStore.shouldRefreshFeed() else {
             return
         }
-        
+
         await loadFeed()
     }
-    
+
     /// Force load feed regardless of timing (used for manual refresh and auth changes)
+    /// **PDS-Only Architecture**: Loads only user's personal timeline
     private func loadFeed() async {
         do {
-            switch selectedFeed {
-            case .following:
-                // Use the authenticated user's DID for following feed
-                guard let userDid = authStore.credentials?.did else {
-                    // If not authenticated, fall back to global feed
-                    _ = try await feedStore.fetchGlobalFeed()
-                    return
-                }
-                _ = try await feedStore.fetchFollowingFeed(for: userDid)
-            case .timeline:
-                // Use the authenticated user's DID for timeline feed
-                guard let userDid = authStore.credentials?.did else {
-                    // If not authenticated, fall back to global feed
-                    _ = try await feedStore.fetchGlobalFeed()
-                    return
-                }
-                _ = try await feedStore.fetchUserFeed(for: userDid)
+            // Use the authenticated user's DID for personal timeline
+            guard let userDid = authStore.credentials?.did else {
+                return
             }
+            _ = try await feedStore.fetchUserFeed(for: userDid)
 
             // Record successful fetch
             appStateStore.recordFeedFetch()
@@ -194,21 +142,23 @@ struct FeedView: View {
     FeedView()
         .environment(authStore)
         .environment(CheckInStore(authStore: authStore))
+        .environment(FeedStore())
         .environment(AppStateStore())
 }
 
 #Preview("Empty State - No Posts") {
     let authStore = AuthStore(storage: InMemoryCredentialsStorage())
-    
+
     FeedView()
         .environment(authStore)
         .environment(CheckInStore(authStore: authStore))
+        .environment(FeedStore())
         .environment(AppStateStore())
 }
 
 #Preview("Filled State") {
     let authStore = AuthStore(storage: InMemoryCredentialsStorage())
-    
+
     // Create a simple view that mimics FeedView but with hardcoded posts
     NavigationStack {
         ScrollView {
@@ -231,5 +181,6 @@ struct FeedView: View {
     }
     .environment(authStore)
     .environment(CheckInStore(authStore: authStore))
+    .environment(FeedStore())
     .environment(AppStateStore())
 }

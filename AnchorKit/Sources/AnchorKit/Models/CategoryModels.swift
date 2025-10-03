@@ -9,7 +9,12 @@ public struct CategoriesAPIResponse: Codable, Sendable {
     public let sociallyRelevant: [String]
     public let metadata: CategoryMetadata
     
-    public init(categories: [CategoryAPI], defaultSearch: [String], sociallyRelevant: [String], metadata: CategoryMetadata) {
+    public init(
+        categories: [CategoryAPI],
+        defaultSearch: [String],
+        sociallyRelevant: [String],
+        metadata: CategoryMetadata
+    ) {
         self.categories = categories
         self.defaultSearch = defaultSearch
         self.sociallyRelevant = sociallyRelevant
@@ -59,7 +64,15 @@ public struct CachedCategory: Codable, Sendable, Identifiable {
     public let tag: String
     public let value: String
     
-    public init(id: String, name: String, icon: String, group: PlaceCategorization.CategoryGroup, osmTag: String, tag: String, value: String) {
+    public init(
+        id: String,
+        name: String,
+        icon: String,
+        group: PlaceCategorization.CategoryGroup,
+        osmTag: String,
+        tag: String,
+        value: String
+    ) {
         self.id = id
         self.name = name
         self.icon = icon
@@ -159,7 +172,13 @@ public struct CachedCategories: Codable, Sendable {
     public let metadata: CategoryMetadata
     public let lastUpdated: Date
     
-    public init(categories: [CachedCategory], defaultSearch: [String], sociallyRelevant: [String], metadata: CategoryMetadata, lastUpdated: Date = Date()) {
+    public init(
+        categories: [CachedCategory],
+        defaultSearch: [String],
+        sociallyRelevant: [String],
+        metadata: CategoryMetadata,
+        lastUpdated: Date = Date()
+    ) {
         self.categories = categories
         self.defaultSearch = defaultSearch
         self.sociallyRelevant = sociallyRelevant

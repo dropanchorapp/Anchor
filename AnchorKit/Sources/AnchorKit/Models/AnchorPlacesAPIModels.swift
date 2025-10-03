@@ -26,7 +26,16 @@ public struct AnchorPlacesAPIPlace: Codable, Sendable {
     public let tags: [String: String]
     public let distance: Double
 
-    public init(id: String, elementType: String, elementId: Int64, name: String, latitude: Double, longitude: Double, tags: [String: String], distance: Double) {
+    public init(
+        id: String,
+        elementType: String,
+        elementId: Int64,
+        name: String,
+        latitude: Double,
+        longitude: Double,
+        tags: [String: String],
+        distance: Double
+    ) {
         self.id = id
         self.elementType = elementType
         self.elementId = elementId
@@ -57,7 +66,13 @@ public struct AnchorPlacesSearchResponse: Codable, Sendable {
     public let radius: Double
     public let count: Int
 
-    public init(places: [AnchorPlacesSearchAPIPlace], query: String, center: AnchorPlacesCoordinates, radius: Double, count: Int) {
+    public init(
+        places: [AnchorPlacesSearchAPIPlace],
+        query: String,
+        center: AnchorPlacesCoordinates,
+        radius: Double,
+        count: Int
+    ) {
         self.places = places
         self.query = query
         self.center = center
@@ -81,7 +96,20 @@ public struct AnchorPlacesSearchAPIPlace: Codable, Sendable {
     public let distanceMeters: Double
     public let formattedDistance: String
 
-    public init(id: String, elementType: String, elementId: Int64, name: String, latitude: Double, longitude: Double, tags: [String: String], address: SearchPlaceAddress?, category: String, icon: String, distanceMeters: Double, formattedDistance: String) {
+    public init(
+        id: String,
+        elementType: String,
+        elementId: Int64,
+        name: String,
+        latitude: Double,
+        longitude: Double,
+        tags: [String: String],
+        address: SearchPlaceAddress?,
+        category: String,
+        icon: String,
+        distanceMeters: Double,
+        formattedDistance: String
+    ) {
         self.id = id
         self.elementType = elementType
         self.elementId = elementId
@@ -112,7 +140,15 @@ public struct SearchPlaceAddress: Codable, Sendable {
         case name, street, locality, region, country, postalCode
     }
 
-    public init(type: String, name: String?, street: String?, locality: String?, region: String?, country: String?, postalCode: String?) {
+    public init(
+        type: String,
+        name: String?,
+        street: String?,
+        locality: String?,
+        region: String?,
+        country: String?,
+        postalCode: String?
+    ) {
         self.type = type
         self.name = name
         self.street = street

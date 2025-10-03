@@ -16,6 +16,7 @@ struct CheckInComposeView: View {
     }
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
+    @Environment(FeedStore.self) private var feedStore
     @Environment(\.dismiss) private var dismiss
     
     @State private var message = ""
@@ -55,9 +56,18 @@ struct CheckInComposeView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Drop Anchor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     SubmitButton(
                         isDisabled: !authStore.isAuthenticated || isPosting,
@@ -98,22 +108,27 @@ struct CheckInComposeView: View {
     
     private func submitCheckIn() async {
         guard authStore.isAuthenticated else { return }
-        
+
         isPosting = true
         error = nil
-        
+
         do {
             let result = try await checkInStore.createCheckin(
                 place: place,
                 customMessage: message.isEmpty ? nil : message
             )
-            
+
             checkinResult = result
             showingSuccess = true
+
+            // Refresh feed to show the new check-in
+            if let userDid = authStore.credentials?.did {
+                try? await feedStore.fetchUserFeed(for: userDid)
+            }
         } catch {
             self.error = error
         }
-        
+
         isPosting = false
     }
 }
@@ -323,11 +338,12 @@ struct CheckInSuccessView: View {
         longitude: -122.4194,
         tags: ["amenity": "cafe"]
     )
-    
+
     let placeWithDistance = AnchorPlaceWithDistance(place: place, distance: 150.0)
     CheckInComposeView(placeWithDistance: placeWithDistance)
         .environment(authStore)
         .environment(CheckInStore(authStore: authStore))
+        .environment(FeedStore())
 }
 
 #Preview("Success View") {

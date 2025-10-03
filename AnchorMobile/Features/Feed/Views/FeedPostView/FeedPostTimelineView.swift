@@ -62,8 +62,6 @@ struct FeedPostTimelineView: View {
                         .fontWeight(.regular)
                         .foregroundStyle(.primary)
                         .lineSpacing(2)
-                        .padding(.leading, 40)
-                        .padding(.trailing, 16)
                 }
             }
             .padding(.vertical, 12)

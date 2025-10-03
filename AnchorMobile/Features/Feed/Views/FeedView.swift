@@ -39,36 +39,16 @@ struct FeedView: View {
                                 }
                             }
                         } else {
-                            let groupedPosts = feedStore.posts.groupedByDate()
-
-                            ZStack {
-                                // Background timeline line that spans the entire feed
-                                HStack {
-                                    Rectangle()
-                                        .fill(.orange.opacity(0.3))
-                                        .frame(width: 2)
-                                        .padding(.leading, 19)
-                                    Spacer()
+                            List(feedStore.posts, id: \.id) { post in
+                                FeedPostTimelineView(post: post) {
+                                    selectedPost = post
                                 }
-
-                                List(groupedPosts) { section in
-                                    Section {
-                                        ForEach(section.posts, id: \.id) { post in
-                                            FeedPostTimelineView(post: post) {
-                                                selectedPost = post
-                                            }
-                                            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                                            .listRowSeparator(.hidden)
-                                            .listRowBackground(Color.clear)
-                                        }
-                                    } header: {
-                                        FeedDateHeaderView(date: section.date)
-                                            .listRowInsets(EdgeInsets())
-                                    }
-                                }
-                                .listStyle(.plain)
-                                .scrollContentBackground(.hidden)
+                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
                             }
+                            .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
                         }
                     }
                     .refreshable {

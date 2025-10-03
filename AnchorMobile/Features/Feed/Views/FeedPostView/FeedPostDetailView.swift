@@ -18,7 +18,35 @@ struct FeedPostDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var authStore
     @Environment(FeedStore.self) private var feedStore
-    
+
+    private func formatLocationDetails(_ address: FeedAddress) -> String {
+        var parts: [String] = []
+
+        if let locality = address.locality, !locality.isEmpty {
+            parts.append(locality)
+        }
+        if let region = address.region, !region.isEmpty {
+            parts.append(region)
+        }
+        if let country = address.country, !country.isEmpty {
+            parts.append(country)
+        }
+
+        return parts.joined(separator: ", ")
+    }
+
+    private var shareText: String {
+        // Use personal message if available, otherwise use "Dropped anchor" fallback
+        if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(
+            from: post.record.text,
+            locations: nil
+        ) {
+            return "\(personalMessage) https://dropanchor.app/checkin/\(post.id)"
+        } else {
+            return "Dropped anchor at \(post.address?.name ?? "a location") https://dropanchor.app/checkin/\(post.id)"
+        }
+    }
+
     init(post: FeedPost) {
         self.post = post
         // Initialize map position based on coordinates
@@ -50,7 +78,15 @@ struct FeedPostDetailView: View {
                             post.address?.name ?? "Location",
                             coordinate: CLLocationCoordinate2D(latitude: coords.latitude, longitude: coords.longitude)
                         ) {
-                            VStack {
+                            Button {
+                                ExternalAppService.shared.openInMaps(
+                                    coordinate: CLLocationCoordinate2D(
+                                        latitude: coords.latitude,
+                                        longitude: coords.longitude
+                                    ),
+                                    locationName: post.address?.name ?? "Location"
+                                )
+                            } label: {
                                 Image(systemName: "mappin.and.ellipse")
                                     .font(.title2)
                                     .foregroundStyle(.primary)
@@ -100,10 +136,6 @@ struct FeedPostDetailView: View {
                         }
 
                         Spacer()
-
-                        Text(post.record.createdAt, style: .relative)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                     
                     // Image attachment
@@ -153,27 +185,37 @@ struct FeedPostDetailView: View {
 
                     // Location details
                     if post.coordinates != nil {
-                        VStack(alignment: .leading, spacing: 12) {
-                            // Place name
+                        HStack(alignment: .top, spacing: 12) {
+                            // Place name and location
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(post.address?.name ?? "Location")
                                     .font(.title2)
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.primary)
 
-                                let address: String = {
-                                    if let addressObj = post.address {
-                                        // Use ATProtoAddress if available, or create a struct conforming to LocationRepresentable
-                                        return LocationFormatter.shared.getLocationAddress([addressObj])
+                                // Show locality, region, country
+                                if let addressObj = post.address {
+                                    let locationDetails = formatLocationDetails(addressObj)
+                                    if !locationDetails.isEmpty {
+                                        Text(locationDetails)
+                                            .font(.callout)
+                                            .fontWeight(.regular)
+                                            .foregroundStyle(.secondary)
                                     }
-                                    return ""
-                                }()
-                                if !address.isEmpty {
-                                    Text(address)
-                                        .font(.callout)
-                                        .fontWeight(.regular)
-                                        .foregroundStyle(.secondary)
                                 }
+                            }
+
+                            Spacer()
+
+                            // Date and time
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(post.record.createdAt.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.secondary)
+                                Text(post.record.createdAt.formatted(date: .omitted, time: .shortened))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -184,27 +226,21 @@ struct FeedPostDetailView: View {
                         locations: nil
                     ) {
                         Divider()
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Message")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.secondary)
-                                .textCase(.uppercase)
-                                .tracking(0.5)
 
-                            Text(personalMessage)
-                                .font(.system(.body, design: .serif))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.primary)
-                                .lineSpacing(2)
-                        }
+                        Text(personalMessage)
+                            .font(.system(.body, design: .serif))
+                            .fontWeight(.regular)
+                            .foregroundStyle(.primary)
+                            .lineSpacing(2)
                     }
-                    
+
                     // Action buttons
-                    HStack(spacing: 16) {
+                    Divider()
+                        .padding(.vertical, 8)
+
+                    VStack(alignment: .leading, spacing: 12) {
                         if let coords = post.coordinates {
-                            Button(action: {
+                            Button {
                                 ExternalAppService.shared.openInMaps(
                                     coordinate: CLLocationCoordinate2D(
                                         latitude: coords.latitude,
@@ -212,53 +248,46 @@ struct FeedPostDetailView: View {
                                     ),
                                     locationName: post.address?.name ?? "Location"
                                 )
-                            }) {
+                            } label: {
                                 Label("Open in Maps", systemImage: "map")
-                                    .font(.callout)
-                                    .fontWeight(.medium)
                             }
-                            .buttonStyle(.bordered)
+                            .font(.callout)
+                            .fontWeight(.medium)
                         }
 
-                        Button(action: {
+                        Button {
                             ExternalAppService.shared.openBlueskyProfile(handle: post.author.handle)
-                        }) {
+                        } label: {
                             Label("View Profile", systemImage: "person")
-                                .font(.callout)
-                                .fontWeight(.medium)
-                        }
-                        .buttonStyle(.bordered)
-
-                        Spacer()
-                    }
-
-                    // Delete button (only show if user is the author)
-                    if authStore.credentials?.did == post.author.did {
-                        Divider()
-                            .padding(.vertical, 8)
-
-                        Button(role: .destructive, action: {
-                            showDeleteConfirmation = true
-                        }) {
-                            if isDeleting {
-                                HStack {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                    Text("Deleting...")
-                                }
-                            } else {
-                                Label("Delete Check-in", systemImage: "trash")
-                            }
                         }
                         .font(.callout)
                         .fontWeight(.medium)
-                        .disabled(isDeleting)
 
-                        if let error = deleteError {
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                                .padding(.top, 4)
+                        // Delete button (only show if user is the author)
+                        if authStore.credentials?.did == post.author.did {
+                            Button(role: .destructive) {
+                                showDeleteConfirmation = true
+                            } label: {
+                                if isDeleting {
+                                    HStack {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                        Text("Deleting...")
+                                    }
+                                } else {
+                                    Label("Delete Check-in", systemImage: "trash")
+                                }
+                            }
+                            .font(.callout)
+                            .fontWeight(.medium)
+                            .disabled(isDeleting)
+
+                            if let error = deleteError {
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                                    .padding(.top, 4)
+                            }
                         }
                     }
                 }
@@ -279,9 +308,9 @@ struct FeedPostDetailView: View {
                     }
                     
                     Spacer()
-                    
+
                     ShareLink(
-                        item: "Dropped anchor at \(post.address?.name ?? "a location") https://dropanchor.app/checkin/\(post.id)",
+                        item: shareText,
                         subject: Text("Check-in at \(post.address?.name ?? "a location")")
                     ) {
                         Text("Share")

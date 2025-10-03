@@ -11,15 +11,18 @@ import AnchorKit
 struct FeedPostTimelineHeaderView: View {
     let post: FeedPost
 
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Circle()
-                .fill(.orange)
-                .frame(width: 8, height: 8)
-                .alignmentGuide(.firstTextBaseline) { _ in 10 }
+    private func formatLocationContext(_ address: FeedAddress) -> String {
+        // Just show locality (city) for timeline - detail view has full info
+        if let locality = address.locality, !locality.isEmpty {
+            return locality
+        }
+        return ""
+    }
 
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Place name and location context
             VStack(alignment: .leading, spacing: 4) {
-                // Place name aligned to top
                 if let placeName = post.address?.name, !placeName.isEmpty {
                     Text(placeName)
                         .font(.headline)
@@ -32,29 +35,25 @@ struct FeedPostTimelineHeaderView: View {
                         .foregroundStyle(.primary)
                 }
 
-                // Address if different from place name
+                // Show city for context
                 if let addressObj = post.address {
-                    let address = LocationFormatter.shared.getLocationAddress([addressObj])
-                    let placeName = post.address?.name ?? ""
-                    if !address.isEmpty && address != placeName {
-                        Text(address)
+                    let locationContext = formatLocationContext(addressObj)
+                    if !locationContext.isEmpty {
+                        Text(locationContext)
                             .font(.caption)
                             .fontWeight(.regular)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .padding(.leading, 8) // Space between timeline and text
 
             Spacer()
 
-            // Time aligned to top
-            Text(post.record.createdAt.formatted(date: .omitted, time: .shortened))
+            // Relative time (e.g., "2h ago")
+            Text(post.record.createdAt, style: .relative)
                 .font(.caption)
-                .fontWeight(.regular)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 16)
     }
 }
 

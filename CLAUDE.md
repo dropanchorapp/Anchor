@@ -397,7 +397,7 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 
 ### Backend Integration
 
-- **OAuth backend**: Uses `/Users/tijs/projects/atproto/anchor-appview` for web-based OAuth
+- **OAuth backend**: Uses [anchor-appview](https://github.com/dropanchorapp/anchor-appview) for web-based OAuth
 - **Mobile flow**: iOS app loads `https://dropanchor.app/mobile-auth` in WebView
 - **Callback handling**: Custom URL scheme `anchor-app://auth-callback` with auth parameters
 - **PDS URL resolution**: Backend resolves user's actual PDS URL from DID document and includes it in mobile callback
@@ -427,7 +427,7 @@ xcodebuild -project Anchor.xcodeproj -scheme AnchorMobile test -destination 'pla
 
 ### Backend Management
 
-- **Deploy backend changes**: `cd /Users/tijs/projects/atproto/anchor-appview && deno task deploy`
+- **Deploy backend changes**: `deno task deploy` (from anchor-appview repository)
 - **Backend URL**: All API endpoints at `https://dropanchor.app`
 - **AT Protocol browser**: View records at `https://atproto-browser.vercel.app/at/{did}/{collection}/{rkey}`
 

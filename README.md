@@ -151,36 +151,6 @@ Check-ins reference address records via StrongRef with content integrity verific
 }
 ```
 
-#### 3. **Optional Bluesky Posts** - Share with Your Network
-
-When you enable "Also post to Bluesky", Anchor creates rich posts on your Bluesky feed to notify your followers:
-
-**What you see on Bluesky:**
-
-```
-Dropped anchor at Klimmuur Centraal 🧭
-"Great lunch session with the team!" 🧗‍♂️
-```
-
-**Under the hood (`app.bsky.feed.post`):**
-
-```json
-{
-  "$type": "app.bsky.feed.post",
-  "text": "Dropped anchor at Klimmuur Centraal 🧭\n\"Great lunch session with the team!\" 🧗‍♂️",
-  "createdAt": "2025-01-30T14:30:00Z",
-  "facets": [
-    {
-      "index": { "byteStart": 17, "byteEnd": 35 },
-      "features": [{ 
-        "$type": "app.bsky.richtext.facet#link", 
-        "uri": "https://www.openstreetmap.org/way/123456" 
-      }]
-    }
-  ]
-}
-```
-
 #### Why This Architecture?
 
 This StrongRef-based approach provides powerful benefits:
@@ -188,9 +158,8 @@ This StrongRef-based approach provides powerful benefits:
 - **🔗 Content Integrity** - CID verification ensures address records haven't been tampered with
 - **♻️ Data Efficiency** - Reusable address records reduce storage duplication
 - **🏠 Self-Contained** - All data stored on your home PDS with no external dependencies
-- **🌐 Optional Social Sharing** - Choose when to share check-ins as Bluesky posts
 - **📊 Rich Query Capability** - Structured data enables powerful future features
-- **🔐 Privacy Control** - Your data stays on your PDS unless you choose to share
+- **🔐 Privacy Control** - Your data stays on your PDS, you own it completely
 - **🌍 AT Protocol Native** - Uses community lexicon standards for interoperability
 - **🛡️ Standards Compliant** - Follows AT Protocol best practices for record linking
 

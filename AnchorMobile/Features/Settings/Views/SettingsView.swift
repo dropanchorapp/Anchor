@@ -7,11 +7,13 @@
 
 import SwiftUI
 import AnchorKit
+import StoreKit
 
 struct SettingsView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
-    
+    @Environment(\.requestReview) private var requestReview
+
     var body: some View {
         NavigationStack {
             List {
@@ -53,60 +55,61 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("About Anchor")
                                 .font(.headline)
-                            
-                            Text("Location-based check-ins for Bluesky")
+
+                            Text("Location-based check-ins for AT Protocol")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         
                         Spacer()
-                        
-                        Text("v1.0.0")
+
+                        Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     
-                    HStack {
-                        Image(systemName: "heart.fill")
-                            .font(.title2)
-                            .foregroundStyle(.red)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Open Source")
-                                .font(.headline)
-                            
-                            Text("Built with Swift and SwiftUI")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    NavigationLink(destination: OpenSourceCreditsView()) {
+                        HStack {
+                            Image(systemName: "heart.fill")
+                                .font(.title2)
+                                .foregroundStyle(.red)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Open Source")
+                                    .font(.headline)
+
+                                Text("Built with Swift and SwiftUI")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
                         }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                     
-                    HStack {
-                        Image(systemName: "lock.shield")
-                            .font(.title2)
-                            .foregroundStyle(.green)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Privacy")
-                                .font(.headline)
-                            
-                            Text("Your data stays on your device")
+                    Link(destination: URL(string: "https://dropanchor.app/privacy-policy")!) {
+                        HStack {
+                            Image(systemName: "lock.shield")
+                                .font(.title2)
+                                .foregroundStyle(.green)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Privacy")
+                                    .font(.headline)
+
+                                Text("Your data stays on your device")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "arrow.up.right")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
+                    .buttonStyle(.plain)
                 } header: {
                     Text("App")
                 } footer: {
@@ -116,47 +119,55 @@ struct SettingsView: View {
                 
                 // Support Section
                 Section {
-                    HStack {
-                        Image(systemName: "questionmark.circle")
-                            .font(.title2)
-                            .foregroundStyle(.blue)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Help & Support")
-                                .font(.headline)
-                            
-                            Text("Get help with using Anchor")
+                    Link(destination: URL(string: "https://bsky.app/profile/dropanchor.app")!) {
+                        HStack {
+                            Image(systemName: "questionmark.circle")
+                                .font(.title2)
+                                .foregroundStyle(.blue)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Help & Support")
+                                    .font(.headline)
+
+                                Text("Get help with using Anchor")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "arrow.up.right")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
+                    .buttonStyle(.plain)
                     
-                    HStack {
-                        Image(systemName: "star.fill")
-                            .font(.title2)
-                            .foregroundStyle(.yellow)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Rate Anchor")
-                                .font(.headline)
-                            
-                            Text("Help us improve the app")
+                    Button {
+                        requestReview()
+                    } label: {
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .font(.title2)
+                                .foregroundStyle(.yellow)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Rate Anchor")
+                                    .font(.headline)
+
+                                Text("Help us improve the app")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
+                    .buttonStyle(.plain)
                 } header: {
                     Text("Support")
                 }

@@ -12,11 +12,11 @@ import AnchorKit
 struct PlaceBrowseView: View {
     let onPlaceSelected: (AnchorPlaceWithDistance) -> Void
     
-    @State private var selectedTab: Tab = .browse
-    
+    @State private var selectedTab: Tab = .search
+
     enum Tab: String, CaseIterable {
-        case browse = "Browse"
         case search = "Search"
+        case browse = "Browse"
     }
     
     var body: some View {
@@ -33,10 +33,10 @@ struct PlaceBrowseView: View {
             
             // Content based on selected tab
             switch selectedTab {
-            case .browse:
-                PlaceBrowseTabView(onPlaceSelected: onPlaceSelected)
             case .search:
                 PlaceSearchTabView(onPlaceSelected: onPlaceSelected)
+            case .browse:
+                PlaceBrowseTabView(onPlaceSelected: onPlaceSelected)
             }
         }
     }

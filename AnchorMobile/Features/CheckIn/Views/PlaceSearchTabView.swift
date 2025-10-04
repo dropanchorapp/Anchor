@@ -11,15 +11,19 @@ import AnchorKit
 
 struct PlaceSearchTabView: View {
     let onPlaceSelected: (AnchorPlaceWithDistance) -> Void
-    
+
     @Environment(LocationService.self) private var locationService
-    @State private var placesService = AnchorPlacesService()
+    @State private var settings = AnchorSettings()
     @State private var searchResults: [AnchorPlaceWithDistance] = []
     @State private var isSearching = false
     @State private var searchError: Error?
     @State private var searchText = ""
     @State private var hasSearched = false
     @FocusState private var isSearchFocused: Bool
+
+    private var placesService: AnchorPlacesService {
+        AnchorPlacesService(settings: settings)
+    }
     
     var body: some View {
         VStack(spacing: 0) {

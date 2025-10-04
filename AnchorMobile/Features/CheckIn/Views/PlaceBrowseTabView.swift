@@ -11,13 +11,17 @@ import AnchorKit
 
 struct PlaceBrowseTabView: View {
     let onPlaceSelected: (AnchorPlaceWithDistance) -> Void
-    
+
     @Environment(LocationService.self) private var locationService
-    @State private var placesService = AnchorPlacesService()
+    @State private var settings = AnchorSettings()
     @State private var places: [AnchorPlaceWithDistance] = []
     @State private var isLoading = false
     @State private var error: Error?
     @State private var searchText = ""
+
+    private var placesService: AnchorPlacesService {
+        AnchorPlacesService(settings: settings)
+    }
     
     var filteredPlaces: [AnchorPlaceWithDistance] {
         var filtered = places

@@ -13,10 +13,42 @@ struct SettingsView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(\.requestReview) private var requestReview
+    @State private var settings = AnchorSettings()
 
     var body: some View {
         NavigationStack {
             List {
+                // Place Providers Section
+                Section {
+                    Picker("Nearby Places", selection: $settings.nearbyPlacesProvider) {
+                        ForEach(PlaceProvider.nearbyProviders, id: \.self) { provider in
+                            VStack(alignment: .leading) {
+                                Text(provider.displayName)
+                                Text(provider.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(provider)
+                        }
+                    }
+
+                    Picker("Place Search", selection: $settings.placeSearchProvider) {
+                        ForEach(PlaceProvider.searchProviders, id: \.self) { provider in
+                            VStack(alignment: .leading) {
+                                Text(provider.displayName)
+                                Text(provider.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(provider)
+                        }
+                    }
+                } header: {
+                    Text("Data Sources")
+                } footer: {
+                    Text("Choose which OpenStreetMap data provider to use for discovering nearby places and searching for locations.")
+                }
+
                 // Account Section
                 Section {
                     NavigationLink(destination: SecureAuthenticationView()) {

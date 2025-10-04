@@ -32,17 +32,20 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
     private let session: URLSession
     private let baseURL: URL
     private let categoryCache: CategoryCacheServiceProtocol
+    private let settings: AnchorSettings
 
     // MARK: - Initialization
 
     public init(
         session: URLSession = .shared,
         baseURL: URL = URL(string: "https://dropanchor.app/api")!,
-        categoryCache: CategoryCacheServiceProtocol = CategoryCacheService.shared
+        categoryCache: CategoryCacheServiceProtocol = CategoryCacheService.shared,
+        settings: AnchorSettings = AnchorSettings()
     ) {
         self.session = session
         self.baseURL = baseURL
         self.categoryCache = categoryCache
+        self.settings = settings
     }
 
     // MARK: - Public Methods
@@ -274,7 +277,8 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         var queryItems = [
             URLQueryItem(name: "lat", value: String(coordinate.latitude)),
             URLQueryItem(name: "lng", value: String(coordinate.longitude)),
-            URLQueryItem(name: "radius", value: String(radiusMeters))
+            URLQueryItem(name: "radius", value: String(radiusMeters)),
+            URLQueryItem(name: "provider", value: settings.nearbyPlacesProvider.rawValue)
         ]
 
         // Add categories if provided
@@ -308,7 +312,8 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
             URLQueryItem(name: "q", value: query),
             URLQueryItem(name: "lat", value: String(coordinate.latitude)),
             URLQueryItem(name: "lng", value: String(coordinate.longitude)),
-            URLQueryItem(name: "limit", value: String(limit))
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "provider", value: settings.placeSearchProvider.rawValue)
         ]
 
         components.queryItems = queryItems

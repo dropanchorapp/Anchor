@@ -6,50 +6,48 @@
 //
 
 import Foundation
+import SwiftData
 
 /// User preferences for the Anchor app
-@Observable
+@Model
 public final class AnchorSettings {
 
     // MARK: - Provider Preferences
 
+    /// Provider for nearby places browsing (stored as raw string value)
+    private var nearbyPlacesProviderRaw: String
+
+    /// Provider for place search (stored as raw string value)
+    private var placeSearchProviderRaw: String
+
     /// Provider for nearby places browsing
     public var nearbyPlacesProvider: PlaceProvider {
         get {
-            if let rawValue = UserDefaults.standard.string(forKey: Keys.nearbyPlacesProvider),
-               let provider = PlaceProvider(rawValue: rawValue) {
-                return provider
-            }
-            return .overpass // Default
+            PlaceProvider(rawValue: nearbyPlacesProviderRaw) ?? .overpass
         }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: Keys.nearbyPlacesProvider)
+            nearbyPlacesProviderRaw = newValue.rawValue
         }
     }
 
     /// Provider for place search
     public var placeSearchProvider: PlaceProvider {
         get {
-            if let rawValue = UserDefaults.standard.string(forKey: Keys.placeSearchProvider),
-               let provider = PlaceProvider(rawValue: rawValue) {
-                return provider
-            }
-            return .nominatim // Default
+            PlaceProvider(rawValue: placeSearchProviderRaw) ?? .nominatim
         }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: Keys.placeSearchProvider)
+            placeSearchProviderRaw = newValue.rawValue
         }
     }
 
     // MARK: - Initialization
 
-    public init() {}
-
-    // MARK: - UserDefaults Keys
-
-    private enum Keys {
-        static let nearbyPlacesProvider = "nearbyPlacesProvider"
-        static let placeSearchProvider = "placeSearchProvider"
+    public init(
+        nearbyPlacesProvider: PlaceProvider = .overpass,
+        placeSearchProvider: PlaceProvider = .nominatim
+    ) {
+        self.nearbyPlacesProviderRaw = nearbyPlacesProvider.rawValue
+        self.placeSearchProviderRaw = placeSearchProvider.rawValue
     }
 }
 

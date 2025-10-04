@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import AnchorKit
 import StoreKit
 
@@ -13,34 +14,40 @@ struct SettingsView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(\.requestReview) private var requestReview
-    @State private var settings = AnchorSettings()
+    @Environment(\.modelContext) private var modelContext
+    @Query private var settingsArray: [AnchorSettings]
+
+    private var settings: AnchorSettings {
+        if let existing = settingsArray.first {
+            return existing
+        }
+
+        // Create default settings if none exist
+        let newSettings = AnchorSettings()
+        modelContext.insert(newSettings)
+        return newSettings
+    }
 
     var body: some View {
         NavigationStack {
             List {
                 // Place Providers Section
                 Section {
-                    Picker("Nearby Places", selection: $settings.nearbyPlacesProvider) {
+                    Picker("Nearby Places", selection: Binding(
+                        get: { settings.nearbyPlacesProvider },
+                        set: { settings.nearbyPlacesProvider = $0 }
+                    )) {
                         ForEach(PlaceProvider.nearbyProviders, id: \.self) { provider in
-                            VStack(alignment: .leading) {
-                                Text(provider.displayName)
-                                Text(provider.description)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .tag(provider)
+                            Text(provider.displayName).tag(provider)
                         }
                     }
 
-                    Picker("Place Search", selection: $settings.placeSearchProvider) {
+                    Picker("Place Search", selection: Binding(
+                        get: { settings.placeSearchProvider },
+                        set: { settings.placeSearchProvider = $0 }
+                    )) {
                         ForEach(PlaceProvider.searchProviders, id: \.self) { provider in
-                            VStack(alignment: .leading) {
-                                Text(provider.displayName)
-                                Text(provider.description)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .tag(provider)
+                            Text(provider.displayName).tag(provider)
                         }
                     }
                 } header: {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import AnchorKit
 
 @main
@@ -24,6 +25,20 @@ struct AnchorMobileApp: App {
 
         self._authStore = State(initialValue: authStore)
         self._checkInStore = State(initialValue: checkInStore)
+    }
+
+    // SwiftData model container for persistent settings
+    private var modelContainer: ModelContainer {
+        let schema = Schema([
+            AnchorSettings.self
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
     }
 
     // MARK: - URL Scheme Handling
@@ -82,6 +97,7 @@ struct AnchorMobileApp: App {
                     }
                 }
             }
+            .modelContainer(modelContainer)
             .onOpenURL { url in
                 handleIncomingURL(url)
             }

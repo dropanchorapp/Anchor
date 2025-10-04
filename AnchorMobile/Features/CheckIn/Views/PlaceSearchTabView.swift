@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import CoreLocation
 import AnchorKit
 
@@ -13,13 +14,25 @@ struct PlaceSearchTabView: View {
     let onPlaceSelected: (AnchorPlaceWithDistance) -> Void
 
     @Environment(LocationService.self) private var locationService
-    @State private var settings = AnchorSettings()
+    @Environment(\.modelContext) private var modelContext
+    @Query private var settingsArray: [AnchorSettings]
     @State private var searchResults: [AnchorPlaceWithDistance] = []
     @State private var isSearching = false
     @State private var searchError: Error?
     @State private var searchText = ""
     @State private var hasSearched = false
     @FocusState private var isSearchFocused: Bool
+
+    private var settings: AnchorSettings {
+        if let existing = settingsArray.first {
+            return existing
+        }
+
+        // Create default settings if none exist
+        let newSettings = AnchorSettings()
+        modelContext.insert(newSettings)
+        return newSettings
+    }
 
     private var placesService: AnchorPlacesService {
         AnchorPlacesService(settings: settings)

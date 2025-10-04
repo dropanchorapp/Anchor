@@ -45,32 +45,6 @@ public struct AnchorPlacesAPIPlace: Codable, Sendable {
         self.tags = tags
         self.distance = distance
     }
-
-    // Custom decoding to handle elementId as either string or integer
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decode(String.self, forKey: .id)
-        self.elementType = try container.decode(String.self, forKey: .elementType)
-        self.name = try container.decode(String.self, forKey: .name)
-        self.latitude = try container.decode(Double.self, forKey: .latitude)
-        self.longitude = try container.decode(Double.self, forKey: .longitude)
-        self.tags = try container.decode([String: String].self, forKey: .tags)
-        self.distance = try container.decode(Double.self, forKey: .distance)
-
-        // Decode elementId flexibly - try as Int64 first, fall back to String
-        if let elementIdInt = try? container.decode(Int64.self, forKey: .elementId) {
-            self.elementId = elementIdInt
-        } else if let elementIdString = try? container.decode(String.self, forKey: .elementId) {
-            // Parse string to Int64
-            self.elementId = Int64(elementIdString) ?? 0
-        } else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .elementId,
-                in: container,
-                debugDescription: "elementId must be either Int64 or String"
-            )
-        }
-    }
 }
 
 /// Geographic coordinates for API responses
@@ -148,36 +122,6 @@ public struct AnchorPlacesSearchAPIPlace: Codable, Sendable {
         self.icon = icon
         self.distanceMeters = distanceMeters
         self.formattedDistance = formattedDistance
-    }
-
-    // Custom decoding to handle elementId as either string or integer
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decode(String.self, forKey: .id)
-        self.elementType = try container.decode(String.self, forKey: .elementType)
-        self.name = try container.decode(String.self, forKey: .name)
-        self.latitude = try container.decode(Double.self, forKey: .latitude)
-        self.longitude = try container.decode(Double.self, forKey: .longitude)
-        self.tags = try container.decode([String: String].self, forKey: .tags)
-        self.address = try container.decodeIfPresent(SearchPlaceAddress.self, forKey: .address)
-        self.category = try container.decode(String.self, forKey: .category)
-        self.icon = try container.decode(String.self, forKey: .icon)
-        self.distanceMeters = try container.decode(Double.self, forKey: .distanceMeters)
-        self.formattedDistance = try container.decode(String.self, forKey: .formattedDistance)
-
-        // Decode elementId flexibly - try as Int64 first, fall back to String
-        if let elementIdInt = try? container.decode(Int64.self, forKey: .elementId) {
-            self.elementId = elementIdInt
-        } else if let elementIdString = try? container.decode(String.self, forKey: .elementId) {
-            // Parse string to Int64
-            self.elementId = Int64(elementIdString) ?? 0
-        } else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .elementId,
-                in: container,
-                debugDescription: "elementId must be either Int64 or String"
-            )
-        }
     }
 }
 

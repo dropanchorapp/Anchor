@@ -170,7 +170,7 @@ struct CheckInComposeView: View {
 
             // Refresh feed to show the new check-in
             if let userDid = authStore.credentials?.did {
-                try? await feedStore.fetchUserFeed(for: userDid)
+                _ = try? await feedStore.fetchUserFeed(for: userDid)
             }
         } catch {
             self.error = error

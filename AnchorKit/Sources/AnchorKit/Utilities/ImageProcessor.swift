@@ -18,10 +18,10 @@ public enum ImageProcessor {
     // MARK: - Constants
 
     /// Maximum file size for uploaded images (5MB)
-    public static let maxFileSizeBytes = 5 * 1024 * 1024
+    public nonisolated(unsafe) static let maxFileSizeBytes = 5 * 1024 * 1024
 
     /// Maximum dimension for images (prevents memory issues)
-    public static let maxDimension: CGFloat = 2048
+    public nonisolated(unsafe) static let maxDimension: CGFloat = 2048
 
     /// Starting JPEG compression quality
     private static let initialCompressionQuality: CGFloat = 0.8
@@ -34,7 +34,7 @@ public enum ImageProcessor {
     /// Process image for upload: normalize orientation, strip EXIF, resize, and compress
     /// - Parameter image: Original UIImage from camera or photo library
     /// - Returns: Processed JPEG data ready for upload, or nil if processing fails
-    public static func processImageForUpload(_ image: UIImage) -> Data? {
+    public nonisolated static func processImageForUpload(_ image: UIImage) -> Data? {
         // Step 1: Normalize orientation (fixes rotation from EXIF)
         let orientedImage = normalizeOrientation(image)
 
@@ -49,7 +49,7 @@ public enum ImageProcessor {
     /// This fixes rotation issues from EXIF orientation tag
     /// - Parameter image: Image with potential orientation issues
     /// - Returns: Image with normalized orientation (EXIF stripped)
-    public static func normalizeOrientation(_ image: UIImage) -> UIImage {
+    public nonisolated static func normalizeOrientation(_ image: UIImage) -> UIImage {
         // If already in .up orientation, no need to process
         if image.imageOrientation == .up {
             return stripEXIFData(from: image)
@@ -81,7 +81,7 @@ public enum ImageProcessor {
     /// Strip EXIF data from image by redrawing into new context
     /// - Parameter image: Image with potential EXIF data
     /// - Returns: Image without EXIF data
-    public static func stripEXIFData(from image: UIImage) -> UIImage {
+    public nonisolated static func stripEXIFData(from image: UIImage) -> UIImage {
         UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
         defer { UIGraphicsEndImageContext() }
 
@@ -233,7 +233,7 @@ public enum ImageProcessor {
     /// Get formatted size string from byte count
     /// - Parameter bytes: Number of bytes
     /// - Returns: Formatted string (e.g., "2.5 MB", "450 KB")
-    public static func formatFileSize(_ bytes: Int) -> String {
+    public nonisolated static func formatFileSize(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useKB, .useMB]
         formatter.countStyle = .file

@@ -1,21 +1,23 @@
-import XCTest
 import Foundation
+import Testing
 @testable import AnchorKit
 
-final class CategoryCacheServiceTests: XCTestCase {
+@Suite("Category Cache Service", .tags(.services))
+struct CategoryCacheServiceTests {
+    let mockUserDefaults: UserDefaults
+    let mockSession: MockURLSession
+    let categoryService: CategoryCacheService
+    let suiteName: String
 
-    var mockUserDefaults: UserDefaults!
-    var mockSession: MockURLSession!
-    var categoryService: CategoryCacheService!
-
-    override func setUp() {
-        super.setUp()
+    init() {
+        // Create a unique suite name for each test instance to avoid conflicts in parallel execution
+        suiteName = "CategoryCacheServiceTests-\(UUID().uuidString)"
 
         // Create a mock UserDefaults for testing
-        mockUserDefaults = UserDefaults(suiteName: "CategoryCacheServiceTests")!
+        mockUserDefaults = UserDefaults(suiteName: suiteName)!
 
-        // Clear any existing data
-        mockUserDefaults.removePersistentDomain(forName: "CategoryCacheServiceTests")
+        // Clear any existing data before each test
+        mockUserDefaults.removePersistentDomain(forName: suiteName)
 
         // Create mock URL session
         mockSession = MockURLSession()
@@ -28,27 +30,20 @@ final class CategoryCacheServiceTests: XCTestCase {
         )
     }
 
-    override func tearDown() {
-        // Clean up
-        mockUserDefaults.removePersistentDomain(forName: "CategoryCacheServiceTests")
-        mockUserDefaults = nil
-        mockSession = nil
-        categoryService = nil
-        super.tearDown()
-    }
-
     // MARK: - Cache Management Tests
 
-    func testEmptyCache() {
+    @Test("Empty cache returns nil and is expired")
+    func emptyCache() {
         // When cache is empty
         let cached = categoryService.getCachedCategories()
 
         // Then no cached data should be returned
-        XCTAssertNil(cached)
-        XCTAssertTrue(categoryService.isCacheExpired())
+        #expect(cached == nil)
+        #expect(categoryService.isCacheExpired())
     }
 
-    func testSetAndGetCachedCategories() {
+    @Test("Set and get cached categories")
+    func setAndGetCachedCategories() {
         // Given some test categories
         let testCategories = createTestCachedCategories()
 
@@ -57,13 +52,14 @@ final class CategoryCacheServiceTests: XCTestCase {
 
         // Then we should be able to retrieve them
         let retrieved = categoryService.getCachedCategories()
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.categories.count, testCategories.categories.count)
-        XCTAssertEqual(retrieved?.defaultSearch.count, testCategories.defaultSearch.count)
-        XCTAssertFalse(categoryService.isCacheExpired())
+        #expect(retrieved != nil)
+        #expect(retrieved?.categories.count == testCategories.categories.count)
+        #expect(retrieved?.defaultSearch.count == testCategories.defaultSearch.count)
+        #expect(!categoryService.isCacheExpired())
     }
 
-    func testCacheExpiry() {
+    @Test("Cache expiry after 25 hours")
+    func cacheExpiry() {
         // Given categories cached 25 hours ago (expired)
         let expiredDate = Date().addingTimeInterval(-25 * 3600) // 25 hours ago
         let testCategories = CachedCategories(
@@ -78,26 +74,28 @@ final class CategoryCacheServiceTests: XCTestCase {
         categoryService.setCachedCategories(testCategories)
 
         // Then cache should be considered expired
-        XCTAssertTrue(categoryService.isCacheExpired())
+        #expect(categoryService.isCacheExpired())
     }
 
-    func testClearCache() {
+    @Test("Clear cache removes all data")
+    func clearCache() {
         // Given cached categories
         let testCategories = createTestCachedCategories()
         categoryService.setCachedCategories(testCategories)
-        XCTAssertNotNil(categoryService.getCachedCategories())
+        #expect(categoryService.getCachedCategories() != nil)
 
         // When we clear the cache
         categoryService.clearCache()
 
         // Then cache should be empty
-        XCTAssertNil(categoryService.getCachedCategories())
-        XCTAssertTrue(categoryService.isCacheExpired())
+        #expect(categoryService.getCachedCategories() == nil)
+        #expect(categoryService.isCacheExpired())
     }
 
     // MARK: - API Fetch Tests
 
-    func testSuccessfulAPIFetch() async throws {
+    @Test("Successful API fetch caches categories")
+    func successfulAPIFetch() async throws {
         // Given a successful API response
         let apiResponse = createTestAPIResponse()
         let responseData = try JSONEncoder().encode(apiResponse)
@@ -108,10 +106,10 @@ final class CategoryCacheServiceTests: XCTestCase {
             headerFields: nil
         )!
 
-        mockSession = MockURLSession(data: responseData, response: httpResponse)
+        let mockSession = MockURLSession(data: responseData, response: httpResponse)
 
         // Recreate service with updated mock
-        categoryService = CategoryCacheService(
+        let categoryService = CategoryCacheService(
             session: mockSession,
             baseURL: URL(string: "https://test.example.com/api")!,
             userDefaults: mockUserDefaults
@@ -121,43 +119,36 @@ final class CategoryCacheServiceTests: XCTestCase {
         let result = try await categoryService.fetchAndCacheCategories()
 
         // Then we should get cached categories
-        XCTAssertEqual(result.categories.count, 2)
-        XCTAssertEqual(result.defaultSearch.count, 1)
-        XCTAssertEqual(result.sociallyRelevant.count, 2)
+        #expect(result.categories.count == 2)
+        #expect(result.defaultSearch.count == 1)
+        #expect(result.sociallyRelevant.count == 2)
 
         // And they should be cached
         let cached = categoryService.getCachedCategories()
-        XCTAssertNotNil(cached)
-        XCTAssertEqual(cached?.categories.count, 2)
+        #expect(cached != nil)
+        #expect(cached?.categories.count == 2)
     }
 
-    func testAPIFetchFailure() async {
+    @Test("API fetch failure throws network error")
+    func apiFetchFailure() async {
         // Given a failed API response
-        mockSession = MockURLSession(error: URLError(.notConnectedToInternet))
+        let mockSession = MockURLSession(error: URLError(.notConnectedToInternet))
 
         // Recreate service with updated mock
-        categoryService = CategoryCacheService(
+        let categoryService = CategoryCacheService(
             session: mockSession,
             baseURL: URL(string: "https://test.example.com/api")!,
             userDefaults: mockUserDefaults
         )
 
-        // When we fetch categories
-        do {
-            _ = try await categoryService.fetchAndCacheCategories()
-            XCTFail("Should have thrown an error")
-        } catch {
-            // Then we should get a network error
-            XCTAssertTrue(error is CategoryCacheError)
-            if case .networkError(let underlyingError) = error as? CategoryCacheError {
-                XCTAssertTrue(underlyingError is URLError)
-            } else {
-                XCTFail("Expected network error")
-            }
+        // When/Then we fetch categories, should throw network error
+        await #expect(throws: CategoryCacheError.self) {
+            try await categoryService.fetchAndCacheCategories()
         }
     }
 
-    func testAPIFetchHTTPError() async {
+    @Test("API fetch HTTP error throws with status code")
+    func apiFetchHTTPError() async throws {
         // Given an HTTP error response
         let errorData = "Not Found".data(using: .utf8)!
         let httpErrorResponse = HTTPURLResponse(
@@ -167,80 +158,83 @@ final class CategoryCacheServiceTests: XCTestCase {
             headerFields: nil
         )!
 
-        mockSession = MockURLSession(data: errorData, response: httpErrorResponse)
+        let mockSession = MockURLSession(data: errorData, response: httpErrorResponse)
 
         // Recreate service with updated mock
-        categoryService = CategoryCacheService(
+        let categoryService = CategoryCacheService(
             session: mockSession,
             baseURL: URL(string: "https://test.example.com/api")!,
             userDefaults: mockUserDefaults
         )
 
-        // When we fetch categories
+        // When/Then we fetch categories, should throw HTTP error with status code
         do {
             _ = try await categoryService.fetchAndCacheCategories()
-            XCTFail("Should have thrown an error")
-        } catch {
-            // Then we should get a network error containing HTTP error
-            XCTAssertTrue(error is CategoryCacheError)
-            if case .networkError(let underlyingError) = error as? CategoryCacheError,
+            Issue.record("Should have thrown an error")
+        } catch let error as CategoryCacheError {
+            if case .networkError(let underlyingError) = error,
                case .httpError(let statusCode) = underlyingError as? CategoryCacheError {
-                XCTAssertEqual(statusCode, 404)
+                #expect(statusCode == 404)
             } else {
-                XCTFail("Expected network error containing HTTP error, got: \(error)")
+                Issue.record("Expected network error containing HTTP error, got: \(error)")
             }
         }
     }
 
     // MARK: - Fallback Tests
 
-    func testNoCachedCategoriesReturnsEmpty() {
+    @Test("No cached categories returns empty array")
+    func noCachedCategoriesReturnsEmpty() {
         // Given no cached categories
-        XCTAssertNil(categoryService.getCachedCategories())
+        #expect(categoryService.getCachedCategories() == nil)
 
         // When we request categories
         let categories = categoryService.getAllCategories()
 
         // Then we should get empty array (no hardcoded fallback)
-        XCTAssertTrue(categories.isEmpty)
+        #expect(categories.isEmpty)
     }
 
-    func testNoCachedPrioritizedCategoriesReturnsEmpty() {
+    @Test("No cached prioritized categories returns empty array")
+    func noCachedPrioritizedCategoriesReturnsEmpty() {
         // Given no cached categories
-        XCTAssertNil(categoryService.getCachedCategories())
+        #expect(categoryService.getCachedCategories() == nil)
 
         // When we request prioritized categories
         let prioritized = categoryService.getPrioritizedCategories()
 
         // Then we should get empty array (no hardcoded fallback)
-        XCTAssertTrue(prioritized.isEmpty)
+        #expect(prioritized.isEmpty)
     }
 
-    func testNoCachedCategoryGroupReturnsNil() {
+    @Test("No cached category group returns nil")
+    func noCachedCategoryGroupReturnsNil() {
         // Given no cached categories
-        XCTAssertNil(categoryService.getCachedCategories())
+        #expect(categoryService.getCachedCategories() == nil)
 
         // When we request category group
         let group = categoryService.getCategoryGroup(for: "amenity", value: "restaurant")
 
         // Then we should get nil (no hardcoded fallback)
-        XCTAssertNil(group)
+        #expect(group == nil)
     }
 
-    func testNoCachedIconReturnsDefault() {
+    @Test("No cached icon returns default icon")
+    func noCachedIconReturnsDefault() {
         // Given no cached categories
-        XCTAssertNil(categoryService.getCachedCategories())
+        #expect(categoryService.getCachedCategories() == nil)
 
         // When we request icon
         let icon = categoryService.getIcon(for: "amenity", value: "restaurant")
 
         // Then we should get default icon (no hardcoded fallback)
-        XCTAssertEqual(icon, "📍")
+        #expect(icon == "📍")
     }
 
     // MARK: - Cached Category Lookup Tests
 
-    func testCachedCategoryLookup() {
+    @Test("Cached category lookup returns correct data")
+    func cachedCategoryLookup() {
         // Given cached categories
         let testCategories = createTestCachedCategories()
         categoryService.setCachedCategories(testCategories)
@@ -251,10 +245,10 @@ final class CategoryCacheServiceTests: XCTestCase {
         let allCategories = categoryService.getAllCategories()
 
         // Then we should get cached data
-        XCTAssertEqual(group, .foodAndDrink)
-        XCTAssertEqual(icon, "🍽️")
-        XCTAssertTrue(allCategories.contains("amenity=restaurant"))
-        XCTAssertTrue(allCategories.contains("leisure=climbing"))
+        #expect(group == .foodAndDrink)
+        #expect(icon == "🍽️")
+        #expect(allCategories.contains("amenity=restaurant"))
+        #expect(allCategories.contains("leisure=climbing"))
     }
 
     // MARK: - Helper Methods

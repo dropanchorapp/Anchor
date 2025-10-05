@@ -19,7 +19,7 @@ public final class FeedTextProcessor: Sendable {
     ///   - text: The full post text
     ///   - locations: Location data to help filter out location-related content
     /// - Returns: The personal message if substantial enough, otherwise nil
-    public func extractPersonalMessage(from text: String, locations: [LocationRepresentable]?) -> String? {
+    public nonisolated func extractPersonalMessage(from text: String, locations: [LocationRepresentable]?) -> String? {
         guard let locations = locations, !locations.isEmpty else {
             // If no location data, return the full text if it's not just an emoji
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -53,7 +53,7 @@ public final class FeedTextProcessor: Sendable {
     /// Extract a category icon from text content
     /// - Parameter text: The text to extract emoji from
     /// - Returns: The first emoji found, or a default location icon
-    public func extractCategoryIcon(from text: String) -> String {
+    public nonisolated func extractCategoryIcon(from text: String) -> String {
         // Simple emoji detection - find first emoji-like character
         for char in text where char.isEmoji {
             return String(char)

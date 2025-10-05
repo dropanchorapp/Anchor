@@ -14,7 +14,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
 
     // MARK: - Public Methods
 
-    public func detectFacets(in text: String) -> [RichTextFacet] {
+    public nonisolated func detectFacets(in text: String) -> [RichTextFacet] {
         var facets: [RichTextFacet] = []
 
         // Detect URLs
@@ -48,7 +48,7 @@ public final class RichTextProcessor: RichTextProcessorProtocol {
     ///   - place: The place being checked into
     ///   - customMessage: The user's original message, if any
     /// - Returns: Enhanced text with facets for social media posting
-    public func buildCheckinText(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet]) {
+    public nonisolated func buildCheckinText(place: Place, customMessage: String?) -> (text: String, facets: [RichTextFacet]) {
         var text = ""
         var facets: [RichTextFacet] = []
 

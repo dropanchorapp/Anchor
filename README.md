@@ -15,6 +15,9 @@
   <a href="https://github.com/dropanchorapp/Anchor/actions/workflows/swiftlint.yml">
     <img src="https://github.com/dropanchorapp/Anchor/actions/workflows/swiftlint.yml/badge.svg" alt="SwiftLint">
   </a>
+  <a href="https://ko-fi.com/tijsteulings">
+    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi">
+  </a>
 </p>
 
 <p align="center">
@@ -276,6 +279,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 - **Bluesky**: [@anchor.app](https://bsky.app/profile/anchor.app) - Follow us for updates
 - **AT Protocol**: [atproto.com](https://atproto.com) - Learn about the decentralized web
 - **OpenStreetMap**: [openstreetmap.org](https://openstreetmap.org) - The collaborative mapping project powering our place data
+
+## ☕ Support Development
+
+If you find Anchor useful, consider [supporting its development on Ko-fi](https://ko-fi.com/tijsteulings). Your support helps maintain and improve Anchor for the community.
 
 ---
 

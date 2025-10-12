@@ -116,6 +116,7 @@ struct CheckInComposeView: View {
                 CheckInSuccessView(
                     place: place,
                     checkinId: result.checkinId,
+                    userDid: authStore.credentials?.did,
                     userMessage: message.isEmpty ? nil : message,
                     sharedToFollowers: false
                 ) {
@@ -243,6 +244,7 @@ struct CheckInComposeView: View {
     CheckInSuccessView(
         place: place,
         checkinId: "3lw2aztgeua2o",
+        userDid: "did:plc:example123",
         userMessage: "Great coffee here!",
         sharedToFollowers: true
     ) {

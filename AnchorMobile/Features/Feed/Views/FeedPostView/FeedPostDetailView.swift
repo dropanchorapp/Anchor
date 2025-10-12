@@ -36,14 +36,17 @@ struct FeedPostDetailView: View {
     }
 
     private var shareText: String {
+        // Build URL with DID for permanent link
+        let url = "https://dropanchor.app/checkin/\(post.author.did)/\(post.id)"
+
         // Use personal message if available, otherwise use "Dropped anchor" fallback
         if let personalMessage = FeedTextProcessor.shared.extractPersonalMessage(
             from: post.record.text,
             locations: nil
         ) {
-            return "\(personalMessage) https://dropanchor.app/checkin/\(post.id)"
+            return "\(personalMessage) \(url)"
         } else {
-            return "Dropped anchor at \(post.address?.name ?? "a location") https://dropanchor.app/checkin/\(post.id)"
+            return "Dropped anchor at \(post.address?.name ?? "a location") \(url)"
         }
     }
 

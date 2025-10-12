@@ -141,6 +141,7 @@ struct LoadingOverlay: View {
 struct CheckInSuccessView: View {
     let place: Place
     let checkinId: String?
+    let userDid: String?
     let userMessage: String?
     let sharedToFollowers: Bool
     let onDismiss: () -> Void
@@ -154,10 +155,18 @@ struct CheckInSuccessView: View {
     }
 
     private func shareText(for checkinId: String) -> String {
-        if let userMessage = userMessage {
-            return "\(userMessage) https://dropanchor.app/checkin/\(checkinId)"
+        let url: String
+        if let userDid = userDid {
+            url = "https://dropanchor.app/checkin/\(userDid)/\(checkinId)"
         } else {
-            return "Dropped anchor at \(place.name) https://dropanchor.app/checkin/\(checkinId)"
+            // Fallback to old format if DID is not available
+            url = "https://dropanchor.app/checkin/\(checkinId)"
+        }
+
+        if let userMessage = userMessage {
+            return "\(userMessage) \(url)"
+        } else {
+            return "Dropped anchor at \(place.name) \(url)"
         }
     }
 

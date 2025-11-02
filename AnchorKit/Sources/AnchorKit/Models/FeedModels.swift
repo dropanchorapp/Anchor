@@ -10,6 +10,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
     public let address: FeedAddress?
     public let distance: Double? // Only present in nearby feeds
     public let image: FeedImage? // Optional image attachment
+    public let likesCount: Int? // Optional likes count
 
     // Public initializer for testing and previews
     public init(
@@ -19,7 +20,8 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         coordinates: FeedCoordinates? = nil,
         address: FeedAddress? = nil,
         distance: Double? = nil,
-        image: FeedImage? = nil
+        image: FeedImage? = nil,
+        likesCount: Int? = nil
     ) {
         self.id = id
         self.author = author
@@ -28,6 +30,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         self.address = address
         self.distance = distance
         self.image = image
+        self.likesCount = likesCount
     }
 
     // New initializer for Feed Service API responses
@@ -68,6 +71,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
                 alt: $0.alt
             )
         }
+        likesCount = checkin.likesCount
     }
 }
 

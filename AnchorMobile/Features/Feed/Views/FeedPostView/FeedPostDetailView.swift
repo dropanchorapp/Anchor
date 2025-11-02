@@ -206,6 +206,19 @@ struct FeedPostDetailView: View {
                                             .foregroundStyle(.secondary)
                                     }
                                 }
+
+                                // Likes count (prominent display)
+                                if let likesCount = post.likesCount, likesCount > 0 {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "heart.fill")
+                                            .font(.callout)
+                                        Text("\(likesCount)")
+                                            .font(.callout)
+                                            .fontWeight(.medium)
+                                    }
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 4)
+                                }
                             }
 
                             Spacer()

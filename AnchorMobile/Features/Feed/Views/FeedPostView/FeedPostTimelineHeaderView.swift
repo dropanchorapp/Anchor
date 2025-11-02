@@ -49,10 +49,24 @@ struct FeedPostTimelineHeaderView: View {
 
             Spacer()
 
-            // Relative time (e.g., "2h ago")
-            Text(post.record.createdAt, style: .relative)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // Metadata: time and likes
+            VStack(alignment: .trailing, spacing: 4) {
+                // Relative time (e.g., "2h ago")
+                Text(post.record.createdAt, style: .relative)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                // Likes count (subtle display)
+                if let likesCount = post.likesCount, likesCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .font(.caption2)
+                        Text("\(likesCount)")
+                            .font(.caption2)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 }

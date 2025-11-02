@@ -145,6 +145,7 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
     public let address: AnchorFeedAddress?
     public let distance: Double? // Only present in nearby responses
     public let image: AnchorFeedImage? // Optional image attachment
+    public let likesCount: Int? // Optional likes count
 
     public init(
         id: String,
@@ -155,7 +156,8 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         coordinates: AnchorFeedCoordinates? = nil,
         address: AnchorFeedAddress? = nil,
         distance: Double? = nil,
-        image: AnchorFeedImage? = nil
+        image: AnchorFeedImage? = nil,
+        likesCount: Int? = nil
     ) {
         self.id = id
         self.uri = uri
@@ -166,6 +168,7 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         self.address = address
         self.distance = distance
         self.image = image
+        self.likesCount = likesCount
     }
 
     // Custom decoder to handle null id values by using uri as fallback
@@ -184,10 +187,11 @@ public struct AnchorFeedCheckin: Codable, Sendable, Identifiable {
         address = try container.decodeIfPresent(AnchorFeedAddress.self, forKey: .address)
         distance = try container.decodeIfPresent(Double.self, forKey: .distance)
         image = try container.decodeIfPresent(AnchorFeedImage.self, forKey: .image)
+        likesCount = try container.decodeIfPresent(Int.self, forKey: .likesCount)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, uri, author, text, createdAt, coordinates, address, distance, image
+        case id, uri, author, text, createdAt, coordinates, address, distance, image, likesCount
     }
 }
 

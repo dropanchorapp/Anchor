@@ -16,6 +16,7 @@ struct SignInButton: View {
     @State private var showingError = false
     @State private var errorMessage: String?
     @State private var authSession: ASWebAuthenticationSession?
+    @State private var presentationContextProvider = WebAuthPresentationContextProvider()
 
     var body: some View {
         Button(action: startSignIn) {

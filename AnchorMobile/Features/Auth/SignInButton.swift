@@ -101,8 +101,8 @@ struct SignInButton: View {
             }
         }
 
-        // Configure session
-        authSession?.presentationContextProvider = WebAuthPresentationContextProvider()
+        // Configure session - use stored presentation context provider
+        authSession?.presentationContextProvider = presentationContextProvider
         authSession?.prefersEphemeralWebBrowserSession = false
 
         // Start the authentication session

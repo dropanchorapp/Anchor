@@ -89,10 +89,7 @@ struct AuthenticationPromptSection: View {
                 .font(.body)
                 .foregroundColor(.secondary)
 
-            NavigationLink("Sign In") {
-                Text("Authentication View")
-            }
-            .buttonStyle(.borderedProminent)
+            SignInButton()
         }
         .padding()
         .background(Color.orange.opacity(0.1))

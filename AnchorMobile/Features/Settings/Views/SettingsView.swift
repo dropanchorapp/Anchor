@@ -58,25 +58,59 @@ struct SettingsView: View {
 
                 // Account Section
                 Section {
-                    NavigationLink(destination: SecureAuthenticationView()) {
+                    if authStore.isAuthenticated {
+                        // Show account info
                         HStack {
-                            Image(systemName: authStore.isAuthenticated ? "checkmark.circle.fill" : "person.circle")
+                            Image(systemName: "checkmark.circle.fill")
                                 .font(.title2)
-                                .foregroundStyle(authStore.isAuthenticated ? .green : .secondary)
-                            
+                                .foregroundStyle(.green)
+
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Account")
                                     .font(.headline)
-                                
-                                Text(authStore.isAuthenticated 
-                                     ? "Connected as @\(authStore.credentials?.handle ?? "Unknown")"
-                                     : "Not signed in")
+
+                                Text("Connected as @\(authStore.credentials?.handle ?? "Unknown")")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
-                            
+
                             Spacer()
                         }
+
+                        // Sign out button
+                        Button(role: .destructive) {
+                            Task {
+                                await authStore.signOut()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.right.square")
+                                Text("Sign Out")
+                            }
+                        }
+                    } else {
+                        // Show sign in button
+                        VStack(spacing: 12) {
+                            HStack {
+                                Image(systemName: "person.circle")
+                                    .font(.title2)
+                                    .foregroundStyle(.secondary)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Account")
+                                        .font(.headline)
+
+                                    Text("Not signed in")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+                            }
+
+                            SignInButton()
+                        }
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                     }
                 } header: {
                     Text("Bluesky")

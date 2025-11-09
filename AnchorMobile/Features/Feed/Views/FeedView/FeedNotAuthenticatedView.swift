@@ -9,7 +9,7 @@ import SwiftUI
 
 struct FeedNotAuthenticatedView: View {
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: "person.slash")
                 .foregroundStyle(.orange)
                 .font(.system(size: 40))
@@ -24,10 +24,8 @@ struct FeedNotAuthenticatedView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            Text("Go to Settings to sign in")
-                .foregroundStyle(.blue)
-                .font(.callout)
-                .fontWeight(.medium)
+            SignInButton()
+                .padding(.horizontal)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)

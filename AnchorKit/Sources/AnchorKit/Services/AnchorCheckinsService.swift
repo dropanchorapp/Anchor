@@ -150,9 +150,8 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         imageData: Data,
         imageAlt: String?
     ) async throws -> CheckinResponse {
-        // Get authenticated credentials for Bearer token
-        guard let credentials = try? await apiClient.credentialsStorage.load(),
-              let sessionId = credentials.sessionId else {
+        // Verify user is authenticated (cookie-based via BFF pattern)
+        guard (try? await apiClient.credentialsStorage.load()) != nil else {
             throw AnchorCheckinsError.authenticationRequired
         }
 
@@ -160,7 +159,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: URL(string: "\(apiClient.baseURL)/api/checkins")!)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(sessionId)", forHTTPHeaderField: "Authorization")
+        // Cookie authentication - URLSession automatically includes cookies
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         // Build multipart body

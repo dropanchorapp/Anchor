@@ -372,7 +372,7 @@ struct FeedPostDetailView: View {
         deleteError = nil
 
         do {
-            try await feedStore.deleteCheckin(post, sessionId: sessionId)
+            try await feedStore.deleteCheckin(post)
             dismiss()
         } catch {
             isDeleting = false

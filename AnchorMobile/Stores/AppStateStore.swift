@@ -140,6 +140,27 @@ public final class AppStateStore {
         let credentials = await authStore.loadStoredCredentials()
         if let creds = credentials {
             print("✅ Successfully loaded credentials for @\(creds.handle)")
+
+            // Recreate HTTPCookie from stored session ID
+            // This is essential for authentication to work after app restart
+            if let sessionId = creds.sessionId {
+                let cookie = HTTPCookie(properties: [
+                    .name: "sid",
+                    .value: sessionId,
+                    .domain: "dropanchor.app",
+                    .path: "/",
+                    .secure: true,
+                    .expires: creds.expiresAt
+                ])
+                if let cookie = cookie {
+                    HTTPCookieStorage.shared.setCookie(cookie)
+                    print("🍪 Successfully recreated 'sid' cookie from stored session ID")
+                } else {
+                    print("⚠️ Failed to recreate session cookie - authentication may fail")
+                }
+            } else {
+                print("⚠️ No session ID found in credentials - authentication may fail")
+            }
         } else {
             print("ℹ️ No stored credentials found - user needs to sign in")
         }

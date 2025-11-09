@@ -9,8 +9,11 @@ import Foundation
 
 /// API client for Iron Session authentication
 ///
-/// Makes authenticated API calls using sealed session IDs stored in credentials.
-/// Similar to BookHive's mobile client approach where session IDs are sent as cookies.
+/// Makes authenticated API calls using HttpOnly cookies for session management.
+/// Follows AT Protocol OAuth BFF (Backend-For-Frontend) pattern where:
+/// - Backend manages OAuth tokens server-side
+/// - Client uses HttpOnly session cookies for authentication
+/// - No bearer tokens exposed to client
 @MainActor
 public final class IronSessionAPIClient: @unchecked Sendable {
 
@@ -30,16 +33,31 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         self.credentialsStorage = credentialsStorage
         self.session = session
         self.baseURL = URL(string: baseURL)!
+
+        // Configure URLSession for cookie-based authentication
+        configureSessionForCookies(session)
+    }
+
+    /// Configure URLSession to use shared cookie storage
+    private func configureSessionForCookies(_ session: URLSessionProtocol) {
+        // Only configure real URLSession instances, not test mocks
+        guard let urlSession = session as? URLSession else { return }
+
+        // Ensure we're using shared cookie storage
+        // This allows cookies set by ASWebAuthenticationSession to be available
+        urlSession.configuration.httpCookieAcceptPolicy = .always
+        urlSession.configuration.httpShouldSetCookies = true
+        urlSession.configuration.httpCookieStorage = HTTPCookieStorage.shared
     }
 
     // MARK: - Authenticated API Calls
 
-    /// Make authenticated API request using sealed session token
+    /// Make authenticated API request using session cookies
     ///
-    /// Automatically includes sealed session token as Bearer authorization header for backend authentication.
-    /// The backend will validate and use the Iron Session for API calls.
-    /// 
-    /// **Proactive Token Refresh**: Automatically refreshes tokens before they expire to prevent 401 errors.
+    /// Uses HttpOnly session cookies for authentication following AT Protocol BFF pattern.
+    /// URLSession automatically includes cookies from HTTPCookieStorage.shared.
+    ///
+    /// **Proactive Token Refresh**: Automatically refreshes session before it expires to prevent 401 errors.
     ///
     /// - Parameters:
     ///   - path: API endpoint path
@@ -105,9 +123,8 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
     /// Load credentials and perform proactive token refresh if needed
     private func loadAndRefreshCredentials() async throws -> AuthCredentials {
-        guard var credentials = await credentialsStorage.load(),
-              credentials.sessionId != nil else {
-            print("❌ IronSessionAPIClient: No credentials or session ID found")
+        guard var credentials = await credentialsStorage.load() else {
+            print("❌ IronSessionAPIClient: No credentials found")
             throw IronSessionAPIError.notAuthenticated
         }
 
@@ -117,6 +134,9 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     }
 
     /// Build authenticated URLRequest with headers
+    ///
+    /// Cookies are automatically included by URLSession from HTTPCookieStorage.shared.
+    /// No Authorization header needed - backend uses HttpOnly cookies for auth.
     private func buildAuthenticatedRequest(
         path: String,
         method: String,
@@ -129,8 +149,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = method
 
-        // Add headers
-        request.setValue("Bearer \(credentials.sessionId!)", forHTTPHeaderField: "Authorization")
+        // Add standard headers (cookies added automatically by URLSession)
         request.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
@@ -239,12 +258,11 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
     /// Check if user is currently authenticated
     ///
-    /// Validates that we have credentials with a sealed session ID.
+    /// Validates that we have credentials. Session is managed via HttpOnly cookie.
     ///
     /// - Returns: True if authenticated, false otherwise
     public func isAuthenticated() async -> Bool {
-        guard let credentials = await credentialsStorage.load(),
-              credentials.sessionId != nil else {
+        guard await credentialsStorage.load() != nil else {
             return false
         }
         return true
@@ -256,8 +274,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     ///
     /// - Returns: User info if authenticated, nil otherwise
     public func getCurrentUser() async -> (handle: String, did: String)? {
-        guard let credentials = await credentialsStorage.load(),
-              credentials.sessionId != nil else {
+        guard let credentials = await credentialsStorage.load() else {
             return nil
         }
         return (handle: credentials.handle, did: credentials.did)

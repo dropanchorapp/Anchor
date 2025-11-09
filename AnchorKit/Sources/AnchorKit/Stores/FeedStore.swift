@@ -125,20 +125,19 @@ public final class FeedStore {
     }
 
     /// Delete a check-in from the feed
+    /// Authentication via HttpOnly cookie (BFF pattern).
     /// - Parameters:
     ///   - post: The post to delete
-    ///   - sessionId: User's session ID for authentication
     /// - Throws: FeedError if deletion fails
     @MainActor
-    public func deleteCheckin(_ post: FeedPost, sessionId: String) async throws {
+    public func deleteCheckin(_ post: FeedPost) async throws {
         debugPrint("🗑️ FeedStore: Deleting check-in \(post.id)...")
 
         do {
-            // Delete from backend
+            // Delete from backend (cookie authentication)
             try await feedService.deleteCheckin(
                 did: post.author.did,
-                rkey: post.id,
-                sessionId: sessionId
+                rkey: post.id
             )
 
             // Remove from local posts array

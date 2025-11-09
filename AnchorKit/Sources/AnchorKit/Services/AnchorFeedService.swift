@@ -11,10 +11,11 @@ import Foundation
 
 /// Service protocol for Anchor feed operations
 /// **PDS-Only Architecture**: Focuses on personal location logging, not social feeds
+/// Authentication via HttpOnly cookies (BFF pattern)
 @MainActor
 public protocol AnchorFeedServiceProtocol {
     func getUserCheckins(did: String, limit: Int, cursor: String?) async throws -> AnchorFeedResponse
-    func deleteCheckin(did: String, rkey: String, sessionId: String) async throws
+    func deleteCheckin(did: String, rkey: String) async throws
 }
 
 // MARK: - Anchor Feed Service
@@ -33,6 +34,20 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
     public init(session: URLSessionProtocol = URLSession.shared) {
         self.session = session
         self.baseURL = URL(string: "https://dropanchor.app/api")!
+
+        // Configure URLSession for cookie-based authentication (BFF pattern)
+        configureSessionForCookies(session)
+    }
+
+    /// Configure URLSession to use shared cookie storage for authentication
+    private func configureSessionForCookies(_ session: URLSessionProtocol) {
+        // Only configure real URLSession instances, not test mocks
+        guard let urlSession = session as? URLSession else { return }
+
+        // Ensure we're using shared cookie storage for authentication
+        urlSession.configuration.httpCookieAcceptPolicy = .always
+        urlSession.configuration.httpShouldSetCookies = true
+        urlSession.configuration.httpCookieStorage = HTTPCookieStorage.shared
     }
 
     // MARK: - Feed Methods
@@ -67,16 +82,16 @@ public final class AnchorFeedService: AnchorFeedServiceProtocol {
 
     /// Delete a check-in (only the author can delete their own check-ins)
     /// Uses REST endpoint: DELETE /api/checkins/:did/:rkey
+    /// Authentication via HttpOnly cookie (BFF pattern).
     /// - Parameters:
     ///   - did: User's DID identifier
     ///   - rkey: Record key of the check-in to delete
-    ///   - sessionId: User's session ID for authentication
     /// - Throws: AnchorFeedError if deletion fails
-    public func deleteCheckin(did: String, rkey: String, sessionId: String) async throws {
+    public func deleteCheckin(did: String, rkey: String) async throws {
         let url = baseURL.appendingPathComponent("/checkins/\(did)/\(rkey)")
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue("Bearer \(sessionId)", forHTTPHeaderField: "Authorization")
+        // Cookie authentication - sid cookie automatically included from HTTPCookieStorage.shared
 
         _ = try await performRequest(request, responseType: AnchorFeedDeleteResponse.self)
     }

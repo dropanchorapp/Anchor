@@ -151,7 +151,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         imageAlt: String?
     ) async throws -> CheckinResponse {
         // Verify user is authenticated (cookie-based via BFF pattern)
-        guard (try? await apiClient.credentialsStorage.load()) != nil else {
+        guard (await apiClient.credentialsStorage.load()) != nil else {
             throw AnchorCheckinsError.authenticationRequired
         }
 

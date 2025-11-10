@@ -18,10 +18,10 @@ public enum ImageProcessor {
     // MARK: - Constants
 
     /// Maximum file size for uploaded images (5MB)
-    public nonisolated(unsafe) static let maxFileSizeBytes = 5 * 1024 * 1024
+    public static let maxFileSizeBytes = 5 * 1024 * 1024
 
     /// Maximum dimension for images (prevents memory issues)
-    public nonisolated(unsafe) static let maxDimension: CGFloat = 2048
+    public static let maxDimension: CGFloat = 2048
 
     /// Starting JPEG compression quality
     private static let initialCompressionQuality: CGFloat = 0.8

@@ -363,7 +363,7 @@ struct FeedPostDetailView: View {
     // MARK: - Delete Handler
 
     private func handleDelete() async {
-        guard let sessionId = authStore.credentials?.sessionId else {
+        guard authStore.credentials?.sessionId != nil else {
             deleteError = "Not authenticated"
             return
         }

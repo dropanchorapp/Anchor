@@ -36,6 +36,7 @@ public final class AuthStore: AuthStoreProtocol {
     private let storage: CredentialsStorageProtocol
     private let ironSessionCoordinator: IronSessionMobileOAuthCoordinator
     private let sessionValidator: SessionValidator
+    private let logger: Logger
 
     /// Current authentication state (observable for UI)
     public private(set) var authenticationState: AuthenticationState = .unauthenticated
@@ -60,18 +61,20 @@ public final class AuthStore: AuthStoreProtocol {
     /// Convenience initializer for production use with Keychain storage
     public convenience init() {
         let storage = KeychainCredentialsStorage()
+        let logger = DebugLogger()
         let authService = AnchorAuthService(storage: storage)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage)
-        let sessionValidator = SessionValidator(authService: authService)
-        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage, logger: logger)
+        let sessionValidator = SessionValidator(authService: authService, logger: logger)
+        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator, logger: logger)
     }
 
     /// Convenience initializer for testing with custom storage
     public convenience init(storage: CredentialsStorageProtocol) {
+        let logger = DebugLogger()
         let authService = AnchorAuthService(storage: storage)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage)
-        let sessionValidator = SessionValidator(authService: authService)
-        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage, logger: logger)
+        let sessionValidator = SessionValidator(authService: authService, logger: logger)
+        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator, logger: logger)
     }
 
     /// Dependency injection initializer
@@ -79,29 +82,31 @@ public final class AuthStore: AuthStoreProtocol {
         storage: CredentialsStorageProtocol,
         authService: AnchorAuthServiceProtocol,
         ironSessionCoordinator: IronSessionMobileOAuthCoordinator,
-        sessionValidator: SessionValidator
+        sessionValidator: SessionValidator,
+        logger: Logger = DebugLogger()
     ) {
         self.storage = storage
         self.authService = authService
         self.ironSessionCoordinator = ironSessionCoordinator
         self.sessionValidator = sessionValidator
+        self.logger = logger
     }
 
     // MARK: - Secure Authentication Methods
 
     public func loadStoredCredentials() async -> AuthCredentials? {
-        print("🔑 AuthStore: Loading stored credentials...")
+        logger.log("🔑 Loading stored credentials...", level: .debug, category: .auth)
         let loadedCredentials = await storage.load()
 
         guard let credentials = loadedCredentials else {
-            print("🔑 AuthStore: No stored credentials found")
+            logger.log("🔑 No stored credentials found", level: .info, category: .auth)
             updateAuthenticationState(with: nil)
             return nil
         }
 
-        print("🔑 AuthStore: Loaded stored credentials for @\(credentials.handle)")
-        print("🔑 AuthStore: Loaded credentials DID: \(credentials.did)")
-        print("🔑 AuthStore: Loaded credentials session ID present: \(credentials.sessionId != nil)")
+        logger.log("🔑 Loaded stored credentials for @\(credentials.handle)", level: .info, category: .auth)
+        logger.log("🔑 Loaded credentials DID: \(credentials.did)", level: .debug, category: .auth)
+        logger.log("🔑 Loaded credentials session ID present: \(credentials.sessionId != nil)", level: .debug, category: .auth)
 
         updateAuthenticationState(with: credentials)
         return credentials
@@ -115,16 +120,16 @@ public final class AuthStore: AuthStoreProtocol {
     /// - Returns: OAuth URL for WebView navigation
     /// - Throws: OAuth errors if flow initialization fails
     public func startDirectOAuthFlow() async throws -> URL {
-        print("🔐 AuthStore: Starting direct OAuth flow")
+        logger.log("🔐 Starting direct OAuth flow", level: .info, category: .oauth)
 
         do {
             // Start OAuth without requiring handle upfront - backend will handle OAuth discovery
             let oauthURL = try await ironSessionCoordinator.startDirectOAuthFlow()
-            print("✅ AuthStore: Direct OAuth flow started successfully")
+            logger.log("✅ Direct OAuth flow started successfully", level: .info, category: .oauth)
             return oauthURL
 
         } catch {
-            print("❌ AuthStore: Failed to start direct authentication: \(error.localizedDescription)")
+            logger.log("❌ Failed to start direct authentication: \(error.localizedDescription)", level: .error, category: .oauth)
             throw error
         }
     }
@@ -135,16 +140,16 @@ public final class AuthStore: AuthStoreProtocol {
     /// - Returns: True if authentication successful
     /// - Throws: OAuth errors if token exchange fails
     public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
-        print("🔐 AuthStore: Handling Iron Session OAuth callback")
+        logger.log("🔐 Handling Iron Session OAuth callback", level: .info, category: .oauth)
         setAuthenticating()
 
         do {
             let credentials = try await ironSessionCoordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
-            print("🔐 AuthStore: Iron Session OAuth flow completed successfully")
+            logger.log("🔐 Iron Session OAuth flow completed successfully", level: .info, category: .oauth)
 
             // Cast to AuthCredentials for storage
             guard let authCredentials = credentials as? AuthCredentials else {
-                print("❌ AuthStore: Failed to cast credentials to AuthCredentials")
+                logger.log("❌ Failed to cast credentials to AuthCredentials", level: .error, category: .oauth)
                 let error = AuthenticationError.invalidCredentials("Failed to process authentication response")
                 setError(error)
                 throw error
@@ -152,13 +157,13 @@ public final class AuthStore: AuthStoreProtocol {
 
             updateAuthenticationState(with: authCredentials)
 
-            print("✅ AuthStore: Iron Session authentication completed successfully")
-            print("✅ AuthStore: Authentication state updated - isAuthenticated: \(isAuthenticated)")
+            logger.log("✅ Iron Session authentication completed successfully", level: .info, category: .oauth)
+            logger.log("✅ Authentication state updated - isAuthenticated: \(isAuthenticated)", level: .debug, category: .oauth)
 
             return true
 
         } catch {
-            print("❌ AuthStore: Iron Session OAuth callback failed: \(error)")
+            logger.log("❌ Iron Session OAuth callback failed: \(error)", level: .error, category: .oauth)
             setError(.networkError(error.localizedDescription))
             throw error
         }
@@ -167,42 +172,42 @@ public final class AuthStore: AuthStoreProtocol {
     // MARK: - Session Management
 
     public func signOut() async {
-        print("🔓 AuthStore: Signing out...")
+        logger.log("🔓 Signing out...", level: .info, category: .auth)
 
         updateAuthenticationState(with: nil)
 
         do {
             try await storage.clear()
-            print("✅ AuthStore: Sign out completed successfully")
+            logger.log("✅ Sign out completed successfully", level: .info, category: .auth)
         } catch {
-            print("⚠️ AuthStore: Failed to clear stored credentials during sign out: \(error)")
+            logger.log("⚠️ Failed to clear stored credentials during sign out: \(error)", level: .warning, category: .auth)
         }
     }
 
     public func getValidCredentials() async throws -> AuthCredentialsProtocol {
-        print("🔑 AuthStore: Getting valid credentials...")
+        logger.log("🔑 Getting valid credentials...", level: .debug, category: .auth)
 
         // Check if we have loaded credentials
         guard let credentials = authenticationState.credentials else {
-            print("❌ AuthStore: No credentials loaded")
+            logger.log("❌ No credentials loaded", level: .error, category: .auth)
             throw AuthenticationError.invalidCredentials("No credentials loaded")
         }
 
         // Check if credentials are still valid
         guard credentials.isValid else {
-            print("🔄 AuthStore: Credentials expired, attempting refresh...")
+            logger.log("🔄 Credentials expired, attempting refresh...", level: .info, category: .auth)
             return try await refreshExpiredCredentials(credentials)
         }
 
-        print("✅ AuthStore: Returning valid credentials for @\(credentials.handle)")
+        logger.log("✅ Returning valid credentials for @\(credentials.handle)", level: .debug, category: .auth)
         return credentials
     }
 
     public func validateSessionOnAppLaunch() async {
-        print("🔍 AuthStore: Validating session on app launch...")
+        logger.log("🔍 Validating session on app launch...", level: .info, category: .session)
 
         guard let credentials = authenticationState.credentials else {
-            print("🔍 AuthStore: No credentials to validate on launch")
+            logger.log("🔍 No credentials to validate on launch", level: .debug, category: .session)
             return
         }
 
@@ -210,10 +215,10 @@ public final class AuthStore: AuthStoreProtocol {
     }
 
     public func validateSessionOnAppResume() async {
-        print("🔍 AuthStore: Validating session on app resume...")
+        logger.log("🔍 Validating session on app resume...", level: .info, category: .session)
 
         guard let credentials = authenticationState.credentials else {
-            print("🔍 AuthStore: No credentials to validate on resume")
+            logger.log("🔍 No credentials to validate on resume", level: .debug, category: .session)
             return
         }
 
@@ -224,7 +229,7 @@ public final class AuthStore: AuthStoreProtocol {
 
     /// Refresh expired credentials using SessionValidator
     private func refreshExpiredCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials {
-        print("🔄 AuthStore: Refreshing expired credentials...")
+        logger.log("🔄 Refreshing expired credentials...", level: .info, category: .session)
 
         do {
             let refreshedCredentials = try await sessionValidator.refreshCredentials(credentials) { [weak self] state in
@@ -237,10 +242,10 @@ public final class AuthStore: AuthStoreProtocol {
                 }
             }
             updateAuthenticationState(with: refreshedCredentials)
-            print("✅ AuthStore: Credentials refreshed successfully")
+            logger.log("✅ Credentials refreshed successfully", level: .info, category: .session)
             return refreshedCredentials
         } catch {
-            print("❌ AuthStore: Failed to refresh credentials: \(error)")
+            logger.log("❌ Failed to refresh credentials: \(error)", level: .error, category: .session)
             await signOut()
             throw AuthenticationError.sessionExpiredUnrecoverable
         }
@@ -277,7 +282,7 @@ public final class AuthStore: AuthStoreProtocol {
                     do {
                         try await storage.save(creds)
                     } catch {
-                        print("⚠️ AuthStore: Failed to save credentials: \(error)")
+                        logger.log("⚠️ Failed to save credentials: \(error)", level: .warning, category: .auth)
                     }
                 }
             } else if creds.isExpired {

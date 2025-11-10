@@ -28,6 +28,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     private let session: URLSessionProtocol
     private let config: OAuthConfiguration
     private let cookieManager: CookieManagerProtocol
+    private let logger: Logger
 
     // MARK: - Initialization
 
@@ -35,12 +36,14 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         credentialsStorage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
         config: OAuthConfiguration = .default,
-        cookieManager: CookieManagerProtocol = HTTPCookieManager()
+        cookieManager: CookieManagerProtocol = HTTPCookieManager(),
+        logger: Logger = DebugLogger()
     ) {
         self.credentialsStorage = credentialsStorage
         self.session = session
         self.config = config
         self.cookieManager = cookieManager
+        self.logger = logger
     }
 
     // MARK: - Iron Session OAuth Flow
@@ -52,12 +55,12 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     ///
     /// - Returns: Mobile OAuth URL for WebView navigation
     public func startDirectOAuthFlow() async throws -> URL {
-        print("🔐 IronSessionMobileOAuthCoordinator: Starting direct Iron Session OAuth flow")
+        logger.log("🔐 Starting direct Iron Session OAuth flow", level: .info, category: .oauth)
 
         // Load the mobile auth page
         let authURL = config.baseURL.appendingPathComponent("/mobile-auth")
-        print("✅ IronSessionMobileOAuthCoordinator: Direct OAuth flow URL generated")
-        print("🔗 IronSessionMobileOAuthCoordinator: OAuth URL: \(authURL)")
+        logger.log("✅ Direct OAuth flow URL generated", level: .info, category: .oauth)
+        logger.log("🔗 OAuth URL: \(authURL)", level: .debug, category: .oauth)
 
         return authURL
     }
@@ -71,13 +74,13 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     /// - Returns: Authentication credentials with user info
     /// - Throws: OAuth errors if flow completion fails
     public func completeIronSessionOAuthFlow(callbackURL: URL) async throws -> AuthCredentialsProtocol {
-        print("🔐 IronSessionMobileOAuthCoordinator: Completing Iron Session OAuth flow")
-        print("🔐 IronSessionMobileOAuthCoordinator: Callback URL: \(callbackURL)")
+        logger.log("🔐 Completing Iron Session OAuth flow", level: .info, category: .oauth)
+        logger.log("🔐 Callback URL: \(callbackURL)", level: .debug, category: .oauth)
 
         // Parse session data from callback URL
         guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else {
-            print("❌ IronSessionMobileOAuthCoordinator: Invalid callback URL format")
+            logger.log("❌ Invalid callback URL format", level: .error, category: .oauth)
             throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
         }
 
@@ -86,14 +89,14 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         // cannot share cookies with URLSession
         guard let did = queryItems.first(where: { $0.name == "did" })?.value,
               let sessionToken = queryItems.first(where: { $0.name == "session_token" })?.value else {
-            print("❌ IronSessionMobileOAuthCoordinator: Missing required parameters in callback")
-            print("🔍 IronSessionMobileOAuthCoordinator: Available query items: \(queryItems.map(\.name))")
+            logger.log("❌ Missing required parameters in callback", level: .error, category: .oauth)
+            logger.log("🔍 Available query items: \(queryItems.map(\.name))", level: .debug, category: .oauth)
             throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
         }
 
-        print("✅ IronSessionMobileOAuthCoordinator: Successfully parsed callback parameters")
-        print("🔐 IronSessionMobileOAuthCoordinator: DID: \(did)")
-        print("🔐 IronSessionMobileOAuthCoordinator: Session token length: \(sessionToken.count)")
+        logger.log("✅ Successfully parsed callback parameters", level: .info, category: .oauth)
+        logger.log("🔐 DID: \(did)", level: .debug, category: .oauth)
+        logger.log("🔐 Session token length: \(sessionToken.count)", level: .debug, category: .oauth)
 
         // Manually set session cookie since ASWebAuthenticationSession doesn't share cookies
         // This cookie will be automatically included in all URLSession requests
@@ -116,14 +119,14 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
             let (data, response) = try await session.data(for: sessionRequest)
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                debugPrint("❌ IronSessionMobileOAuthCoordinator: Invalid response type")
+                logger.log("❌ Invalid response type", level: .error, category: .oauth)
                 throw AuthenticationError.networkError("Invalid response type")
             }
 
-            debugPrint("🔐 IronSessionMobileOAuthCoordinator: Session validation response: \(httpResponse.statusCode)")
+            logger.log("🔐 Session validation response: \(httpResponse.statusCode)", level: .debug, category: .oauth)
 
             guard httpResponse.statusCode == 200 else {
-                debugPrint("❌ IronSessionMobileOAuthCoordinator: Session validation failed: \(httpResponse.statusCode)")
+                logger.log("❌ Session validation failed: \(httpResponse.statusCode)", level: .error, category: .oauth)
                 throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
             }
 
@@ -131,7 +134,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
 
             guard let sessionData = sessionData,
                   let actualHandle = sessionData["userHandle"] as? String else {
-                debugPrint("❌ IronSessionMobileOAuthCoordinator: Could not get handle from session")
+                logger.log("❌ Could not get handle from session", level: .error, category: .oauth)
                 throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
             }
 
@@ -146,11 +149,11 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
                 sessionId: sessionToken // Store session ID to recreate cookie on app restart
             )
 
-            debugPrint("✅ IronSessionMobileOAuthCoordinator: Retrieved handle: @\(actualHandle)")
+            logger.log("✅ Retrieved handle: @\(actualHandle)", level: .info, category: .oauth)
             return credentials
 
         } catch {
-            debugPrint("❌ IronSessionMobileOAuthCoordinator: Failed to validate session: \(error)")
+            logger.log("❌ Failed to validate session: \(error)", level: .error, category: .oauth)
             throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
         }
     }
@@ -163,15 +166,15 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     /// - Returns: Updated credentials with refreshed expiration
     /// - Throws: Refresh errors if session refresh fails
     public func refreshIronSession() async throws -> AuthCredentialsProtocol {
-        print("🔄 IronSessionMobileOAuthCoordinator: Refreshing Iron Session")
+        logger.log("🔄 Refreshing Iron Session", level: .info, category: .session)
 
         // Load current credentials
         guard let currentCredentials = await credentialsStorage.load() else {
-            print("❌ IronSessionMobileOAuthCoordinator: No current session to refresh")
+            logger.log("❌ No current session to refresh", level: .error, category: .session)
             throw AuthenticationError.sessionExpiredUnrecoverable
         }
 
-        print("🔄 IronSessionMobileOAuthCoordinator: Found current session to refresh")
+        logger.log("🔄 Found current session to refresh", level: .debug, category: .session)
 
         // Call mobile refresh endpoint using cookie authentication
         let url = config.baseURL.appendingPathComponent("/mobile/refresh-token")
@@ -185,14 +188,14 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
             let (data, response) = try await session.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                print("❌ IronSessionMobileOAuthCoordinator: Invalid response type during refresh")
+                logger.log("❌ Invalid response type during refresh", level: .error, category: .session)
                 throw AuthenticationError.networkError("Invalid response type during refresh")
             }
 
-            print("🔄 IronSessionMobileOAuthCoordinator: Refresh response status: \(httpResponse.statusCode)")
+            logger.log("🔄 Refresh response status: \(httpResponse.statusCode)", level: .debug, category: .session)
 
             guard httpResponse.statusCode == 200 else {
-                print("❌ IronSessionMobileOAuthCoordinator: Session refresh failed: \(httpResponse.statusCode)")
+                logger.log("❌ Session refresh failed: \(httpResponse.statusCode)", level: .error, category: .session)
                 throw AuthenticationError.sessionExpiredUnrecoverable
             }
 
@@ -202,7 +205,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
             if error is AuthenticationError {
                 throw error
             } else {
-                print("❌ IronSessionMobileOAuthCoordinator: Network error during refresh: \(error)")
+                logger.log("❌ Network error during refresh: \(error)", level: .error, category: .session)
                 throw AuthenticationError.networkError(error.localizedDescription)
             }
         }
@@ -228,13 +231,13 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
               let payload = jsonResponse["payload"] as? [String: Any],
               let did = payload["did"] as? String,
               let newSessionToken = payload["sid"] as? String else {
-            print("❌ IronSessionMobileOAuthCoordinator: Invalid refresh response format")
+            logger.log("❌ Invalid refresh response format", level: .error, category: .session)
             throw AuthenticationError.sessionExpiredUnrecoverable
         }
 
-        print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
-        print("🔄 IronSessionMobileOAuthCoordinator: Using BFF pattern - OAuth tokens managed server-side")
-        print("🔄 IronSessionMobileOAuthCoordinator: New session token length: \(newSessionToken.count)")
+        logger.log("✅ Session refreshed successfully", level: .info, category: .session)
+        logger.log("🔄 Using BFF pattern - OAuth tokens managed server-side", level: .debug, category: .session)
+        logger.log("🔄 New session token length: \(newSessionToken.count)", level: .debug, category: .session)
 
         // Update session cookie with new token
         let expiresAt = Date().addingTimeInterval(config.sessionDuration)

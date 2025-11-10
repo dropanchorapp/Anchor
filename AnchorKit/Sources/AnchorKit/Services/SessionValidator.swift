@@ -9,11 +9,13 @@ public final class SessionValidator: @unchecked Sendable {
     // MARK: - Properties
 
     private let authService: AnchorAuthServiceProtocol
+    private let logger: Logger
 
     // MARK: - Initialization
 
-    public init(authService: AnchorAuthServiceProtocol) {
+    public init(authService: AnchorAuthServiceProtocol, logger: Logger = DebugLogger()) {
         self.authService = authService
+        self.logger = logger
     }
 
     // MARK: - Session Validation
@@ -30,12 +32,12 @@ public final class SessionValidator: @unchecked Sendable {
         onStateChange: @escaping @MainActor (SessionValidationState) -> Void
     ) async -> AuthCredentials? {
         do {
-            debugPrint("🔍 SessionValidator: Validating session for \(reason)...")
+            logger.log("🔍 Validating session for \(reason)...", level: .debug, category: .session)
             let validatedCredentials = try await authService.validateSession(credentials)
-            debugPrint("✅ SessionValidator: Session validation successful for \(reason)")
+            logger.log("✅ Session validation successful for \(reason)", level: .info, category: .session)
             return validatedCredentials
         } catch {
-            debugPrint("❌ SessionValidator: Session validation failed for \(reason): \(error)")
+            logger.log("❌ Session validation failed for \(reason): \(error)", level: .warning, category: .session)
             return await attemptTokenRefresh(credentials, reason: reason, onStateChange: onStateChange)
         }
     }
@@ -50,15 +52,15 @@ public final class SessionValidator: @unchecked Sendable {
         _ credentials: AuthCredentials,
         onStateChange: @escaping @MainActor (SessionValidationState) -> Void
     ) async throws -> AuthCredentials {
-        debugPrint("🔄 SessionValidator: Refreshing expired credentials...")
+        logger.log("🔄 Refreshing expired credentials...", level: .info, category: .session)
         await onStateChange(.refreshing)
 
         do {
             let refreshedCredentials = try await authService.refreshTokens(credentials)
-            debugPrint("✅ SessionValidator: Credentials refreshed successfully")
+            logger.log("✅ Credentials refreshed successfully", level: .info, category: .session)
             return refreshedCredentials
         } catch {
-            debugPrint("❌ SessionValidator: Failed to refresh credentials: \(error)")
+            logger.log("❌ Failed to refresh credentials: \(error)", level: .error, category: .session)
             await onStateChange(.refreshFailed(error))
             throw error
         }
@@ -71,15 +73,15 @@ public final class SessionValidator: @unchecked Sendable {
         reason: String,
         onStateChange: @escaping @MainActor (SessionValidationState) -> Void
     ) async -> AuthCredentials? {
-        debugPrint("🔄 SessionValidator: Attempting token refresh as fallback for \(reason)...")
+        logger.log("🔄 Attempting token refresh as fallback for \(reason)...", level: .info, category: .session)
         await onStateChange(.refreshing)
 
         do {
             let refreshedCredentials = try await authService.refreshTokens(credentials)
-            debugPrint("✅ SessionValidator: Token refresh successful as fallback for \(reason)")
+            logger.log("✅ Token refresh successful as fallback for \(reason)", level: .info, category: .session)
             return refreshedCredentials
         } catch {
-            debugPrint("❌ SessionValidator: Token refresh failed for \(reason): \(error)")
+            logger.log("❌ Token refresh failed for \(reason): \(error)", level: .error, category: .session)
             await onStateChange(.refreshFailed(error))
             return nil
         }

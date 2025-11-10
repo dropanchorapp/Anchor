@@ -24,17 +24,20 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     internal let credentialsStorage: CredentialsStorageProtocol
     internal let session: URLSessionProtocol
     internal let baseURL: URL
+    private let logger: Logger
 
     // MARK: - Initialization
 
     public init(
         credentialsStorage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
-        baseURL: String = "https://dropanchor.app"
+        baseURL: String = "https://dropanchor.app",
+        logger: Logger = DebugLogger()
     ) {
         self.credentialsStorage = credentialsStorage
         self.session = session
         self.baseURL = URL(string: baseURL)!
+        self.logger = logger
 
         // Configure URLSession for cookie-based authentication
         configureSessionForCookies(session)
@@ -93,11 +96,11 @@ public final class IronSessionAPIClient: @unchecked Sendable {
             let (data, response) = try await session.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                print("❌ IronSessionAPIClient: Invalid response type")
+                logger.log("❌ Invalid response type", level: .error, category: .network)
                 throw AuthenticationError.networkError("Invalid response type")
             }
 
-            print("🌐 IronSessionAPIClient: Response status: \(httpResponse.statusCode)")
+            logger.log("🌐 Response status: \(httpResponse.statusCode)", level: .debug, category: .network)
 
             // Handle authentication failure with retry
             if httpResponse.statusCode == 401 {
@@ -111,11 +114,11 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
             // Handle other errors
             guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 300 else {
-                print("❌ IronSessionAPIClient: API error: \(httpResponse.statusCode)")
+                logger.log("❌ API error: \(httpResponse.statusCode)", level: .error, category: .network)
                 throw AuthenticationError.apiError(httpResponse.statusCode, "API error")
             }
 
-            print("✅ IronSessionAPIClient: Request completed successfully")
+            logger.log("✅ Request completed successfully", level: .info, category: .network)
             return data
 
         } catch {
@@ -126,7 +129,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     /// Load credentials and perform proactive token refresh if needed
     private func loadAndRefreshCredentials() async throws -> AuthCredentials {
         guard var credentials = await credentialsStorage.load() else {
-            print("❌ IronSessionAPIClient: No credentials found")
+            logger.log("❌ No credentials found", level: .error, category: .auth)
             throw AuthenticationError.invalidCredentials("Not authenticated - no session ID found")
         }
 
@@ -145,7 +148,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         body: Data?,
         credentials: AuthCredentials
     ) -> URLRequest {
-        print("🌐 IronSessionAPIClient: Making authenticated request to \(path)")
+        logger.log("🌐 Making authenticated request to \(path)", level: .debug, category: .network)
 
         let url = baseURL.appendingPathComponent(path)
         var request = URLRequest(url: url)
@@ -293,7 +296,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
             return credentials
         }
 
-        print("🔄 IronSessionAPIClient: Proactively refreshing tokens before request")
+        logger.log("🔄 Proactively refreshing tokens before request", level: .info, category: .session)
 
         do {
             let coordinator = IronSessionMobileOAuthCoordinator(
@@ -304,16 +307,16 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
             // Update credentials and save to storage
             guard let authCredentials = refreshedCredentials as? AuthCredentials else {
-                print("⚠️ IronSessionAPIClient: Failed to cast refreshed credentials")
+                logger.log("⚠️ Failed to cast refreshed credentials", level: .warning, category: .session)
                 return credentials // Continue with existing tokens
             }
 
             try await credentialsStorage.save(authCredentials)
-            print("✅ IronSessionAPIClient: Proactive token refresh successful")
+            logger.log("✅ Proactive token refresh successful", level: .info, category: .session)
             return authCredentials
 
         } catch {
-            print("⚠️ IronSessionAPIClient: Proactive refresh failed, continuing with existing tokens: \(error)")
+            logger.log("⚠️ Proactive refresh failed, continuing with existing tokens: \(error)", level: .warning, category: .session)
             return credentials // Continue with existing tokens - reactive refresh will handle 401 if needed
         }
     }
@@ -331,8 +334,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         let shouldRefresh = credentials.expiresAt < oneHourFromNow
 
         if shouldRefresh {
-            print("🔄 IronSessionAPIClient: Token expires at \(credentials.expiresAt), " +
-                  "current time + 1h = \(oneHourFromNow)")
+            logger.log("🔄 Token expires at \(credentials.expiresAt), current time + 1h = \(oneHourFromNow)", level: .debug, category: .session)
         }
 
         return shouldRefresh

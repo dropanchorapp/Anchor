@@ -11,6 +11,7 @@ extension Tag {
     @Tag static var services: Self
     @Tag static var stores: Self
     @Tag static var auth: Self
+    @Tag static var session: Self
     @Tag static var location: Self
     @Tag static var feed: Self
     @Tag static var bluesky: Self

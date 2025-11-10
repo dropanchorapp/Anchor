@@ -19,28 +19,32 @@ import AnchorKit
 public final class AppStateStore {
     
     // MARK: - Properties
-    
+
     /// Whether the app has completed initialization
     private(set) var isInitialized = false
-    
+
     /// Current initialization step (for debugging/monitoring)
     private(set) var initializationStep: String = "Not started"
-    
+
     /// Last time the feed was fetched
     private(set) var lastFeedFetchTime: Date?
-    
+
     /// Last time the app became active
     private(set) var lastAppBecameActiveTime: Date?
-    
+
     /// Whether the app is currently in the foreground
     private(set) var isAppActive = true
-    
+
     /// Minimum time interval before allowing automatic feed refresh (5 minutes)
     private let minimumFetchInterval: TimeInterval = 5 * 60
-    
+
+    /// Cookie manager for session cookie recreation
+    private let cookieManager: CookieManagerProtocol
+
     // MARK: - Initialization
-    
-    public init() {
+
+    public init(cookieManager: CookieManagerProtocol = HTTPCookieManager()) {
+        self.cookieManager = cookieManager
         setupAppStateObservation()
     }
     
@@ -144,20 +148,12 @@ public final class AppStateStore {
             // Recreate HTTPCookie from stored session ID
             // This is essential for authentication to work after app restart
             if let sessionId = creds.sessionId {
-                let cookie = HTTPCookie(properties: [
-                    .name: "sid",
-                    .value: sessionId,
-                    .domain: "dropanchor.app",
-                    .path: "/",
-                    .secure: true,
-                    .expires: creds.expiresAt
-                ])
-                if let cookie = cookie {
-                    HTTPCookieStorage.shared.setCookie(cookie)
-                    print("🍪 Successfully recreated 'sid' cookie from stored session ID")
-                } else {
-                    print("⚠️ Failed to recreate session cookie - authentication may fail")
-                }
+                cookieManager.saveSessionCookie(
+                    sessionToken: sessionId,
+                    expiresAt: creds.expiresAt,
+                    domain: "dropanchor.app"
+                )
+                print("🍪 Successfully recreated 'sid' cookie from stored session ID")
             } else {
                 print("⚠️ No session ID found in credentials - authentication may fail")
             }

@@ -36,16 +36,17 @@ public final class AuthStore: AuthStoreProtocol {
     private let storage: CredentialsStorageProtocol
     private let ironSessionCoordinator: IronSessionMobileOAuthCoordinator
 
-    /// Whether the user is currently authenticated (observable for UI)
-    public private(set) var isAuthenticated: Bool = false
+    /// Current authentication state (observable for UI)
+    public private(set) var authenticationState: AuthenticationState = .unauthenticated
 
-    /// Current authentication credentials (backing storage)
-    @MainActor
-    private var _credentials: AuthCredentials?
+    /// Whether the user is currently authenticated (convenience property)
+    public var isAuthenticated: Bool {
+        authenticationState.isAuthenticated
+    }
 
     /// Current authentication credentials
     public var credentials: AuthCredentials? {
-        _credentials
+        authenticationState.credentials
     }
 
     /// Current user handle (convenience property)
@@ -89,8 +90,7 @@ public final class AuthStore: AuthStoreProtocol {
 
         guard let credentials = loadedCredentials else {
             print("🔑 AuthStore: No stored credentials found")
-            _credentials = nil
-            updateAuthenticationState()
+            updateAuthenticationState(with: nil)
             return nil
         }
 
@@ -98,8 +98,7 @@ public final class AuthStore: AuthStoreProtocol {
         print("🔑 AuthStore: Loaded credentials DID: \(credentials.did)")
         print("🔑 AuthStore: Loaded credentials session ID present: \(credentials.sessionId != nil)")
 
-        _credentials = credentials
-        updateAuthenticationState()
+        updateAuthenticationState(with: credentials)
         return credentials
     }
 
@@ -132,6 +131,7 @@ public final class AuthStore: AuthStoreProtocol {
     /// - Throws: OAuth errors if token exchange fails
     public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
         print("🔐 AuthStore: Handling Iron Session OAuth callback")
+        setAuthenticating()
 
         do {
             let credentials = try await ironSessionCoordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
@@ -140,11 +140,11 @@ public final class AuthStore: AuthStoreProtocol {
             // Cast to AuthCredentials for storage
             guard let authCredentials = credentials as? AuthCredentials else {
                 print("❌ AuthStore: Failed to cast credentials to AuthCredentials")
+                setError(.invalidCredentials("Failed to process authentication response"))
                 throw AuthStoreError.authenticationFailed
             }
 
-            _credentials = authCredentials
-            updateAuthenticationState()
+            updateAuthenticationState(with: authCredentials)
 
             print("✅ AuthStore: Iron Session authentication completed successfully")
             print("✅ AuthStore: Authentication state updated - isAuthenticated: \(isAuthenticated)")
@@ -153,6 +153,7 @@ public final class AuthStore: AuthStoreProtocol {
 
         } catch {
             print("❌ AuthStore: Iron Session OAuth callback failed: \(error)")
+            setError(.networkError(error.localizedDescription))
             throw error
         }
     }
@@ -162,8 +163,7 @@ public final class AuthStore: AuthStoreProtocol {
     public func signOut() async {
         print("🔓 AuthStore: Signing out...")
 
-        _credentials = nil
-        updateAuthenticationState()
+        updateAuthenticationState(with: nil)
 
         do {
             try await storage.clear()
@@ -177,7 +177,7 @@ public final class AuthStore: AuthStoreProtocol {
         print("🔑 AuthStore: Getting valid credentials...")
 
         // Check if we have loaded credentials
-        guard let credentials = _credentials else {
+        guard let credentials = authenticationState.credentials else {
             print("❌ AuthStore: No credentials loaded")
             throw AuthStoreError.notAuthenticated
         }
@@ -195,7 +195,7 @@ public final class AuthStore: AuthStoreProtocol {
     public func validateSessionOnAppLaunch() async {
         print("🔍 AuthStore: Validating session on app launch...")
 
-        guard let credentials = _credentials else {
+        guard let credentials = authenticationState.credentials else {
             print("🔍 AuthStore: No credentials to validate on launch")
             return
         }
@@ -206,7 +206,7 @@ public final class AuthStore: AuthStoreProtocol {
     public func validateSessionOnAppResume() async {
         print("🔍 AuthStore: Validating session on app resume...")
 
-        guard let credentials = _credentials else {
+        guard let credentials = authenticationState.credentials else {
             print("🔍 AuthStore: No credentials to validate on resume")
             return
         }
@@ -218,15 +218,16 @@ public final class AuthStore: AuthStoreProtocol {
 
     private func refreshExpiredCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials {
         print("🔄 AuthStore: Refreshing expired credentials...")
+        setRefreshing()
 
         do {
             let refreshedCredentials = try await authService.refreshTokens(credentials)
-            _credentials = refreshedCredentials
-            updateAuthenticationState()
+            updateAuthenticationState(with: refreshedCredentials)
             print("✅ AuthStore: Credentials refreshed successfully")
             return refreshedCredentials
         } catch {
             print("❌ AuthStore: Failed to refresh credentials: \(error)")
+            setError(.sessionExpiredUnrecoverable)
             await signOut()
             throw AuthStoreError.sessionExpired
         }
@@ -236,8 +237,7 @@ public final class AuthStore: AuthStoreProtocol {
         do {
             print("🔍 AuthStore: Validating session for \(reason)...")
             let validatedCredentials = try await authService.validateSession(credentials)
-            _credentials = validatedCredentials
-            updateAuthenticationState()
+            updateAuthenticationState(with: validatedCredentials)
             print("✅ AuthStore: Session validation successful for \(reason)")
         } catch {
             print("❌ AuthStore: Session validation failed for \(reason): \(error)")
@@ -247,14 +247,15 @@ public final class AuthStore: AuthStoreProtocol {
 
     private func attemptTokenRefresh(_ credentials: AuthCredentials, reason: String) async {
         print("🔄 AuthStore: Attempting token refresh as fallback for \(reason)...")
+        setRefreshing()
 
         do {
             let refreshedCredentials = try await authService.refreshTokens(credentials)
-            _credentials = refreshedCredentials
-            updateAuthenticationState()
+            updateAuthenticationState(with: refreshedCredentials)
             print("✅ AuthStore: Token refresh successful as fallback for \(reason)")
         } catch {
             print("❌ AuthStore: Token refresh failed for \(reason): \(error)")
+            setError(.sessionExpiredUnrecoverable)
             await signOut()
         }
     }
@@ -265,18 +266,43 @@ public final class AuthStore: AuthStoreProtocol {
         return authService.shouldRefreshTokens(credentials)
     }
 
-    private func updateAuthenticationState() {
-        isAuthenticated = _credentials?.isValid ?? false
+    /// Update authentication state based on current credentials
+    private func updateAuthenticationState(with credentials: AuthCredentials?) {
+        if let creds = credentials {
+            if creds.isValid {
+                authenticationState = .authenticated(credentials: creds)
 
-        if isAuthenticated {
-            Task {
-                do {
-                    try await storage.save(_credentials!)
-                } catch {
-                    print("⚠️ AuthStore: Failed to save credentials: \(error)")
+                // Save valid credentials
+                Task {
+                    do {
+                        try await storage.save(creds)
+                    } catch {
+                        print("⚠️ AuthStore: Failed to save credentials: \(error)")
+                    }
                 }
+            } else if creds.isExpired {
+                authenticationState = .sessionExpired(credentials: creds)
             }
+        } else {
+            authenticationState = .unauthenticated
         }
+    }
+
+    /// Set state to authenticating
+    private func setAuthenticating() {
+        authenticationState = .authenticating
+    }
+
+    /// Set state to refreshing with current credentials
+    private func setRefreshing() {
+        if let creds = authenticationState.credentials {
+            authenticationState = .refreshing(credentials: creds)
+        }
+    }
+
+    /// Set error state
+    private func setError(_ error: AuthenticationError) {
+        authenticationState = .error(error)
     }
 }
 

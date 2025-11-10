@@ -123,17 +123,19 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         } catch {
             debugPrint("❌ CheckinsService: Checkin creation failed: \(error)")
 
-            // Map Iron Session errors to Checkin errors
-            if let apiError = error as? IronSessionAPIError {
+            // Map authentication errors to Checkin errors
+            if let apiError = error as? AuthenticationError {
                 switch apiError {
-                case .notAuthenticated:
+                case .invalidCredentials:
                     throw AnchorCheckinsError.authenticationRequired
-                case .authenticationFailed:
+                case .sessionExpiredUnrecoverable:
                     throw AnchorCheckinsError.authenticationRequired
                 case .networkError:
                     throw AnchorCheckinsError.networkError(error)
-                case .apiError(let statusCode):
+                case .apiError(let statusCode, _):
                     throw AnchorCheckinsError.httpError(statusCode)
+                default:
+                    throw error
                 }
             } else {
                 throw AnchorCheckinsError.networkError(error)

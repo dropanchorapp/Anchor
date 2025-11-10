@@ -86,6 +86,9 @@ public enum AuthenticationState: Sendable {
 }
 
 /// Errors that can occur during authentication
+///
+/// Unified error type for all authentication-related failures including OAuth,
+/// session management, and credential storage.
 public enum AuthenticationError: Error, Equatable, Sendable {
     /// Network request failed
     case networkError(String)
@@ -98,6 +101,12 @@ public enum AuthenticationError: Error, Equatable, Sendable {
 
     /// OAuth flow was cancelled by user
     case userCancelled
+
+    /// Credential storage operation failed
+    case storageError(String)
+
+    /// API returned an error status
+    case apiError(Int, String)
 
     /// Unknown or unexpected error
     case unknown(String)
@@ -115,6 +124,10 @@ public enum AuthenticationError: Error, Equatable, Sendable {
             return "Your session has expired. Please sign in again."
         case .userCancelled:
             return "Sign in was cancelled."
+        case .storageError:
+            return "Failed to save authentication data. Please try again."
+        case .apiError(let code, _):
+            return "Server error (HTTP \(code)). Please try again."
         case .unknown:
             return "An unexpected error occurred. Please try again."
         }
@@ -123,7 +136,7 @@ public enum AuthenticationError: Error, Equatable, Sendable {
     /// Whether this error is recoverable (user can retry)
     public var isRecoverable: Bool {
         switch self {
-        case .networkError, .userCancelled, .unknown:
+        case .networkError, .userCancelled, .unknown, .storageError, .apiError:
             return true
         case .invalidCredentials, .sessionExpiredUnrecoverable:
             return false

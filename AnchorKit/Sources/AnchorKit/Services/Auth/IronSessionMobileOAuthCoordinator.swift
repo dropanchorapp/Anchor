@@ -78,7 +78,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else {
             print("❌ IronSessionMobileOAuthCoordinator: Invalid callback URL format")
-            throw IronSessionOAuthError.invalidCallback
+            throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
         }
 
         // Extract DID and session token from callback
@@ -88,7 +88,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
               let sessionToken = queryItems.first(where: { $0.name == "session_token" })?.value else {
             print("❌ IronSessionMobileOAuthCoordinator: Missing required parameters in callback")
             print("🔍 IronSessionMobileOAuthCoordinator: Available query items: \(queryItems.map(\.name))")
-            throw IronSessionOAuthError.invalidCallback
+            throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
         }
 
         print("✅ IronSessionMobileOAuthCoordinator: Successfully parsed callback parameters")
@@ -117,14 +117,14 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 debugPrint("❌ IronSessionMobileOAuthCoordinator: Invalid response type")
-                throw IronSessionOAuthError.networkError
+                throw AuthenticationError.networkError("Invalid response type")
             }
 
             debugPrint("🔐 IronSessionMobileOAuthCoordinator: Session validation response: \(httpResponse.statusCode)")
 
             guard httpResponse.statusCode == 200 else {
                 debugPrint("❌ IronSessionMobileOAuthCoordinator: Session validation failed: \(httpResponse.statusCode)")
-                throw IronSessionOAuthError.invalidCallback
+                throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
             }
 
             let sessionData = try JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -132,7 +132,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
             guard let sessionData = sessionData,
                   let actualHandle = sessionData["userHandle"] as? String else {
                 debugPrint("❌ IronSessionMobileOAuthCoordinator: Could not get handle from session")
-                throw IronSessionOAuthError.invalidCallback
+                throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
             }
 
             // Create credentials with session ID for cookie recreation on app restart
@@ -151,7 +151,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
 
         } catch {
             debugPrint("❌ IronSessionMobileOAuthCoordinator: Failed to validate session: \(error)")
-            throw IronSessionOAuthError.invalidCallback
+            throw AuthenticationError.invalidCredentials("Invalid OAuth callback URL")
         }
     }
 
@@ -168,7 +168,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         // Load current credentials
         guard let currentCredentials = await credentialsStorage.load() else {
             print("❌ IronSessionMobileOAuthCoordinator: No current session to refresh")
-            throw IronSessionOAuthError.noCurrentSession
+            throw AuthenticationError.sessionExpiredUnrecoverable
         }
 
         print("🔄 IronSessionMobileOAuthCoordinator: Found current session to refresh")
@@ -186,24 +186,24 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("❌ IronSessionMobileOAuthCoordinator: Invalid response type during refresh")
-                throw IronSessionOAuthError.networkError
+                throw AuthenticationError.networkError("Invalid response type during refresh")
             }
 
             print("🔄 IronSessionMobileOAuthCoordinator: Refresh response status: \(httpResponse.statusCode)")
 
             guard httpResponse.statusCode == 200 else {
                 print("❌ IronSessionMobileOAuthCoordinator: Session refresh failed: \(httpResponse.statusCode)")
-                throw IronSessionOAuthError.sessionRefreshFailed
+                throw AuthenticationError.sessionExpiredUnrecoverable
             }
 
             return try parseRefreshResponse(data: data, currentCredentials: currentCredentials)
 
         } catch {
-            if error is IronSessionOAuthError {
+            if error is AuthenticationError {
                 throw error
             } else {
                 print("❌ IronSessionMobileOAuthCoordinator: Network error during refresh: \(error)")
-                throw IronSessionOAuthError.networkError
+                throw AuthenticationError.networkError(error.localizedDescription)
             }
         }
     }
@@ -229,7 +229,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
               let did = payload["did"] as? String,
               let newSessionToken = payload["sid"] as? String else {
             print("❌ IronSessionMobileOAuthCoordinator: Invalid refresh response format")
-            throw IronSessionOAuthError.sessionRefreshFailed
+            throw AuthenticationError.sessionExpiredUnrecoverable
         }
 
         print("✅ IronSessionMobileOAuthCoordinator: Session refreshed successfully")
@@ -255,28 +255,5 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
             expiresAt: Date().addingTimeInterval(config.sessionDuration),
             sessionId: newSessionToken // Store new session ID to recreate cookie on app restart
         )
-    }
-}
-
-// MARK: - Iron Session OAuth Errors
-
-/// Errors that can occur during Iron Session OAuth flow
-public enum IronSessionOAuthError: Error, LocalizedError {
-    case invalidCallback
-    case noCurrentSession
-    case networkError
-    case sessionRefreshFailed
-
-    public var errorDescription: String? {
-        switch self {
-        case .invalidCallback:
-            return "Invalid OAuth callback URL from Iron Session backend"
-        case .noCurrentSession:
-            return "No current session to refresh"
-        case .networkError:
-            return "Network error during Iron Session communication"
-        case .sessionRefreshFailed:
-            return "Iron Session refresh failed"
-        }
     }
 }

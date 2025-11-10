@@ -145,8 +145,9 @@ public final class AuthStore: AuthStoreProtocol {
             // Cast to AuthCredentials for storage
             guard let authCredentials = credentials as? AuthCredentials else {
                 print("❌ AuthStore: Failed to cast credentials to AuthCredentials")
-                setError(.invalidCredentials("Failed to process authentication response"))
-                throw AuthStoreError.authenticationFailed
+                let error = AuthenticationError.invalidCredentials("Failed to process authentication response")
+                setError(error)
+                throw error
             }
 
             updateAuthenticationState(with: authCredentials)
@@ -184,7 +185,7 @@ public final class AuthStore: AuthStoreProtocol {
         // Check if we have loaded credentials
         guard let credentials = authenticationState.credentials else {
             print("❌ AuthStore: No credentials loaded")
-            throw AuthStoreError.notAuthenticated
+            throw AuthenticationError.invalidCredentials("No credentials loaded")
         }
 
         // Check if credentials are still valid
@@ -241,7 +242,7 @@ public final class AuthStore: AuthStoreProtocol {
         } catch {
             print("❌ AuthStore: Failed to refresh credentials: \(error)")
             await signOut()
-            throw AuthStoreError.sessionExpired
+            throw AuthenticationError.sessionExpiredUnrecoverable
         }
     }
 
@@ -302,24 +303,5 @@ public final class AuthStore: AuthStoreProtocol {
     /// Set error state
     private func setError(_ error: AuthenticationError) {
         authenticationState = .error(error)
-    }
-}
-
-// MARK: - Authentication Store Errors
-
-public enum AuthStoreError: Error, LocalizedError {
-    case notAuthenticated
-    case authenticationFailed
-    case sessionExpired
-
-    public var errorDescription: String? {
-        switch self {
-        case .notAuthenticated:
-            return "User is not authenticated"
-        case .authenticationFailed:
-            return "Authentication failed"
-        case .sessionExpired:
-            return "Session has expired"
-        }
     }
 }

@@ -66,7 +66,7 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
         // For Iron Session, validation is implicit - if we have a session ID, we're valid
         // The backend validates the sealed session token on each request
         guard credentials.sessionId != nil else {
-            throw AnchorAuthError.invalidAuthData
+            throw AuthenticationError.invalidCredentials("Invalid authentication data")
         }
 
         // Return the credentials as-is since validation happens on the backend
@@ -80,7 +80,7 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
 
         // Cast to AuthCredentials
         guard let authCredentials = refreshedCredentials as? AuthCredentials else {
-            throw AnchorAuthError.invalidAuthData
+            throw AuthenticationError.invalidCredentials("Invalid authentication data")
         }
 
         return authCredentials

@@ -94,7 +94,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("❌ IronSessionAPIClient: Invalid response type")
-                throw IronSessionAPIError.networkError
+                throw AuthenticationError.networkError("Invalid response type")
             }
 
             print("🌐 IronSessionAPIClient: Response status: \(httpResponse.statusCode)")
@@ -112,14 +112,14 @@ public final class IronSessionAPIClient: @unchecked Sendable {
             // Handle other errors
             guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 300 else {
                 print("❌ IronSessionAPIClient: API error: \(httpResponse.statusCode)")
-                throw IronSessionAPIError.apiError(httpResponse.statusCode)
+                throw AuthenticationError.apiError(httpResponse.statusCode, "API error")
             }
 
             print("✅ IronSessionAPIClient: Request completed successfully")
             return data
 
         } catch {
-            throw error is IronSessionAPIError ? error : IronSessionAPIError.networkError
+            throw error is AuthenticationError ? error : AuthenticationError.networkError(error.localizedDescription)
         }
     }
 
@@ -127,7 +127,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     private func loadAndRefreshCredentials() async throws -> AuthCredentials {
         guard var credentials = await credentialsStorage.load() else {
             print("❌ IronSessionAPIClient: No credentials found")
-            throw IronSessionAPIError.notAuthenticated
+            throw AuthenticationError.invalidCredentials("Not authenticated - no session ID found")
         }
 
         // **PROACTIVE TOKEN REFRESH**: Check if tokens need refresh before making request
@@ -176,7 +176,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         // Check retry limit
         guard retryCount < maxRetries else {
             debugPrint("❌ IronSessionAPIClient: Maximum retry attempts (\(maxRetries)) exceeded for \(path)")
-            throw IronSessionAPIError.authenticationFailed
+            throw AuthenticationError.invalidCredentials("Authentication failed after maximum retry attempts")
         }
 
         debugPrint(
@@ -197,7 +197,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
             // If this was our last retry, throw authentication failed
             if retryCount >= maxRetries - 1 {
-                throw IronSessionAPIError.authenticationFailed
+                throw AuthenticationError.invalidCredentials("Authentication failed after maximum retry attempts")
             }
         }
 
@@ -336,28 +336,5 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         }
 
         return shouldRefresh
-    }
-}
-
-// MARK: - Iron Session API Errors
-
-/// Errors that can occur during Iron Session API calls
-public enum IronSessionAPIError: Error, LocalizedError {
-    case notAuthenticated
-    case networkError
-    case apiError(Int)
-    case authenticationFailed
-
-    public var errorDescription: String? {
-        switch self {
-        case .notAuthenticated:
-            return "Not authenticated - no session ID found"
-        case .networkError:
-            return "Network error during API call"
-        case .apiError(let statusCode):
-            return "API error: HTTP \(statusCode)"
-        case .authenticationFailed:
-            return "Authentication failed after maximum retry attempts"
-        }
     }
 }

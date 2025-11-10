@@ -77,14 +77,14 @@ public final class MockAuthStore: AuthStoreProtocol {
 
     public func startDirectOAuthFlow() async throws -> URL {
         if shouldThrowAuthError {
-            throw AuthStoreError.authenticationFailed
+            throw AuthenticationError.invalidCredentials("Authentication failed")
         }
         return URL(string: "https://dropanchor.app/mobile-auth")!
     }
 
     public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
         if shouldThrowAuthError {
-            throw AuthStoreError.authenticationFailed
+            throw AuthenticationError.invalidCredentials("Authentication failed")
         }
         isAuthenticated = true
         testCredentials = TestAuthCredentials.valid()
@@ -99,11 +99,11 @@ public final class MockAuthStore: AuthStoreProtocol {
 
     public func getValidCredentials() async throws -> AuthCredentialsProtocol {
         if shouldThrowAuthError {
-            throw AuthStoreError.notAuthenticated
+            throw AuthenticationError.invalidCredentials("Not authenticated")
         }
 
         guard let testCredentials = testCredentials else {
-            throw AuthStoreError.notAuthenticated
+            throw AuthenticationError.invalidCredentials("Not authenticated")
         }
 
         return testCredentials

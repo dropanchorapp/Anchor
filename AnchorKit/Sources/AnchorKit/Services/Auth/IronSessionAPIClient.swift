@@ -14,7 +14,9 @@ import Foundation
 /// - Backend manages OAuth tokens server-side
 /// - Client uses HttpOnly session cookies for authentication
 /// - No bearer tokens exposed to client
-@MainActor
+///
+/// Note: This class performs network operations and should NOT be @MainActor isolated
+/// to avoid blocking the UI thread. Network calls run on background threads.
 public final class IronSessionAPIClient: @unchecked Sendable {
 
     // MARK: - Properties
@@ -26,7 +28,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     // MARK: - Initialization
 
     public init(
-        credentialsStorage: CredentialsStorageProtocol = KeychainCredentialsStorage(),
+        credentialsStorage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
         baseURL: String = "https://dropanchor.app"
     ) {

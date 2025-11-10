@@ -17,7 +17,9 @@ import Foundation
 ///
 /// This provides the same security benefits as BookHive's approach where
 /// DPoP tokens never leave the backend server.
-@MainActor
+///
+/// Note: This class performs network operations and should NOT be @MainActor isolated
+/// to avoid blocking the UI thread. Network calls run on background threads.
 public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
 
     // MARK: - Properties
@@ -30,7 +32,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     // MARK: - Initialization
 
     public init(
-        credentialsStorage: CredentialsStorageProtocol = KeychainCredentialsStorage(),
+        credentialsStorage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
         config: OAuthConfiguration = .default,
         cookieManager: CookieManagerProtocol = HTTPCookieManager()

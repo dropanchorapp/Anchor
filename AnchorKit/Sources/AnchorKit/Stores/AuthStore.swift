@@ -35,6 +35,7 @@ public final class AuthStore: AuthStoreProtocol {
     private let authService: AnchorAuthServiceProtocol
     private let storage: CredentialsStorageProtocol
     private let ironSessionCoordinator: IronSessionMobileOAuthCoordinator
+    private let sessionValidator: SessionValidator
 
     /// Current authentication state (observable for UI)
     public private(set) var authenticationState: AuthenticationState = .unauthenticated
@@ -61,25 +62,29 @@ public final class AuthStore: AuthStoreProtocol {
         let storage = KeychainCredentialsStorage()
         let authService = AnchorAuthService(storage: storage)
         let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage)
-        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator)
+        let sessionValidator = SessionValidator(authService: authService)
+        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator)
     }
 
     /// Convenience initializer for testing with custom storage
     public convenience init(storage: CredentialsStorageProtocol) {
         let authService = AnchorAuthService(storage: storage)
         let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage)
-        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator)
+        let sessionValidator = SessionValidator(authService: authService)
+        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator)
     }
 
-    /// Dependency injection initializer  
+    /// Dependency injection initializer
     public init(
         storage: CredentialsStorageProtocol,
         authService: AnchorAuthServiceProtocol,
-        ironSessionCoordinator: IronSessionMobileOAuthCoordinator
+        ironSessionCoordinator: IronSessionMobileOAuthCoordinator,
+        sessionValidator: SessionValidator
     ) {
         self.storage = storage
         self.authService = authService
         self.ironSessionCoordinator = ironSessionCoordinator
+        self.sessionValidator = sessionValidator
     }
 
     // MARK: - Secure Authentication Methods
@@ -200,7 +205,7 @@ public final class AuthStore: AuthStoreProtocol {
             return
         }
 
-        await validateSessionInternal(credentials, reason: "app launch")
+        await validateSession(credentials, reason: "app launch")
     }
 
     public func validateSessionOnAppResume() async {
@@ -211,59 +216,53 @@ public final class AuthStore: AuthStoreProtocol {
             return
         }
 
-        await validateSessionInternal(credentials, reason: "app resume")
+        await validateSession(credentials, reason: "app resume")
     }
 
     // MARK: - Private Methods
 
+    /// Refresh expired credentials using SessionValidator
     private func refreshExpiredCredentials(_ credentials: AuthCredentials) async throws -> AuthCredentials {
         print("🔄 AuthStore: Refreshing expired credentials...")
-        setRefreshing()
 
         do {
-            let refreshedCredentials = try await authService.refreshTokens(credentials)
+            let refreshedCredentials = try await sessionValidator.refreshCredentials(credentials) { [weak self] state in
+                guard let self = self else { return }
+                switch state {
+                case .refreshing:
+                    self.setRefreshing()
+                case .refreshFailed:
+                    self.setError(.sessionExpiredUnrecoverable)
+                }
+            }
             updateAuthenticationState(with: refreshedCredentials)
             print("✅ AuthStore: Credentials refreshed successfully")
             return refreshedCredentials
         } catch {
             print("❌ AuthStore: Failed to refresh credentials: \(error)")
-            setError(.sessionExpiredUnrecoverable)
             await signOut()
             throw AuthStoreError.sessionExpired
         }
     }
 
-    private func validateSessionInternal(_ credentials: AuthCredentials, reason: String) async {
-        do {
-            print("🔍 AuthStore: Validating session for \(reason)...")
-            let validatedCredentials = try await authService.validateSession(credentials)
-            updateAuthenticationState(with: validatedCredentials)
-            print("✅ AuthStore: Session validation successful for \(reason)")
-        } catch {
-            print("❌ AuthStore: Session validation failed for \(reason): \(error)")
-            await attemptTokenRefresh(credentials, reason: reason)
+    /// Validate session using SessionValidator
+    private func validateSession(_ credentials: AuthCredentials, reason: String) async {
+        let validatedCredentials = await sessionValidator.validateSession(credentials, reason: reason) { [weak self] state in
+            guard let self = self else { return }
+            switch state {
+            case .refreshing:
+                self.setRefreshing()
+            case .refreshFailed:
+                self.setError(.sessionExpiredUnrecoverable)
+            }
         }
-    }
 
-    private func attemptTokenRefresh(_ credentials: AuthCredentials, reason: String) async {
-        print("🔄 AuthStore: Attempting token refresh as fallback for \(reason)...")
-        setRefreshing()
-
-        do {
-            let refreshedCredentials = try await authService.refreshTokens(credentials)
-            updateAuthenticationState(with: refreshedCredentials)
-            print("✅ AuthStore: Token refresh successful as fallback for \(reason)")
-        } catch {
-            print("❌ AuthStore: Token refresh failed for \(reason): \(error)")
-            setError(.sessionExpiredUnrecoverable)
+        if let validatedCredentials = validatedCredentials {
+            updateAuthenticationState(with: validatedCredentials)
+        } else {
+            // Validation and refresh both failed
             await signOut()
         }
-    }
-
-    private func shouldValidateSession(_ credentials: AuthCredentials) -> Bool {
-        // In a real app, you'd track the last validation time
-        // For now, validate if tokens are close to expiring
-        return authService.shouldRefreshTokens(credentials)
     }
 
     /// Update authentication state based on current credentials

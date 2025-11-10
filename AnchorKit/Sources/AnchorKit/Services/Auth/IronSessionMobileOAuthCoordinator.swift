@@ -24,7 +24,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
 
     private let credentialsStorage: CredentialsStorageProtocol
     private let session: URLSessionProtocol
-    private let baseURL: URL
+    private let config: OAuthConfiguration
     private let cookieManager: CookieManagerProtocol
 
     // MARK: - Initialization
@@ -32,12 +32,12 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
     public init(
         credentialsStorage: CredentialsStorageProtocol = KeychainCredentialsStorage(),
         session: URLSessionProtocol = URLSession.shared,
-        baseURL: String = "https://dropanchor.app",
+        config: OAuthConfiguration = .default,
         cookieManager: CookieManagerProtocol = HTTPCookieManager()
     ) {
         self.credentialsStorage = credentialsStorage
         self.session = session
-        self.baseURL = URL(string: baseURL)!
+        self.config = config
         self.cookieManager = cookieManager
     }
 
@@ -53,7 +53,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         print("🔐 IronSessionMobileOAuthCoordinator: Starting direct Iron Session OAuth flow")
 
         // Load the mobile auth page
-        let authURL = baseURL.appendingPathComponent("/mobile-auth")
+        let authURL = config.baseURL.appendingPathComponent("/mobile-auth")
         print("✅ IronSessionMobileOAuthCoordinator: Direct OAuth flow URL generated")
         print("🔗 IronSessionMobileOAuthCoordinator: OAuth URL: \(authURL)")
 
@@ -95,16 +95,16 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
 
         // Manually set session cookie since ASWebAuthenticationSession doesn't share cookies
         // This cookie will be automatically included in all URLSession requests
-        let expiresAt = Date().addingTimeInterval(60 * 60 * 24 * 7) // 7 days
+        let expiresAt = Date().addingTimeInterval(config.sessionDuration)
         cookieManager.saveSessionCookie(
             sessionToken: sessionToken,
             expiresAt: expiresAt,
-            domain: baseURL.host ?? "dropanchor.app"
+            domain: config.cookieDomain
         )
 
         // Validate session to get user info from backend using cookie
         // Make direct request without requiring credentials (cookie-only auth)
-        let sessionURL = baseURL.appendingPathComponent("/api/auth/session")
+        let sessionURL = config.baseURL.appendingPathComponent("/api/auth/session")
         var sessionRequest = URLRequest(url: sessionURL)
         sessionRequest.httpMethod = "GET"
         sessionRequest.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
@@ -140,7 +140,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
                 refreshToken: "iron-session-backend-managed", // Tokens are backend-managed
                 did: did,
                 pdsURL: "determined-by-backend", // Backend resolves actual PDS URL
-                expiresAt: Date().addingTimeInterval(60 * 60 * 24), // 24 hours session TTL
+                expiresAt: Date().addingTimeInterval(config.sessionDuration),
                 sessionId: sessionToken // Store session ID to recreate cookie on app restart
             )
 
@@ -172,7 +172,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         print("🔄 IronSessionMobileOAuthCoordinator: Found current session to refresh")
 
         // Call mobile refresh endpoint using cookie authentication
-        let url = baseURL.appendingPathComponent("/mobile/refresh-token")
+        let url = config.baseURL.appendingPathComponent("/mobile/refresh-token")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
@@ -235,11 +235,11 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         print("🔄 IronSessionMobileOAuthCoordinator: New session token length: \(newSessionToken.count)")
 
         // Update session cookie with new token
-        let expiresAt = Date().addingTimeInterval(60 * 60 * 24 * 7) // 7 days
+        let expiresAt = Date().addingTimeInterval(config.sessionDuration)
         cookieManager.saveSessionCookie(
             sessionToken: newSessionToken,
             expiresAt: expiresAt,
-            domain: baseURL.host ?? "dropanchor.app"
+            domain: config.cookieDomain
         )
 
         // Update credentials with new session ID and expiration (BFF pattern)
@@ -250,7 +250,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
             refreshToken: "iron-session-backend-managed", // Tokens managed server-side
             did: did,
             pdsURL: currentCredentials.pdsURL,
-            expiresAt: Date().addingTimeInterval(60 * 60 * 24 * 7), // 7 days session TTL
+            expiresAt: Date().addingTimeInterval(config.sessionDuration),
             sessionId: newSessionToken // Store new session ID to recreate cookie on app restart
         )
     }

@@ -43,13 +43,13 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
     public init(
         storage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
-        baseURL: String = "https://dropanchor.app"
+        config: OAuthConfiguration = .default
     ) {
         self.storage = storage
         self.ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
-            baseURL: baseURL
+            config: config
         )
     }
 

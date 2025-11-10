@@ -41,10 +41,17 @@ public final class AppStateStore {
     /// Cookie manager for session cookie recreation
     private let cookieManager: CookieManagerProtocol
 
+    /// OAuth configuration
+    private let oauthConfig: OAuthConfiguration
+
     // MARK: - Initialization
 
-    public init(cookieManager: CookieManagerProtocol = HTTPCookieManager()) {
+    public init(
+        cookieManager: CookieManagerProtocol = HTTPCookieManager(),
+        oauthConfig: OAuthConfiguration = .default
+    ) {
         self.cookieManager = cookieManager
+        self.oauthConfig = oauthConfig
         setupAppStateObservation()
     }
     
@@ -151,7 +158,7 @@ public final class AppStateStore {
                 cookieManager.saveSessionCookie(
                     sessionToken: sessionId,
                     expiresAt: creds.expiresAt,
-                    domain: "dropanchor.app"
+                    domain: oauthConfig.cookieDomain
                 )
                 print("🍪 Successfully recreated 'sid' cookie from stored session ID")
             } else {

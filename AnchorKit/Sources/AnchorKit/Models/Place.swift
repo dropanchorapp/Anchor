@@ -1,5 +1,39 @@
 import Foundation
 
+/// AT Protocol community lexicon address format
+public struct PlaceAddress: Codable, Sendable, Hashable {
+    public let type: String // "$type": "community.lexicon.location.address"
+    public let name: String?
+    public let street: String?
+    public let locality: String?
+    public let region: String?
+    public let country: String?
+    public let postalCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type = "$type"
+        case name, street, locality, region, country, postalCode
+    }
+
+    public init(
+        type: String = "community.lexicon.location.address",
+        name: String? = nil,
+        street: String? = nil,
+        locality: String? = nil,
+        region: String? = nil,
+        country: String? = nil,
+        postalCode: String? = nil
+    ) {
+        self.type = type
+        self.name = name
+        self.street = street
+        self.locality = locality
+        self.region = region
+        self.country = country
+        self.postalCode = postalCode
+    }
+}
+
 /// Represents a place/point of interest from OpenStreetMap via Overpass API
 public struct Place: Codable, Sendable {
     /// Unique identifier in format "type:id" (e.g., "way:123456", "node:789012")
@@ -23,13 +57,17 @@ public struct Place: Codable, Sendable {
     /// OpenStreetMap element ID
     public let elementId: Int64
 
+    /// Structured address data from backend (includes locality, region, country)
+    public let address: PlaceAddress?
+
     public init(
         elementType: ElementType,
         elementId: Int64,
         name: String,
         latitude: Double,
         longitude: Double,
-        tags: [String: String] = [:]
+        tags: [String: String] = [:],
+        address: PlaceAddress? = nil
     ) {
         self.elementType = elementType
         self.elementId = elementId
@@ -38,6 +76,7 @@ public struct Place: Codable, Sendable {
         self.latitude = latitude
         self.longitude = longitude
         self.tags = tags
+        self.address = address
     }
 }
 
@@ -117,11 +156,11 @@ extension Place: Hashable {
 
 extension Place: LocationRepresentable {
     public var displayName: String? { self.name }
-    public var street: String? { nil }
-    public var locality: String? { nil }
-    public var region: String? { nil }
-    public var country: String? { nil }
-    public var postalCode: String? { nil }
+    public var street: String? { address?.street }
+    public var locality: String? { address?.locality }
+    public var region: String? { address?.region }
+    public var country: String? { address?.country }
+    public var postalCode: String? { address?.postalCode }
     public var coordinate: (Double, Double)? { (latitude, longitude) }
 }
 

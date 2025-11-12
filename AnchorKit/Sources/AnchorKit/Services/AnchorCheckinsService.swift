@@ -246,6 +246,7 @@ private struct CheckinRequest: Codable {
         let tags: [String: String]
 
         // Additional fields that the backend expects from the reactivated endpoint
+        var address: PlaceAddress?
         var category: String?
         var categoryGroup: String?
         var icon: String?
@@ -257,6 +258,7 @@ private struct CheckinRequest: Codable {
             latitude: place.latitude,
             longitude: place.longitude,
             tags: place.tags,
+            address: place.address,
             category: place.category,
             categoryGroup: place.categoryGroup?.rawValue,
             icon: place.icon

@@ -118,13 +118,28 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
 
             return placesResponse.places.map { apiPlace in
                 let elementType = Place.ElementType(rawValue: apiPlace.elementType) ?? .node
+
+                // Convert SearchPlaceAddress to PlaceAddress
+                let address: PlaceAddress? = apiPlace.address.map { searchAddr in
+                    PlaceAddress(
+                        type: searchAddr.type,
+                        name: searchAddr.name,
+                        street: searchAddr.street,
+                        locality: searchAddr.locality,
+                        region: searchAddr.region,
+                        country: searchAddr.country,
+                        postalCode: searchAddr.postalCode
+                    )
+                }
+
                 let place = Place(
                     elementType: elementType,
                     elementId: apiPlace.elementId,
                     name: apiPlace.name,
                     latitude: apiPlace.latitude,
                     longitude: apiPlace.longitude,
-                    tags: apiPlace.tags
+                    tags: apiPlace.tags,
+                    address: address
                 )
                 return AnchorPlaceWithDistance(place: place, distance: apiPlace.distance)
             }
@@ -234,13 +249,28 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
 
             return searchResponse.places.map { apiPlace in
                 let elementType = Place.ElementType(rawValue: apiPlace.elementType) ?? .node
+
+                // Convert SearchPlaceAddress to PlaceAddress
+                let address: PlaceAddress? = apiPlace.address.map { searchAddr in
+                    PlaceAddress(
+                        type: searchAddr.type,
+                        name: searchAddr.name,
+                        street: searchAddr.street,
+                        locality: searchAddr.locality,
+                        region: searchAddr.region,
+                        country: searchAddr.country,
+                        postalCode: searchAddr.postalCode
+                    )
+                }
+
                 let place = Place(
                     elementType: elementType,
                     elementId: apiPlace.elementId,
                     name: apiPlace.name,
                     latitude: apiPlace.latitude,
                     longitude: apiPlace.longitude,
-                    tags: apiPlace.tags
+                    tags: apiPlace.tags,
+                    address: address
                 )
                 return AnchorPlaceWithDistance(
                     place: place,

@@ -24,6 +24,7 @@ public struct AnchorPlacesAPIPlace: Codable, Sendable {
     public let latitude: Double
     public let longitude: Double
     public let tags: [String: String]
+    public let address: SearchPlaceAddress?
     public let distance: Double
 
     public init(
@@ -34,6 +35,7 @@ public struct AnchorPlacesAPIPlace: Codable, Sendable {
         latitude: Double,
         longitude: Double,
         tags: [String: String],
+        address: SearchPlaceAddress? = nil,
         distance: Double
     ) {
         self.id = id
@@ -43,6 +45,7 @@ public struct AnchorPlacesAPIPlace: Codable, Sendable {
         self.latitude = latitude
         self.longitude = longitude
         self.tags = tags
+        self.address = address
         self.distance = distance
     }
 }

@@ -74,116 +74,23 @@ struct FeedPostDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // Interactive map that extends behind status bar and scrolls with content
+                // Interactive map
                 if let coords = post.coordinates {
-                    Map(position: $cameraPosition) {
-                        Annotation(
-                            post.address?.name ?? "Location",
-                            coordinate: CLLocationCoordinate2D(latitude: coords.latitude, longitude: coords.longitude)
-                        ) {
-                            Button {
-                                ExternalAppService.shared.openInMaps(
-                                    coordinate: CLLocationCoordinate2D(
-                                        latitude: coords.latitude,
-                                        longitude: coords.longitude
-                                    ),
-                                    locationName: post.address?.name ?? "Location"
-                                )
-                            } label: {
-                                Image(systemName: "mappin.and.ellipse")
-                                    .font(.title2)
-                                    .foregroundStyle(.primary)
-                                    .padding(8)
-                                    .background(.regularMaterial, in: Circle())
-                                    .shadow(radius: 2)
-                            }
-                        }
-                    }
-                    .frame(height: 300)
-                    .mapStyle(.standard)
-                    .mapControlVisibility(.hidden) // Hide all map controls including compass
-                    .ignoresSafeArea(.all, edges: .top) // Extend behind status bar
+                    FeedPostMapView(
+                        coordinates: coords,
+                        address: post.address,
+                        cameraPosition: $cameraPosition
+                    )
                 }
-                
+
                 // Content area
                 VStack(alignment: .leading, spacing: 16) {
                     // Author info
-                    HStack(spacing: 12) {
-                        AsyncImage(url: post.author.avatar.flatMap(URL.init)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Circle()
-                                .fill(.secondary)
-                                .overlay {
-                                    Text(String(post.author.handle.prefix(1).uppercased()))
-                                        .font(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(.white)
-                                }
-                        }
-                        .frame(width: 40, height: 40)
-                        .clipShape(Circle())
+                    FeedPostAuthorView(author: post.author)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(post.author.displayName ?? post.author.handle)
-                                .font(.headline)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
-
-                            Text("@\(post.author.handle)")
-                                .font(.caption)
-                                .fontWeight(.regular)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-                    }
-                    
                     // Image attachment
-                    if let image = post.image, let fullsizeURL = URL(string: image.fullsizeUrl) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            AsyncImage(url: fullsizeURL) { phase in
-                                switch phase {
-                                case .empty:
-                                    Rectangle()
-                                        .fill(Color.secondary.opacity(0.1))
-                                        .frame(height: 300)
-                                        .overlay {
-                                            ProgressView()
-                                        }
-                                case .success(let displayImage):
-                                    displayImage
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                case .failure:
-                                    Rectangle()
-                                        .fill(Color.secondary.opacity(0.1))
-                                        .frame(height: 300)
-                                        .overlay {
-                                            VStack {
-                                                Image(systemName: "photo")
-                                                    .font(.largeTitle)
-                                                    .foregroundStyle(.secondary)
-                                                Text("Failed to load image")
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-
-                            if let alt = image.alt, !alt.isEmpty {
-                                Text(alt)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .italic()
-                            }
-                        }
+                    if let image = post.image {
+                        FeedPostImageView(image: image)
                     }
 
                     // Location details

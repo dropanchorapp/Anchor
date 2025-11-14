@@ -55,9 +55,9 @@ public final class AnchorSettings {
 
 /// Available place data providers
 public enum PlaceProvider: String, CaseIterable, Sendable {
-    case overpass = "overpass"
-    case locationiq = "locationiq"
-    case nominatim = "nominatim"
+    case overpass
+    case locationiq
+    case nominatim
 
     public var displayName: String {
         switch self {

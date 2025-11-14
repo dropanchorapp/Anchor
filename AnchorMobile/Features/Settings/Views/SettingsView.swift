@@ -53,7 +53,10 @@ struct SettingsView: View {
                 } header: {
                     Text("Data Sources")
                 } footer: {
-                    Text("Choose which OpenStreetMap data provider to use for discovering nearby places and searching for locations.")
+                    Text(
+                        "Choose which OpenStreetMap data provider to use for " +
+                        "discovering nearby places and searching for locations."
+                    )
                 }
 
                 // Account Section

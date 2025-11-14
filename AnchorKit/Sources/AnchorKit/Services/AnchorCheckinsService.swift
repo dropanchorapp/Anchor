@@ -174,7 +174,12 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
 
         // Build file attachments
         let files = [
-            (fieldName: "image", filename: "photo.jpg", data: imageData, contentType: "image/jpeg")
+            MultipartFile(
+                fieldName: "image",
+                filename: "photo.jpg",
+                data: imageData,
+                contentType: "image/jpeg"
+            )
         ]
 
         debugPrint("🏁 CheckinsService: Sending multipart request via IronSessionAPIClient")

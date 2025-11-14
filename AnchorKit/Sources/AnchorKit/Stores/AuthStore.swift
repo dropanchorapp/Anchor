@@ -63,18 +63,36 @@ public final class AuthStore: AuthStoreProtocol {
         let storage = KeychainCredentialsStorage()
         let logger = DebugLogger()
         let authService = AnchorAuthService(storage: storage)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage, logger: logger)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+            credentialsStorage: storage,
+            logger: logger
+        )
         let sessionValidator = SessionValidator(authService: authService, logger: logger)
-        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator, logger: logger)
+        self.init(
+            storage: storage,
+            authService: authService,
+            ironSessionCoordinator: ironSessionCoordinator,
+            sessionValidator: sessionValidator,
+            logger: logger
+        )
     }
 
     /// Convenience initializer for testing with custom storage
     public convenience init(storage: CredentialsStorageProtocol) {
         let logger = DebugLogger()
         let authService = AnchorAuthService(storage: storage)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(credentialsStorage: storage, logger: logger)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+            credentialsStorage: storage,
+            logger: logger
+        )
         let sessionValidator = SessionValidator(authService: authService, logger: logger)
-        self.init(storage: storage, authService: authService, ironSessionCoordinator: ironSessionCoordinator, sessionValidator: sessionValidator, logger: logger)
+        self.init(
+            storage: storage,
+            authService: authService,
+            ironSessionCoordinator: ironSessionCoordinator,
+            sessionValidator: sessionValidator,
+            logger: logger
+        )
     }
 
     /// Dependency injection initializer

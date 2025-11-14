@@ -1,5 +1,18 @@
 import Foundation
 
+/// Represents a saved session cookie for testing
+public struct SavedSessionCookie: Sendable {
+    public let token: String
+    public let expiresAt: Date
+    public let domain: String
+
+    public init(token: String, expiresAt: Date, domain: String) {
+        self.token = token
+        self.expiresAt = expiresAt
+        self.domain = domain
+    }
+}
+
 /// Manages session cookies for authentication
 ///
 /// Centralizes cookie creation, storage, and retrieval logic that was previously
@@ -82,11 +95,11 @@ public final class HTTPCookieManager: CookieManagerProtocol, @unchecked Sendable
 /// Mock implementation for testing
 public final class MockCookieManager: CookieManagerProtocol, @unchecked Sendable {
     private let lock = NSLock()
-    private var _savedCookies: [(token: String, expiresAt: Date, domain: String)] = []
+    private var _savedCookies: [SavedSessionCookie] = []
     private var _clearedDomains: [String] = []
     private var _mockHasValidCookie = false
 
-    public var savedCookies: [(token: String, expiresAt: Date, domain: String)] {
+    public var savedCookies: [SavedSessionCookie] {
         lock.lock()
         defer { lock.unlock() }
         return _savedCookies
@@ -116,7 +129,7 @@ public final class MockCookieManager: CookieManagerProtocol, @unchecked Sendable
     public func saveSessionCookie(sessionToken: String, expiresAt: Date, domain: String) {
         lock.lock()
         defer { lock.unlock() }
-        _savedCookies.append((sessionToken, expiresAt, domain))
+        _savedCookies.append(SavedSessionCookie(token: sessionToken, expiresAt: expiresAt, domain: domain))
     }
 
     public func clearSessionCookie(domain: String) {

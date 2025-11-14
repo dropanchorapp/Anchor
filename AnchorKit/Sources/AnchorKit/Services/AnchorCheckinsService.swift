@@ -122,28 +122,30 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
 
         } catch {
             debugPrint("❌ CheckinsService: Checkin creation failed: \(error)")
-
-            // Map authentication errors to Checkin errors
-            if let apiError = error as? AuthenticationError {
-                switch apiError {
-                case .invalidCredentials:
-                    throw AnchorCheckinsError.authenticationRequired
-                case .sessionExpiredUnrecoverable:
-                    throw AnchorCheckinsError.authenticationRequired
-                case .networkError:
-                    throw AnchorCheckinsError.networkError(error)
-                case .apiError(let statusCode, _):
-                    throw AnchorCheckinsError.httpError(statusCode)
-                default:
-                    throw error
-                }
-            } else {
-                throw AnchorCheckinsError.networkError(error)
-            }
+            throw mapErrorToCheckinError(error)
         }
     }
 
     // MARK: - Private Methods
+
+    /// Map generic errors to AnchorCheckinsError types
+    private func mapErrorToCheckinError(_ error: Error) -> Error {
+        // Map authentication errors to Checkin errors
+        guard let apiError = error as? AuthenticationError else {
+            return AnchorCheckinsError.networkError(error)
+        }
+
+        switch apiError {
+        case .invalidCredentials, .sessionExpiredUnrecoverable:
+            return AnchorCheckinsError.authenticationRequired
+        case .networkError:
+            return AnchorCheckinsError.networkError(error)
+        case .apiError(let statusCode, _):
+            return AnchorCheckinsError.httpError(statusCode)
+        default:
+            return error
+        }
+    }
 
     /// Create checkin with image attachment using multipart/form-data
     private func createCheckinWithImage(

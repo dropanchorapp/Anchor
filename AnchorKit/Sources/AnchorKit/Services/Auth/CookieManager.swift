@@ -55,16 +55,20 @@ public final class HTTPCookieManager: CookieManagerProtocol, @unchecked Sendable
     }
 
     public func clearSessionCookie(domain: String) {
-        if let cookies = cookieStorage.cookies(for: URL(string: "https://\(domain)")!) {
-            for cookie in cookies where cookie.name == cookieName {
-                cookieStorage.deleteCookie(cookie)
-                debugPrint("🍪 Cleared '\(cookieName)' cookie for \(domain)")
-            }
+        guard let url = URL(string: "https://\(domain)"),
+              let cookies = cookieStorage.cookies(for: url) else {
+            return
+        }
+
+        for cookie in cookies where cookie.name == cookieName {
+            cookieStorage.deleteCookie(cookie)
+            debugPrint("🍪 Cleared '\(cookieName)' cookie for \(domain)")
         }
     }
 
     public func hasValidSessionCookie(domain: String) -> Bool {
-        guard let cookies = cookieStorage.cookies(for: URL(string: "https://\(domain)")!) else {
+        guard let url = URL(string: "https://\(domain)"),
+              let cookies = cookieStorage.cookies(for: url) else {
             return false
         }
 

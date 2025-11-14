@@ -58,7 +58,8 @@ struct SettingsView: View {
 
                 // Account Section
                 Section {
-                    if authStore.isAuthenticated {
+                    switch authStore.authenticationState {
+                    case .authenticated(let credentials):
                         // Show account info
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
@@ -69,7 +70,7 @@ struct SettingsView: View {
                                 Text("Account")
                                     .font(.headline)
 
-                                Text("Connected as @\(authStore.credentials?.handle ?? "Unknown")")
+                                Text("Connected as @\(credentials.handle)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -88,7 +89,115 @@ struct SettingsView: View {
                                 Text("Sign Out")
                             }
                         }
-                    } else {
+
+                    case .error(let error):
+                        // Show error state with recovery actions
+                        VStack(spacing: 16) {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(.orange)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Authentication Error")
+                                        .font(.headline)
+
+                                    Text(error.localizedDescription)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+                            }
+
+                            // Recovery actions based on error type
+                            if error.isRecoverable {
+                                // Network errors - allow retry
+                                HStack(spacing: 12) {
+                                    Button("Retry") {
+                                        Task {
+                                            await authStore.validateSessionOnAppResume()
+                                        }
+                                    }
+                                    .buttonStyle(.borderedProminent)
+
+                                    Button("Sign Out", role: .destructive) {
+                                        Task {
+                                            await authStore.signOut()
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                            } else {
+                                // Session expired - need re-authentication
+                                VStack(spacing: 8) {
+                                    SignInButton()
+
+                                    Button("Clear Session", role: .destructive) {
+                                        Task {
+                                            await authStore.signOut()
+                                        }
+                                    }
+                                    .font(.caption)
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+
+                    case .sessionExpired:
+                        // Show session expired - will be refreshed automatically
+                        HStack(spacing: 12) {
+                            ProgressView()
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Session Expired")
+                                    .font(.headline)
+
+                                Text("Refreshing your session...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+                        }
+
+                    case .refreshing:
+                        // Show refreshing state
+                        HStack(spacing: 12) {
+                            ProgressView()
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Refreshing Session")
+                                    .font(.headline)
+
+                                Text("Updating your authentication...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+                        }
+
+                    case .authenticating:
+                        // Show authenticating state
+                        HStack(spacing: 12) {
+                            ProgressView()
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Signing In")
+                                    .font(.headline)
+
+                                Text("Please wait...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+                        }
+
+                    case .unauthenticated:
                         // Show sign in button
                         VStack(spacing: 12) {
                             HStack {

@@ -113,7 +113,7 @@ public final class AuthStore: AuthStoreProtocol {
     }
 
     /// Start direct OAuth flow without handle input
-    /// 
+    ///
     /// Opens OAuth flow directly on Bluesky where user enters their handle and password.
     /// Uses Iron Session backend for simplified mobile authentication.
     ///
@@ -121,6 +121,12 @@ public final class AuthStore: AuthStoreProtocol {
     /// - Throws: OAuth errors if flow initialization fails
     public func startDirectOAuthFlow() async throws -> URL {
         logger.log("🔐 Starting direct OAuth flow", level: .info, category: .oauth)
+
+        // Clear any existing error state and old session for fresh authentication
+        if case .error = authenticationState {
+            logger.log("🧹 Clearing error state before new OAuth flow", level: .info, category: .oauth)
+            await signOut()
+        }
 
         do {
             // Start OAuth without requiring handle upfront - backend will handle OAuth discovery
@@ -246,8 +252,12 @@ public final class AuthStore: AuthStoreProtocol {
             return refreshedCredentials
         } catch {
             logger.log("❌ Failed to refresh credentials: \(error)", level: .error, category: .session)
-            await signOut()
-            throw AuthenticationError.sessionExpiredUnrecoverable
+
+            // Map error and set error state - don't auto sign-out
+            // Let UI decide appropriate recovery action based on error.isRecoverable
+            let authError = mapToAuthenticationError(error)
+            setError(authError)
+            throw authError
         }
     }
 
@@ -266,8 +276,9 @@ public final class AuthStore: AuthStoreProtocol {
         if let validatedCredentials = validatedCredentials {
             updateAuthenticationState(with: validatedCredentials)
         } else {
-            // Validation and refresh both failed
-            await signOut()
+            // Validation and refresh both failed - set error state
+            // Don't auto sign-out - let UI provide appropriate recovery actions
+            setError(.sessionExpiredUnrecoverable)
         }
     }
 
@@ -308,5 +319,22 @@ public final class AuthStore: AuthStoreProtocol {
     /// Set error state
     private func setError(_ error: AuthenticationError) {
         authenticationState = .error(error)
+    }
+
+    /// Map generic errors to appropriate AuthenticationError types
+    private func mapToAuthenticationError(_ error: Error) -> AuthenticationError {
+        // If it's already an AuthenticationError, return it
+        if let authError = error as? AuthenticationError {
+            return authError
+        }
+
+        // Check for network errors
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain {
+            return .networkError(error.localizedDescription)
+        }
+
+        // Default to unrecoverable session error if we don't know the type
+        return .sessionExpiredUnrecoverable
     }
 }

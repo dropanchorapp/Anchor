@@ -152,71 +152,40 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         imageData: Data,
         imageAlt: String?
     ) async throws -> CheckinResponse {
-        // Verify user is authenticated (cookie-based via BFF pattern)
-        guard (await apiClient.credentialsStorage.load()) != nil else {
-            throw AnchorCheckinsError.authenticationRequired
-        }
+        // Build text fields
+        var fields: [String: String] = [:]
 
-        // Build multipart request
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var request = URLRequest(url: URL(string: "\(apiClient.baseURL)/api/checkins")!)
-        request.httpMethod = "POST"
-        // Cookie authentication - URLSession automatically includes cookies
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
-        // Build multipart body
-        var body = Data()
-
-        // Add place field
+        // Add place field (JSON-encoded)
         let placeData = CheckinRequest(place: place, message: message)
         if let placeJSON = try? JSONEncoder().encode(placeData.place),
            let placeString = String(data: placeJSON, encoding: .utf8) {
-            body.append(Data("--\(boundary)\r\n".utf8))
-            body.append(Data("Content-Disposition: form-data; name=\"place\"\r\n\r\n".utf8))
-            body.append(Data(placeString.utf8))
-            body.append(Data("\r\n".utf8))
+            fields["place"] = placeString
         }
 
         // Add message field if present
         if let message = message {
-            body.append(Data("--\(boundary)\r\n".utf8))
-            body.append(Data("Content-Disposition: form-data; name=\"message\"\r\n\r\n".utf8))
-            body.append(Data(message.utf8))
-            body.append(Data("\r\n".utf8))
+            fields["message"] = message
         }
-
-        // Add image field
-        body.append(Data("--\(boundary)\r\n".utf8))
-        body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"photo.jpg\"\r\n".utf8))
-        body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
-        body.append(imageData)
-        body.append(Data("\r\n".utf8))
 
         // Add imageAlt field if present
         if let imageAlt = imageAlt, !imageAlt.isEmpty {
-            body.append(Data("--\(boundary)\r\n".utf8))
-            body.append(Data("Content-Disposition: form-data; name=\"imageAlt\"\r\n\r\n".utf8))
-            body.append(Data(imageAlt.utf8))
-            body.append(Data("\r\n".utf8))
+            fields["imageAlt"] = imageAlt
         }
 
-        // Close boundary
-        body.append(Data("--\(boundary)--\r\n".utf8))
+        // Build file attachments
+        let files = [
+            (fieldName: "image", filename: "photo.jpg", data: imageData, contentType: "image/jpeg")
+        ]
 
-        request.httpBody = body
+        debugPrint("🏁 CheckinsService: Sending multipart request via IronSessionAPIClient")
 
-        debugPrint("🏁 CheckinsService: Sending multipart request, body size: \(body.count) bytes")
-
-        // Send request
-        let (data, response) = try await apiClient.session.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AnchorCheckinsError.invalidResponse
-        }
-
-        guard 200...299 ~= httpResponse.statusCode else {
-            throw AnchorCheckinsError.httpError(httpResponse.statusCode)
-        }
+        // Use IronSessionAPIClient for multipart request
+        // This ensures we get proper auth handling (proactive refresh, 401 retry, exponential backoff)
+        let data = try await apiClient.authenticatedMultipartRequest(
+            path: "/api/checkins",
+            fields: fields,
+            files: files
+        )
 
         // Decode response
         let decoder = JSONDecoder()

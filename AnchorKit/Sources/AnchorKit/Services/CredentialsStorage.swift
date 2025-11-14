@@ -80,7 +80,7 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
             throw CredentialsStorageError.keychainError(status)
         }
 
-        print("🔐 Saved credentials to keychain for @\(credentials.handle)")
+        debugPrint("🔐 Saved credentials to keychain for @\(credentials.handle)")
     }
 
     public func load() async -> AuthCredentials? {
@@ -97,7 +97,7 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
 
         guard status == errSecSuccess,
               let data = result as? Data else {
-            print("🔐 No credentials found in keychain")
+            debugPrint("🔐 No credentials found in keychain")
             return nil
         }
 
@@ -114,14 +114,14 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
                 sessionId: credentialsData.sessionId
             )
 
-            print("🔐 Loaded credentials from keychain for @\(credentials.handle), " +
+            debugPrint("🔐 Loaded credentials from keychain for @\(credentials.handle), " +
                   "expires: \(credentials.expiresAt), valid: \(credentials.isValid)")
 
             // Return credentials regardless of expiration status
             // Let higher-level services (AuthService) decide whether to refresh or clear
             return credentials
         } catch {
-            print("🔐 Error decoding keychain credentials: \(error)")
+            debugPrint("🔐 Error decoding keychain credentials: \(error)")
             try? await clear()
             return nil
         }
@@ -136,7 +136,7 @@ public final class KeychainCredentialsStorage: CredentialsStorageProtocol {
 
         let status = SecItemDelete(query as CFDictionary)
         if status == errSecSuccess {
-            print("🔐 Cleared credentials from keychain")
+            debugPrint("🔐 Cleared credentials from keychain")
         }
     }
 }

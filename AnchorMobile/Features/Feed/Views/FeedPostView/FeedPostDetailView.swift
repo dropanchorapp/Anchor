@@ -294,4 +294,3 @@ struct FeedPostDetailView: View {
         FeedPostDetailView(post: sampleCoffeeShopPost)
     }
 }
- 

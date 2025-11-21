@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import AnchorKit
+import ATProtoFoundation
 import StoreKit
 
 struct SettingsView: View {

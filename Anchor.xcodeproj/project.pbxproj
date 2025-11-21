@@ -32,7 +32,6 @@
 		3F77C5012E0EC17200CC0D38 /* AnchorMobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F77C50B2E0EC17200CC0D38 /* AnchorMobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnchorMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F7AB96A2E180B25005806FB /* AnchorMobile.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = AnchorMobile.xctestplan; sourceTree = "<group>"; };
-		3F9C6F422DECDC11009A1F50 /* AnchorKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AnchorKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -107,7 +106,6 @@
 				3F77C5042E0EC17200CC0D38 /* AnchorMobileTests */,
 				3F77C50E2E0EC17200CC0D38 /* AnchorMobileUITests */,
 				3F697D672DECDAF900AC7ACC /* Products */,
-				3F9C6F422DECDC11009A1F50 /* AnchorKit */,
 				3F510DFC2E10293E00B12466 /* Frameworks */,
 			);
 			sourceTree = "<group>";

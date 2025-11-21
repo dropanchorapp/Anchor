@@ -1,10 +1,12 @@
-import CoreLocation
+@preconcurrency import CoreLocation
 import Foundation
 import Observation
 
 /// Service for handling geolocation using CoreLocation
+/// @MainActor isolated to ensure thread-safe access to mutable state from SwiftUI views
+@MainActor
 @Observable
-public final class LocationService: NSObject, @unchecked Sendable {
+public final class LocationService: NSObject {
     private let locationManager = CLLocationManager()
     private var permissionCompletion: ((Bool) -> Void)?
 
@@ -158,9 +160,9 @@ public final class LocationService: NSObject, @unchecked Sendable {
                 }
             }
 
-            // Dispatch authorization request to background queue to prevent UI blocking
-            // This follows Apple's recommendation to avoid calling location methods on main thread
-            Task.detached { [weak self] in
+            // Dispatch authorization request asynchronously
+            // LocationService is @MainActor so this will run on main thread
+            Task { [weak self] in
                 guard let self = self else {
                     continuation.resume(returning: false)
                     return
@@ -168,9 +170,7 @@ public final class LocationService: NSObject, @unchecked Sendable {
 
                 // Check authorization status again right before requesting to handle race conditions
                 let freshStatus = self.locationManager.authorizationStatus
-                await MainActor.run {
-                    self.authorizationStatus = freshStatus
-                }
+                self.authorizationStatus = freshStatus
 
                 // Only request if still not determined
                 if freshStatus == .notDetermined {
@@ -182,9 +182,7 @@ public final class LocationService: NSObject, @unchecked Sendable {
                     #endif
                 } else {
                     // Status changed while we were setting up - handle it
-                    let hasPermission = await MainActor.run {
-                        self.hasLocationPermission
-                    }
+                    let hasPermission = self.hasLocationPermission
                     continuation.resume(returning: hasPermission)
                 }
             }
@@ -320,69 +318,76 @@ public extension LocationService {
 // MARK: - CLLocationManagerDelegate
 
 extension LocationService: CLLocationManagerDelegate {
-    public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        let oldStatus = authorizationStatus
+    nonisolated public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let newStatus = manager.authorizationStatus
 
-        // Only update if status actually changed to prevent unnecessary SwiftUI updates
-        guard oldStatus.rawValue != newStatus.rawValue else { return }
+        Task { @MainActor in
+            let oldStatus = authorizationStatus
+            
+            // Only update if status actually changed to prevent unnecessary SwiftUI updates
+            guard oldStatus.rawValue != newStatus.rawValue else { return }
 
-        print("📍 Location authorization changed from \(oldStatus.rawValue) to \(newStatus.rawValue)")
-        authorizationStatus = newStatus
+            print("📍 Location authorization changed from \(oldStatus.rawValue) to \(newStatus.rawValue)")
+            authorizationStatus = newStatus
 
-        // If we were waiting for permission, complete the request
-        if let completion = permissionCompletion {
-            permissionCompletion = nil
+            // If we were waiting for permission, complete the request
+            if let completion = permissionCompletion {
+                permissionCompletion = nil
 
-            let granted = hasLocationPermission
-            print(granted ? "✅ Location permission granted!" : "❌ Location permission denied")
+                let granted = hasLocationPermission
+                print(granted ? "✅ Location permission granted!" : "❌ Location permission denied")
 
-            // Only start location updates if permission was granted AND we're explicitly requesting it
-            if granted, currentLocation == nil || shouldUpdateLocation() {
-                startLocationUpdates()
+                // Only start location updates if permission was granted AND we're explicitly requesting it
+                if granted, currentLocation == nil || shouldUpdateLocation() {
+                    startLocationUpdates()
+                }
+
+                completion(granted)
             }
-
-            completion(granted)
+            // Don't automatically start location updates when permission changes
+            // Let the app explicitly request location when needed
         }
-        // Don't automatically start location updates when permission changes
-        // Let the app explicitly request location when needed
     }
 
-    public func locationManager(_: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    nonisolated public func locationManager(_: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
 
-        // Update current location and timestamp
-        currentLocation = location
-        lastLocationUpdate = Date()
+        Task { @MainActor in
+            // Update current location and timestamp
+            currentLocation = location
+            lastLocationUpdate = Date()
 
-        let coords = location.coordinate
-        print("📍 Location updated: \(String(format: "%.6f", coords.latitude)), " +
-                "\(String(format: "%.6f", coords.longitude)) (cached for 3 minutes)")
+            let coords = location.coordinate
+            print("📍 Location updated: \(String(format: "%.6f", coords.latitude)), " +
+                    "\(String(format: "%.6f", coords.longitude)) (cached for 3 minutes)")
 
-        // If we were waiting for permission, complete the request
-        if let completion = permissionCompletion {
-            permissionCompletion = nil
-            print("✅ Location permission granted! (Got location data)")
-            completion(true)
+            // If we were waiting for permission, complete the request
+            if let completion = permissionCompletion {
+                permissionCompletion = nil
+                print("✅ Location permission granted! (Got location data)")
+                completion(true)
+            }
+
+            // Stop updates immediately to save battery
+            stopLocationUpdates()
         }
-
-        // Stop updates immediately to save battery
-        stopLocationUpdates()
     }
 
-    public func locationManager(_: CLLocationManager, didFailWithError error: Error) {
+    nonisolated public func locationManager(_: CLLocationManager, didFailWithError error: Error) {
         print("📍 Location error: \(error.localizedDescription)")
 
-        if let completion = permissionCompletion {
-            permissionCompletion = nil
+        Task { @MainActor in
+            if let completion = permissionCompletion {
+                permissionCompletion = nil
 
-            if let clError = error as? CLError, clError.code == .denied {
-                print("❌ Location permission denied by user")
-                completion(false)
-            } else {
-                // Other errors don't necessarily mean permission was denied
-                print("⚠️  Location error, but permission status unclear")
-                completion(hasLocationPermission)
+                if let clError = error as? CLError, clError.code == .denied {
+                    print("❌ Location permission denied by user")
+                    completion(false)
+                } else {
+                    // Other errors don't necessarily mean permission was denied
+                    print("⚠️  Location error, but permission status unclear")
+                    completion(hasLocationPermission)
+                }
             }
         }
     }

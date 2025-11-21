@@ -7,7 +7,7 @@
 
 import Foundation
 import Testing
-@testable import AnchorKit
+@testable import ATProtoFoundation
 
 // MARK: - Iron Session OAuth Coordinator Tests
 
@@ -448,8 +448,17 @@ struct IronSessionOAuthCoordinatorTests {
             logger: MockLogger()
         )
 
-        await #expect(throws: AuthenticationError.sessionExpiredUnrecoverable) {
+        do {
             try await coordinator.refreshIronSession()
+            Issue.record("Expected error to be thrown")
+        } catch let error as AuthenticationError {
+            if case .networkError = error {
+                // Success - expected network error for malformed JSON
+            } else {
+                Issue.record("Expected networkError but got \(error)")
+            }
+        } catch {
+            Issue.record("Unexpected error type: \(error)")
         }
     }
 

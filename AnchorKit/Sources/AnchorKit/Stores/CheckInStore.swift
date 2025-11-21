@@ -1,4 +1,5 @@
 import Foundation
+import ATProtoFoundation
 
 // MARK: - Check-In Store Protocol
 
@@ -69,18 +70,29 @@ public final class CheckInStore: CheckInStoreProtocol {
 
         // Create checkin using Iron Session authentication (handles tokens automatically)
         debugPrint("🔰 CheckInStore: Calling checkins service to create checkin")
-        let result = try await checkinsService.createCheckin(
-            place: place,
-            message: customMessage,
-            imageData: imageData,
-            imageAlt: imageAlt
-        )
-
-        debugPrint("✅ CheckInStore: Checkin creation successful: \(result.success)")
-        if let checkinId = result.checkinId {
-            debugPrint("✅ CheckInStore: Checkin ID: \(checkinId)")
+        do {
+            let result = try await checkinsService.createCheckin(
+                place: place,
+                message: customMessage,
+                imageData: imageData,
+                imageAlt: imageAlt
+            )
+            
+            debugPrint("✅ CheckInStore: Checkin creation successful: \(result.success)")
+            if let checkinId = result.checkinId {
+                debugPrint("✅ CheckInStore: Checkin ID: \(checkinId)")
+            }
+            return result
+            
+        } catch let error as AnchorCheckinsError {
+            if case .authenticationRequired = error {
+                debugPrint("❌ CheckInStore: Authentication required, signing out")
+                await authStore.signOut()
+            }
+            throw error
+        } catch {
+            throw error
         }
-        return result
     }
 }
 

@@ -149,7 +149,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         }
 
         // **PROACTIVE TOKEN REFRESH**: Check if tokens need refresh before making request
-        credentials = await performProactiveTokenRefresh(credentials: credentials)
+        credentials = try await performProactiveTokenRefresh(credentials: credentials)
         return credentials
     }
 
@@ -212,11 +212,8 @@ public final class IronSessionAPIClient: @unchecked Sendable {
             debugPrint("✅ IronSessionAPIClient: Session refreshed, retrying request")
         } catch {
             debugPrint("❌ IronSessionAPIClient: Token refresh failed: \(error)")
-
-            // If this was our last retry, throw authentication failed
-            if retryCount >= maxRetries - 1 {
-                throw AuthenticationError.invalidCredentials("Authentication failed after maximum retry attempts")
-            }
+            // If refresh failed, there's no point in retrying the request
+            throw error
         }
 
         // Retry with incremented counter
@@ -236,6 +233,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         )
 
         let refreshedCredentials = try await coordinator.refreshIronSession()
+        // Save to storage - Swift will automatically hop to MainActor for @MainActor isolated method
         try await credentialsStorage.save(refreshedCredentials)
     }
 
@@ -306,7 +304,8 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     /// 
     /// - Parameter credentials: Current credentials to check and potentially refresh
     /// - Returns: Updated credentials (refreshed if needed, original if not needed or failed)
-    private func performProactiveTokenRefresh(credentials: AuthCredentials) async -> AuthCredentials {
+    /// - Throws: AuthenticationError if refresh fails unrecoverably
+    private func performProactiveTokenRefresh(credentials: AuthCredentials) async throws -> AuthCredentials {
         guard shouldRefreshTokensProactively(credentials) else {
             return credentials
         }
@@ -326,11 +325,18 @@ public final class IronSessionAPIClient: @unchecked Sendable {
                 return credentials // Continue with existing tokens
             }
 
+            // Save to storage - Swift will automatically hop to MainActor for @MainActor isolated method
             try await credentialsStorage.save(authCredentials)
             logger.log("✅ Proactive token refresh successful", level: .info, category: .session)
             return authCredentials
 
         } catch {
+            // If the session is definitely expired, don't continue with invalid tokens
+            if let authError = error as? AuthenticationError, case .sessionExpiredUnrecoverable = authError {
+                logger.log("❌ Proactive refresh failed with unrecoverable error, aborting request", level: .error, category: .session)
+                throw authError
+            }
+            
             logger.log("⚠️ Proactive refresh failed, continuing with existing tokens: \(error)", level: .warning, category: .session)
             return credentials // Continue with existing tokens - reactive refresh will handle 401 if needed
         }

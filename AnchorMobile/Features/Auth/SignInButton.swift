@@ -8,6 +8,7 @@
 import SwiftUI
 import AuthenticationServices
 import AnchorKit
+import ATProtoFoundation
 
 /// Reusable sign-in button that launches secure OAuth flow
 struct SignInButton: View {

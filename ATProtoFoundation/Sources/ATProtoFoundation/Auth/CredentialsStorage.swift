@@ -159,7 +159,8 @@ public final class InMemoryCredentialsStorage: CredentialsStorageProtocol {
             did: credentials.did,
             pdsURL: credentials.pdsURL,
             expiresAt: credentials.expiresAt,
-            appPassword: credentials.appPassword
+            appPassword: credentials.appPassword,
+            sessionId: credentials.sessionId
         )
     }
 

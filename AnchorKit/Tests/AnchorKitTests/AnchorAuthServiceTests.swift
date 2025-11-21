@@ -8,6 +8,7 @@
 import Foundation
 import Testing
 @testable import AnchorKit
+import ATProtoFoundation
 
 // MARK: - Mock Iron Session Coordinator
 

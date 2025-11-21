@@ -8,6 +8,7 @@
 import Foundation
 import Testing
 @testable import AnchorKit
+import ATProtoFoundation
 
 // MARK: - Auth Store Tests
 
@@ -440,9 +441,24 @@ struct AuthStoreTests {
         )
         try await storage.save(testCredentials)
 
-        let authService = AnchorAuthService(storage: storage)
+        // Mock successful session validation response
+        let sessionJSON: [String: Any] = [
+            "userHandle": "launch.bsky.social",
+            "did": "did:plc:launch"
+        ]
+        let sessionData = try JSONSerialization.data(withJSONObject: sessionJSON)
+        let sessionResponse = HTTPURLResponse(
+            url: URL(string: "https://dropanchor.app/api/auth/session")!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+        let session = MockURLSession(data: sessionData, response: sessionResponse)
+
+        let authService = AnchorAuthService(storage: storage, session: session)
         let coordinator = IronSessionMobileOAuthCoordinator(
             credentialsStorage: storage,
+            session: session,
             logger: logger
         )
         let validator = SessionValidator(authService: authService, logger: logger)
@@ -493,7 +509,35 @@ struct AuthStoreTests {
         )
         try await storage.save(testCredentials)
 
-        let authStore = AuthStore(storage: storage)
+        // Mock successful session validation response
+        let sessionJSON: [String: Any] = [
+            "userHandle": "resume.bsky.social",
+            "did": "did:plc:resume"
+        ]
+        let sessionData = try JSONSerialization.data(withJSONObject: sessionJSON)
+        let sessionResponse = HTTPURLResponse(
+            url: URL(string: "https://dropanchor.app/api/auth/session")!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+        let session = MockURLSession(data: sessionData, response: sessionResponse)
+
+        let authService = AnchorAuthService(storage: storage, session: session)
+        let coordinator = IronSessionMobileOAuthCoordinator(
+            credentialsStorage: storage,
+            session: session,
+            logger: logger
+        )
+        let validator = SessionValidator(authService: authService, logger: logger)
+
+        let authStore = AuthStore(
+            storage: storage,
+            authService: authService,
+            ironSessionCoordinator: coordinator,
+            sessionValidator: validator,
+            logger: logger
+        )
         _ = await authStore.loadStoredCredentials()
 
         await authStore.validateSessionOnAppResume()

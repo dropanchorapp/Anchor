@@ -17,9 +17,9 @@ public protocol AnchorPlacesServiceProtocol {
     func findPlacesByCategories(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, categories: [String]) async throws -> [Place]
     func findPlacesByGroup(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, group: String) async throws -> [Place]
     func searchPlaces(query: String, near coordinate: CLLocationCoordinate2D, limit: Int) async throws -> [AnchorPlaceWithDistance]
-    func getAllAvailableCategories() -> [String]
-    func getPrioritizedCategories() -> [String]
-    func clearCache()
+    func getAllAvailableCategories() async -> [String]
+    func getPrioritizedCategories() async -> [String]
+    func clearCache() async
 }
 
 // MARK: - Anchor Places Service
@@ -183,7 +183,7 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
         guard let categoryGroup = PlaceCategorization.CategoryGroup(rawValue: group) else {
             throw AnchorPlacesError.invalidCategory(group)
         }
-        let categories = categoryCache.getCategoriesForGroup(categoryGroup)
+        let categories = await categoryCache.getCategoriesForGroup(categoryGroup)
         return try await findPlacesByCategories(
             near: coordinate,
             radiusMeters: radiusMeters,
@@ -193,14 +193,14 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
 
     /// Get all available place categories
     /// - Returns: Array of all available OSM tag categories
-    public func getAllAvailableCategories() -> [String] {
-        return categoryCache.getAllCategories()
+    public func getAllAvailableCategories() async -> [String] {
+        return await categoryCache.getAllCategories()
     }
 
     /// Get prioritized/popular categories for UI display
     /// - Returns: Array of prioritized category tags
-    public func getPrioritizedCategories() -> [String] {
-        return categoryCache.getPrioritizedCategories()
+    public func getPrioritizedCategories() async -> [String] {
+        return await categoryCache.getPrioritizedCategories()
     }
 
     /// Search for places using text query within vicinity
@@ -287,8 +287,8 @@ public final class AnchorPlacesService: AnchorPlacesServiceProtocol, @unchecked 
     }
 
     /// Clear any cached data
-    public func clearCache() {
-        categoryCache.clearCache()
+    public func clearCache() async {
+        await categoryCache.clearCache()
     }
 
     // MARK: - Private Methods

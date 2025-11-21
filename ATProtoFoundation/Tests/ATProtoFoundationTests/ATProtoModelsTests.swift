@@ -1,4 +1,5 @@
-@testable import AnchorKit
+@testable import ATProtoFoundation
+import Foundation
 import Foundation
 import Testing
 
@@ -108,64 +109,7 @@ struct ATProtoModelsTests {
         #expect(address.type == "community.lexicon.location.address")
     }
 
-    // MARK: - CheckinRecord Tests
-
-    @Test("CheckinRecord creation with required fields")
-    func checkinRecordCreation() throws {
-        // Given
-        let strongRef = StrongRef(uri: "at://did:plc:test123/address/abc", cid: "test-cid")
-        let coordinates = GeoCoordinates(latitude: 37.7749, longitude: -122.4194)
-        let createdAt = "2025-01-15T12:00:00Z"
-
-        // When
-        let checkin = CheckinRecord(
-            text: "Great climbing session!",
-            createdAt: createdAt,
-            addressRef: strongRef,
-            coordinates: coordinates,
-            category: "climbing",
-            categoryGroup: "sports",
-            categoryIcon: "🧗‍♂️"
-        )
-
-        // Then
-        #expect(checkin.text == "Great climbing session!")
-        #expect(checkin.createdAt == createdAt)
-        #expect(checkin.addressRef.uri == strongRef.uri)
-        #expect(checkin.coordinates.latitude == "37.7749")
-        #expect(checkin.category == "climbing")
-        #expect(checkin.categoryGroup == "sports")
-        #expect(checkin.categoryIcon == "🧗‍♂️")
-        #expect(checkin.type == "app.dropanchor.checkin")
-    }
-
-    // MARK: - ResolvedCheckin Tests
-
-    @Test("ResolvedCheckin creation and verification")
-    func resolvedCheckinCreation() throws {
-        // Given
-        let strongRef = StrongRef(uri: "at://did:plc:test123/address/abc", cid: "test-cid")
-        let coordinates = GeoCoordinates(latitude: 37.7749, longitude: -122.4194)
-        let checkin = CheckinRecord(
-            text: "Test checkin",
-            createdAt: "2025-01-15T12:00:00Z",
-            addressRef: strongRef,
-            coordinates: coordinates
-        )
-        let address = CommunityAddressRecord(name: "Test Location")
-
-        // When
-        let resolved = ResolvedCheckin(
-            checkin: checkin,
-            address: address,
-            isVerified: true
-        )
-
-        // Then
-        #expect(resolved.checkin.text == "Test checkin")
-        #expect(resolved.address.name == "Test Location")
-        #expect(resolved.isVerified == true)
-    }
+    // CheckinRecord and ResolvedCheckin tests removed as they belong to AnchorKit
 
     // MARK: - Rich Text Tests
 
@@ -237,18 +181,7 @@ struct ATProtoModelsTests {
 
     // MARK: - Error Tests
 
-    @Test("CheckinError localized descriptions")
-    func checkinErrorDescriptions() throws {
-        // Given/When/Then
-        let addressMismatch = CheckinError.addressContentMismatch
-        #expect(addressMismatch.errorDescription?.contains("modified") == true)
-
-        let missingData = CheckinError.missingLocationData
-        #expect(missingData.errorDescription?.contains("missing") == true)
-
-        let invalidFormat = CheckinError.invalidFormat
-        #expect(invalidFormat.errorDescription?.contains("Invalid") == true)
-    }
+    // CheckinError tests removed as they belong to AnchorKit
 
     @Test("ATProtoError equality")
     func atProtoErrorEquality() throws {

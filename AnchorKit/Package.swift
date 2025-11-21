@@ -16,12 +16,12 @@ let package = Package(
         )
     ],
     dependencies: [
-        // No external dependencies - using built-in frameworks
+        .package(path: "../ATProtoFoundation")
     ],
     targets: [
         .target(
             name: "AnchorKit",
-            dependencies: [],
+            dependencies: ["ATProtoFoundation"],
             path: "Sources/AnchorKit"
         ),
         .testTarget(

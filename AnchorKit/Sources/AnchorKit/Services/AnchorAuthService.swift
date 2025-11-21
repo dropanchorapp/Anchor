@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ATProtoFoundation
 
 // MARK: - Auth Service Protocol
 
@@ -91,6 +92,6 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
         // For Iron Session, we rely on server-side expiration
         // Refresh if the session is close to expiring (within 1 hour)
         let oneHourFromNow = Date().addingTimeInterval(60 * 60)
-        return credentials.expiresAt < oneHourFromNow
+        return credentials.expiresAt <= oneHourFromNow
     }
 }

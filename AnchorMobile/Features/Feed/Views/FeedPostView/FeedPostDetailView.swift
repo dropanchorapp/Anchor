@@ -8,6 +8,7 @@
 import SwiftUI
 import MapKit
 import AnchorKit
+import ATProtoFoundation
 
 struct FeedPostDetailView: View {
     let post: FeedPost

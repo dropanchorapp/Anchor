@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ATProtoFoundation
 
 // MARK: - Stats Service Protocol
 

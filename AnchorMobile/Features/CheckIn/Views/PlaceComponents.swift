@@ -58,20 +58,9 @@ struct PlaceRowView: View {
         placeWithDistance.formattedDistance
     }
     
-    private var categoryGroup: PlaceCategorization.CategoryGroup? {
-        // Find the first tag that has a category group
-        for (tag, value) in place.tags {
-            if let group = PlaceCategorization.getCategoryGroup(for: tag, value: value) {
-                return group
-            }
-        }
-        return nil
-    }
+    @State private var categoryGroup: PlaceCategorization.CategoryGroup?
+    @State private var displayIcon: String = "📍"
     
-    private var displayIcon: String {
-        // Use backend icon from search results if available, otherwise use category group icon
-        return placeWithDistance.backendIcon ?? categoryGroup?.icon ?? "📍"
-    }
     
     private var displayCategory: String? {
         // Use backend category from search results if available, otherwise use category group

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AnchorKit
+import ATProtoFoundation
 
 struct FeedView: View {
     @Environment(AuthStore.self) private var authStore

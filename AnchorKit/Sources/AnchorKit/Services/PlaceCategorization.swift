@@ -45,37 +45,37 @@ public struct PlaceCategorization {
     // MARK: - Public API (All data comes from backend)
 
     /// Get category group for tag/value pair
-    public static func getCategoryGroup(for tag: String, value: String) -> CategoryGroup? {
-        return categoryCache.getCategoryGroup(for: tag, value: value)
+    public static func getCategoryGroup(for tag: String, value: String) async -> CategoryGroup? {
+        return await categoryCache.getCategoryGroup(for: tag, value: value)
     }
 
     /// Get icon for tag/value pair
-    public static func getIcon(for tag: String, value: String) -> String {
-        return categoryCache.getIcon(for: tag, value: value)
+    public static func getIcon(for tag: String, value: String) async -> String {
+        return await categoryCache.getIcon(for: tag, value: value)
     }
 
     /// Get all categories as OSM tag strings
-    public static func getAllCategories() -> [String] {
-        return categoryCache.getAllCategories()
+    public static func getAllCategories() async -> [String] {
+        return await categoryCache.getAllCategories()
     }
 
     /// Get prioritized categories for default searches
-    public static func getPrioritizedCategories() -> [String] {
-        return categoryCache.getPrioritizedCategories()
+    public static func getPrioritizedCategories() async -> [String] {
+        return await categoryCache.getPrioritizedCategories()
     }
 
     /// Get categories for specific group (String version)
-    public static func getCategoriesForGroup(_ group: String) -> [String] {
+    public static func getCategoriesForGroup(_ group: String) async -> [String] {
         let categoryGroup = CategoryGroup(rawValue: group)
-        return getCategoriesForGroup(categoryGroup)
+        return await getCategoriesForGroup(categoryGroup)
     }
 
     /// Get categories for specific group (CategoryGroup version)
-    public static func getCategoriesForGroup(_ group: CategoryGroup?) -> [String] {
+    public static func getCategoriesForGroup(_ group: CategoryGroup?) async -> [String] {
         guard let group = group else {
-            return getPrioritizedCategories()
+            return await getPrioritizedCategories()
         }
 
-        return categoryCache.getCategoriesForGroup(group)
+        return await categoryCache.getCategoriesForGroup(group)
     }
 }

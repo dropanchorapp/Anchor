@@ -7,7 +7,7 @@
 
 import Foundation
 import Testing
-@testable import AnchorKit
+@testable import ATProtoFoundation
 
 // MARK: - MockLogger Tests
 

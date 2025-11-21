@@ -1,26 +1,28 @@
 import Foundation
+import ATProtoFoundation
 
 // MARK: - Category Cache Service Protocol
 
 /// Service protocol for category caching and retrieval
 public protocol CategoryCacheServiceProtocol: Sendable {
-    func getCachedCategories() -> CachedCategories?
-    func setCachedCategories(_ categories: CachedCategories)
+    func getCachedCategories() async -> CachedCategories?
+    func setCachedCategories(_ categories: CachedCategories) async
     func fetchAndCacheCategories() async throws -> CachedCategories
-    func getCategoryGroup(for tag: String, value: String) -> PlaceCategorization.CategoryGroup?
-    func getIcon(for tag: String, value: String) -> String
-    func getAllCategories() -> [String]
-    func getPrioritizedCategories() -> [String]
-    func getCategoriesForGroup(_ group: PlaceCategorization.CategoryGroup) -> [String]
-    func clearCache()
-    func isCacheExpired() -> Bool
+    func getCategoryGroup(for tag: String, value: String) async -> PlaceCategorization.CategoryGroup?
+    func getIcon(for tag: String, value: String) async -> String
+    func getAllCategories() async -> [String]
+    func getPrioritizedCategories() async -> [String]
+    func getCategoriesForGroup(_ group: PlaceCategorization.CategoryGroup) async -> [String]
+    func clearCache() async
+    func isCacheExpired() async -> Bool
 }
 
 // MARK: - Category Cache Service
 
 /// Service for caching and retrieving POI categories from backend API
 /// Provides local caching with fallback to hardcoded categories
-public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecked Sendable {
+/// Actor ensures thread-safe access to mutable cache state
+public actor CategoryCacheService: CategoryCacheServiceProtocol {
 
     // MARK: - Properties
 
@@ -31,7 +33,6 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
     private let cacheExpiryHours: TimeInterval = 24 // 24 hours
 
     private var memoryCache: CachedCategories?
-    private let cacheQueue = DispatchQueue(label: "com.anchor.category-cache", qos: .utility)
 
     // MARK: - Initialization
 
@@ -43,41 +44,36 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
         self.session = session
         self.baseURL = baseURL
         self.userDefaults = userDefaults
-
-        // Load cache from disk on init
-        loadCacheFromDisk()
+        // Note: Can't call loadCacheFromDisk() from init since it's actor-isolated
+        // Cache will be loaded lazily on first access
     }
 
     // MARK: - Cache Management
 
     /// Get cached categories (memory first, then disk, then fallback)
     public func getCachedCategories() -> CachedCategories? {
-        return cacheQueue.sync {
-            if let memoryCache = memoryCache {
-                if !isCacheExpired(memoryCache) {
-                    return memoryCache
-                }
+        if let memoryCache = memoryCache {
+            if !isCacheExpired(memoryCache) {
+                return memoryCache
             }
-
-            // Try to load from disk
-            loadCacheFromDisk()
-
-            if let memoryCache = memoryCache {
-                if !isCacheExpired(memoryCache) {
-                    return memoryCache
-                }
-            }
-
-            return nil
         }
+
+        // Try to load from disk
+        loadCacheFromDisk()
+
+        if let memoryCache = memoryCache {
+            if !isCacheExpired(memoryCache) {
+                return memoryCache
+            }
+        }
+
+        return nil
     }
 
     /// Set cached categories (saves to both memory and disk)
     public func setCachedCategories(_ categories: CachedCategories) {
-        cacheQueue.async {
-            self.memoryCache = categories
-            self.saveCacheToDisk(categories)
-        }
+        memoryCache = categories
+        saveCacheToDisk(categories)
     }
 
     /// Fetch categories from API and cache them
@@ -133,10 +129,8 @@ public final class CategoryCacheService: CategoryCacheServiceProtocol, @unchecke
 
     /// Clear all cached data
     public func clearCache() {
-        cacheQueue.async {
-            self.memoryCache = nil
-            self.userDefaults.removeObject(forKey: self.cacheKey)
-        }
+        memoryCache = nil
+        userDefaults.removeObject(forKey: cacheKey)
     }
 
     // MARK: - Category Lookup Methods

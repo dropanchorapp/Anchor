@@ -1,7 +1,5 @@
+@testable import ATProtoFoundation
 import Foundation
-@testable import AnchorKit
-import ATProtoFoundation
-import ATProtoFoundation
 import Foundation
 import Testing
 
@@ -9,157 +7,15 @@ import Testing
 
 /// Utilities for creating test instances and mock data
 public enum TestUtilities {
-    // MARK: - Service Creation
-
-    /// Creates a CheckInStore with in-memory storage for testing
-    @MainActor
-    public static func createTestCheckInStore(session: URLSessionProtocol = MockURLSession()) -> CheckInStore {
-        let authStore = AuthStore(storage: createTestStorage())
-        return CheckInStore(authStore: authStore, session: session)
-    }
-
-    /// Creates in-memory credentials storage for testing
-    @MainActor
-    public static func createTestStorage() -> CredentialsStorageProtocol {
-        InMemoryCredentialsStorage()
-    }
-
-    /// Creates a CheckInStore with custom storage for advanced testing scenarios
-    @MainActor
-    public static func createTestCheckInStore(
-        session: URLSessionProtocol = MockURLSession(),
-        storage: CredentialsStorageProtocol
-    ) -> CheckInStore {
-        let authStore = AuthStore(storage: storage)
-        return CheckInStore(authStore: authStore, session: session)
-    }
-
     // MARK: - Mock Data
-
-    /// Creates a sample Place for testing
-    public static func createSamplePlace() -> Place {
-        Place(
-            elementType: .way,
-            elementId: 123_456_789,
-            name: "Test Climbing Gym",
-            latitude: 37.7749,
-            longitude: -122.4194,
-            tags: [
-                "leisure": "climbing",
-                "name": "Test Climbing Gym",
-                "sport": "climbing"
-            ]
-        )
-    }
-
+    
+    // Place creation removed as it depends on AnchorKit
+    
     // AuthCredentials creation methods removed to avoid SwiftData ModelContainer issues in CI.
     // Tests that need credentials use mock storage or service-level mocking instead.
 }
 
-// MARK: - Mock AuthStore for Testing
-
-@MainActor
-public final class MockAuthStore: AuthStoreProtocol {
-    public var isAuthenticated: Bool = false
-    public var credentials: AuthCredentials?
-    public var handle: String?
-    public var shouldThrowAuthError: Bool = false
-
-    // Test credentials for mocking authentication
-    public var testCredentials: TestAuthCredentials?
-
-    public init() {
-        // Set up default test credentials
-        testCredentials = TestAuthCredentials.valid()
-        isAuthenticated = true
-    }
-
-    public func loadStoredCredentials() async -> AuthCredentials? {
-        return credentials
-    }
-
-    public func startDirectOAuthFlow() async throws -> URL {
-        if shouldThrowAuthError {
-            throw AuthenticationError.invalidCredentials("Authentication failed")
-        }
-        return URL(string: "https://dropanchor.app/mobile-auth")!
-    }
-
-    public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
-        if shouldThrowAuthError {
-            throw AuthenticationError.invalidCredentials("Authentication failed")
-        }
-        isAuthenticated = true
-        testCredentials = TestAuthCredentials.valid()
-        return true
-    }
-
-    public func signOut() async {
-        credentials = nil
-        testCredentials = nil
-        isAuthenticated = false
-    }
-
-    public func getValidCredentials() async throws -> AuthCredentialsProtocol {
-        if shouldThrowAuthError {
-            throw AuthenticationError.invalidCredentials("Not authenticated")
-        }
-
-        guard let testCredentials = testCredentials else {
-            throw AuthenticationError.invalidCredentials("Not authenticated")
-        }
-
-        return testCredentials
-    }
-
-    public func validateSessionOnAppLaunch() async {
-        // Mock implementation - no action needed
-    }
-
-    public func validateSessionOnAppResume() async {
-        // Mock implementation - no action needed
-    }
-}
-
-// MARK: - Mock Backend Service
-
-public class MockAnchorCheckinsService: AnchorCheckinsServiceProtocol {
-    public var shouldThrowError = false
-    public var createCheckinResult = CheckinResult(success: true, checkinId: "test-checkin-id")
-    public var createCheckinCallCount = 0
-    public var lastCreateCheckinPlace: Place?
-    public var lastCreateCheckinMessage: String?
-    public var lastCreateCheckinImageData: Data?
-    public var lastCreateCheckinImageAlt: String?
-    // lastCreateCheckinAccessToken removed - no longer needed with Iron Session auth
-
-    public func createCheckin(
-        place: Place,
-        message: String?,
-        imageData: Data? = nil,
-        imageAlt: String? = nil
-    ) async throws -> CheckinResult {
-        createCheckinCallCount += 1
-        lastCreateCheckinPlace = place
-        lastCreateCheckinMessage = message
-        lastCreateCheckinImageData = imageData
-        lastCreateCheckinImageAlt = imageAlt
-
-        if shouldThrowError {
-            throw NSError(domain: "MockCheckinsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock checkins service error"])
-        }
-
-        return createCheckinResult
-    }
-
-    public func reset() {
-        shouldThrowError = false
-        createCheckinResult = CheckinResult(success: true, checkinId: "test-checkin-id")
-        createCheckinCallCount = 0
-        lastCreateCheckinPlace = nil
-        lastCreateCheckinMessage = nil
-    }
-}
+// MockAuthStore removed as it depends on AnchorKit and is not used in ATProtoFoundation tests
 
 // MARK: - Test Credentials Implementation
 

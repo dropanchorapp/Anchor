@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ATProtoFoundation
 
 // MARK: - Checkin Service Protocol
 
@@ -90,7 +91,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
                 )
             } else {
                 // Create request body for JSON request
-                let requestBody = CheckinRequest(place: place, message: message)
+                let requestBody = await CheckinRequest(place: place, message: message)
 
                 // Use Iron Session API client for authenticated JSON request
                 responseData = try await apiClient.authenticatedJSONRequest(
@@ -158,7 +159,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         var fields: [String: String] = [:]
 
         // Add place field (JSON-encoded)
-        let placeData = CheckinRequest(place: place, message: message)
+        let placeData = await CheckinRequest(place: place, message: message)
         if let placeJSON = try? JSONEncoder().encode(placeData.place),
            let placeString = String(data: placeJSON, encoding: .utf8) {
             fields["place"] = placeString
@@ -228,7 +229,7 @@ private struct CheckinRequest: Codable {
         var icon: String?
     }
 
-    init(place: Place, message: String?) {
+    init(place: Place, message: String?) async {
         self.place = BackendPlace(
             name: place.name,
             latitude: place.latitude,
@@ -236,8 +237,8 @@ private struct CheckinRequest: Codable {
             tags: place.tags,
             address: place.address,
             category: place.category,
-            categoryGroup: place.categoryGroup?.rawValue,
-            icon: place.icon
+            categoryGroup: await place.categoryGroup()?.rawValue,
+            icon: await place.icon()
         )
         self.message = message
     }

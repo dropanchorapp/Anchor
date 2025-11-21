@@ -1,4 +1,5 @@
 import Foundation
+import ATProtoFoundation
 
 /// Wrapper class for FeedPost to use with NSCache
 private final class FeedPostWrapper {

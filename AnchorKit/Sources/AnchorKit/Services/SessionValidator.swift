@@ -1,4 +1,5 @@
 import Foundation
+import ATProtoFoundation
 
 /// Handles session validation and token refresh logic
 ///

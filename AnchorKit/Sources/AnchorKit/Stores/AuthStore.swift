@@ -1,4 +1,5 @@
 import Foundation
+import ATProtoFoundation
 
 // MARK: - Authentication Store Protocol
 

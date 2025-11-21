@@ -1,7 +1,7 @@
 # Makefile for Anchor Project
 # Swift project with multiple targets: macOS menu bar app, iOS mobile app, and shared AnchorKit library
 
-.PHONY: help lint lint-fix lint-strict test test-swift test-ui build clean setup check info
+.PHONY: help lint lint-fix lint-strict test test-ui build clean setup check info
 
 # Default target
 help: ## Show this help message
@@ -22,27 +22,29 @@ lint-strict: ## Run SwiftLint in strict mode (treat warnings as errors)
 	swiftlint --strict
 
 # Testing Commands
-test: test-swift ## Run all tests (currently just Swift package tests)
-
-test-swift: ## Run AnchorKit Swift package tests
+test: ## Run Swift package tests
+	@echo "🧪 Running ATProtoFoundation tests..."
+	cd ATProtoFoundation && swift test
 	@echo "🧪 Running AnchorKit tests..."
 	cd AnchorKit && swift test
 
 test-ui: ## Run Xcode project tests (AnchorMobile - currently placeholder tests)
 	@echo "🧪 Running AnchorMobile iOS tests..."
-	xcodebuild test -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16'
+	xcodebuild test -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 17' 2>&1 | xcsift
 
 build: ## Build AnchorMobile iOS app
 	@echo "🏗️ Building AnchorMobile iOS app..."
-	xcodebuild build -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 16' -configuration Debug
+	xcodebuild build -project Anchor.xcodeproj -scheme AnchorMobile -destination 'platform=iOS Simulator,name=iPhone 17' -configuration Debug 2>&1 | xcsift
 
 # Development Commands
 clean: ## Clean all build artifacts
 	@echo "🧹 Cleaning build artifacts..."
-	xcodebuild clean -project Anchor.xcodeproj
+	xcodebuild clean -project Anchor.xcodeproj 2>&1 | xcsift
+	cd ATProtoFoundation && swift package clean
 	cd AnchorKit && swift package clean
 	rm -rf build/
 	rm -rf .build/
+	rm -rf ATProtoFoundation/.build/
 	rm -rf AnchorKit/.build/
 	rm -rf ~/Library/Developer/Xcode/DerivedData
 
@@ -58,8 +60,9 @@ info: ## Show project information
 	@echo "SwiftLint Version: $$(swiftlint --version 2>/dev/null || echo 'Not installed')"
 	@echo ""
 	@echo "Project Structure:"
-	@echo "- AnchorMobile (iOS mobile app)"  
-	@echo "- AnchorKit (shared Swift package)"
+	@echo "- AnchorMobile (iOS mobile app)"
+	@echo "- ATProtoFoundation (generic ATProto/OAuth library)"
+	@echo "- AnchorKit (app-specific logic library)"
 	@echo ""
 	@echo "Available simulators:"
 	@xcrun simctl list devices available | grep -E 'iPhone|iPad' | head -5

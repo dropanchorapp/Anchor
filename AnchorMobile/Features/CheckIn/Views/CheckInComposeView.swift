@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AnchorKit
+import ATProtoFoundation
 
 struct CheckInComposeView: View {
     let placeWithDistance: AnchorPlaceWithDistance
@@ -35,9 +36,7 @@ struct CheckInComposeView: View {
     @State private var isProcessingImage = false
     @State private var imageSizeText: String?
     
-    private var categoryGroup: PlaceCategorization.CategoryGroup? {
-        place.categoryGroup
-    }
+    @State private var categoryGroup: PlaceCategorization.CategoryGroup?
     
     // Use backend category info when available (from search results)
     private var displayIcon: String {

@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import UIKit
 import AnchorKit
+import ATProtoFoundation
 
 /// Observable store for managing AnchorMobile-specific app state
 /// 
@@ -206,8 +207,9 @@ public final class AppStateStore {
     /// Load POI categories from backend
     private func loadCategories() async {
         // Check if we already have cached categories
-        if CategoryCacheService.shared.getCachedCategories() != nil {
-            if !CategoryCacheService.shared.isCacheExpired() {
+        if await CategoryCacheService.shared.getCachedCategories() != nil {
+            let isExpired = await CategoryCacheService.shared.isCacheExpired()
+            if !isExpired {
                 return
             }
         }
@@ -220,8 +222,9 @@ public final class AppStateStore {
             print("❌ Failed to fetch categories from backend: \(error.localizedDescription)")
             
             // Check if we have cached categories as fallback
-            if CategoryCacheService.shared.getCachedCategories() != nil {
-                if CategoryCacheService.shared.isCacheExpired() {
+            if await CategoryCacheService.shared.getCachedCategories() != nil {
+                let isExpired = await CategoryCacheService.shared.isCacheExpired()
+                if isExpired {
                     print("⚠️ Using expired cached categories - app functionality may be limited")
                 } else {
                     print("✅ Using valid cached categories from previous session")

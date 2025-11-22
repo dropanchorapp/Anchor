@@ -218,8 +218,8 @@ public final class AuthStore: AuthStoreProtocol {
             throw AuthenticationError.invalidCredentials("No credentials loaded")
         }
 
-        // Check if credentials are still valid
-        guard credentials.isValid else {
+        // Check if credentials are still valid and not expired
+        guard credentials.isValid && !credentials.isExpired else {
             logger.log("🔄 Credentials expired, attempting refresh...", level: .info, category: .auth)
             return try await refreshExpiredCredentials(credentials)
         }
@@ -304,7 +304,11 @@ public final class AuthStore: AuthStoreProtocol {
     /// Update authentication state based on current credentials
     private func updateAuthenticationState(with credentials: AuthCredentials?) {
         if let creds = credentials {
-            if creds.isValid {
+            // Check expiration first - expired credentials should show as sessionExpired
+            // even if all fields are present (isValid only checks field presence)
+            if creds.isExpired {
+                authenticationState = .sessionExpired(credentials: creds)
+            } else if creds.isValid {
                 authenticationState = .authenticated(credentials: creds)
 
                 // Save valid credentials
@@ -315,8 +319,6 @@ public final class AuthStore: AuthStoreProtocol {
                         logger.log("⚠️ Failed to save credentials: \(error)", level: .warning, category: .auth)
                     }
                 }
-            } else if creds.isExpired {
-                authenticationState = .sessionExpired(credentials: creds)
             }
         } else {
             authenticationState = .unauthenticated

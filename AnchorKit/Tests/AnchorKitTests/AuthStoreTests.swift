@@ -484,7 +484,19 @@ struct AuthStoreTests {
     func validateSessionOnAppLaunchWithNoCredentialsDoesNothing() async {
         let storage = InMemoryCredentialsStorage()
         let logger = MockLogger()
-        let authStore = AuthStore(storage: storage)
+        let authService = AnchorAuthService(storage: storage)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+            credentialsStorage: storage,
+            logger: logger
+        )
+        let sessionValidator = SessionValidator(authService: authService, logger: logger)
+        let authStore = AuthStore(
+            storage: storage,
+            authService: authService,
+            ironSessionCoordinator: ironSessionCoordinator,
+            sessionValidator: sessionValidator,
+            logger: logger
+        )
 
         await authStore.validateSessionOnAppLaunch()
 

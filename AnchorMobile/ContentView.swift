@@ -8,23 +8,23 @@
 import SwiftUI
 
 struct ContentView: View {
-
+    @SceneStorage("selectedTab") private var selectedTabIndex = 0
+    
     var body: some View {
-        TabView {
-            TabSection {
-                Tab("Feed", systemImage: "list.bullet") {
-                    FeedView()
-                }
-                
-                Tab("Check-in", systemImage: "location") {
-                    CheckInView()
-                }
+        TabView(selection: $selectedTabIndex) {
+            Tab("Feed", systemImage: "list.bullet", value: 0) {
+                FeedView()
+            }
+            
+            Tab("Check-in", systemImage: "location", value: 1) {
+                CheckInView()
             }
 
-            Tab("Settings", systemImage: "gear") {
+            Tab("Settings", systemImage: "gear", value: 2) {
                 SettingsView()
             }
         }
+        .tabBarMinimizeBehavior(.onScrollDown)
     }
 }
 

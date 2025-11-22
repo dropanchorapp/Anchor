@@ -11,20 +11,19 @@ struct ContentView: View {
 
     var body: some View {
         TabView {
-            FeedView()
-                .tabItem {
-                    Label("Feed", systemImage: "list.bullet")
+            TabSection {
+                Tab("Feed", systemImage: "list.bullet") {
+                    FeedView()
                 }
-            
-            CheckInView()
-                .tabItem {
-                    Label("Check-in", systemImage: "location")
+                
+                Tab("Check-in", systemImage: "location") {
+                    CheckInView()
                 }
-            
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
+            }
+
+            Tab("Settings", systemImage: "gear") {
+                SettingsView()
+            }
         }
     }
 }

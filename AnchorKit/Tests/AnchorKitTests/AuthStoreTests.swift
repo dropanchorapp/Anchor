@@ -135,9 +135,9 @@ struct AuthStoreTests {
         // Manually set error state
         await authStore.signOut()
 
-        // Starting OAuth should not throw
+        // Starting OAuth should not throw and should return a valid URL
         let oauthURL = try await authStore.startDirectOAuthFlow()
-        #expect(oauthURL != nil)
+        #expect(oauthURL.absoluteString.contains("dropanchor.app"))
     }
 
     @Test("Handle OAuth callback with valid parameters succeeds")
@@ -205,21 +205,6 @@ struct AuthStoreTests {
     @Test("Handle OAuth callback sets authenticating state during processing")
     func handleOAuthCallbackSetsAuthenticatingStateDuringProcessing() async throws {
         let storage = InMemoryCredentialsStorage()
-
-        // Use a slow mock that we can observe state during
-        let sessionJSON: [String: Any] = [
-            "userHandle": "test.bsky.social",
-            "did": "did:plc:test123"
-        ]
-        let sessionData = try JSONSerialization.data(withJSONObject: sessionJSON)
-        let sessionResponse = HTTPURLResponse(
-            url: URL(string: "https://dropanchor.app/api/auth/session")!,
-            statusCode: 200,
-            httpVersion: nil,
-            headerFields: nil
-        )!
-
-        let session = MockURLSession(data: sessionData, response: sessionResponse)
         let authStore = AuthStore(storage: storage)
 
         let callbackURL = URL(string: "anchor-app://auth-callback?did=did:plc:test123&session_token=test-token")!
@@ -416,7 +401,21 @@ struct AuthStoreTests {
         )!
 
         let session = MockURLSession(data: Data(), response: refreshResponse)
-        let authStore = AuthStore(storage: storage)
+        let logger = MockLogger()
+        let authService = AnchorAuthService(storage: storage, session: session)
+        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+            credentialsStorage: storage,
+            session: session,
+            logger: logger
+        )
+        let sessionValidator = SessionValidator(authService: authService, logger: logger)
+        let authStore = AuthStore(
+            storage: storage,
+            authService: authService,
+            ironSessionCoordinator: ironSessionCoordinator,
+            sessionValidator: sessionValidator,
+            logger: logger
+        )
         _ = await authStore.loadStoredCredentials()
 
         await #expect(throws: AuthenticationError.self) {

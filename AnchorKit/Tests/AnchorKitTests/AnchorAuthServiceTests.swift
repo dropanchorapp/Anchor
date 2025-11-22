@@ -292,7 +292,8 @@ struct AnchorAuthServiceTests {
 
         let shouldRefresh = authService.shouldRefreshTokens(credentials)
         // At exactly 1 hour, should still refresh (better safe than sorry)
-        #expect(shouldRefresh == false) // Equal to threshold, not less than
+        // The implementation uses <= so at the boundary it returns true
+        #expect(shouldRefresh == true)
     }
 
     // MARK: - Service Initialization Tests
@@ -302,8 +303,17 @@ struct AnchorAuthServiceTests {
         let customStorage = InMemoryCredentialsStorage()
         let authService = AnchorAuthService(storage: customStorage)
 
-        // Service should be created successfully
-        #expect(authService.shouldRefreshTokens != nil)
+        // Service should be created successfully - verify with a test call
+        let testCreds = AuthCredentials(
+            handle: "test.bsky.social",
+            accessToken: "token",
+            refreshToken: "refresh",
+            did: "did:plc:test",
+            pdsURL: "https://bsky.social",
+            expiresAt: Date().addingTimeInterval(7200), // 2 hours
+            sessionId: "session-id"
+        )
+        #expect(authService.shouldRefreshTokens(testCreds) == false)
     }
 
     @Test("Service initializes with custom session and config")
@@ -334,7 +344,7 @@ struct AnchorAuthServiceTests {
             refreshToken: "refresh",
             did: "did:plc:test",
             pdsURL: "https://bsky.social",
-            expiresAt: Date().addingTimeInterval(3600),
+            expiresAt: Date().addingTimeInterval(7200), // 2 hours - well beyond refresh threshold
             sessionId: "session-id"
         )
         #expect(authService.shouldRefreshTokens(testCreds) == false)
@@ -351,7 +361,7 @@ struct AnchorAuthServiceTests {
             refreshToken: "refresh",
             did: "did:plc:test",
             pdsURL: "https://bsky.social",
-            expiresAt: Date().addingTimeInterval(3600),
+            expiresAt: Date().addingTimeInterval(7200), // 2 hours - well beyond refresh threshold
             sessionId: "session-id"
         )
         #expect(authService.shouldRefreshTokens(testCreds) == false)

@@ -13,7 +13,7 @@ import ATProtoFoundation
 /// Service protocol for Anchor checkin operations
 @MainActor
 public protocol AnchorCheckinsServiceProtocol {
-    /// Create a checkin using the backend API with Iron Session authentication
+    /// Create a checkin using the backend API with BFF authentication
     func createCheckin(
         place: Place,
         message: String?,
@@ -25,12 +25,12 @@ public protocol AnchorCheckinsServiceProtocol {
 // MARK: - Anchor Checkins Service
 
 /// Service for creating and managing checkins via the Anchor backend
-/// Uses Iron Session authentication for secure API access with automatic token management
+/// Uses BFF authentication for secure API access with automatic token management
 @MainActor
 public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
     // MARK: - Properties
 
-    private let apiClient: IronSessionAPIClient
+    private let apiClient: BFFAPIClient
 
     // MARK: - Initialization
 
@@ -39,7 +39,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
         session: URLSessionProtocol = URLSession.shared,
         config: OAuthConfiguration = .default
     ) {
-        self.apiClient = IronSessionAPIClient(
+        self.apiClient = BFFAPIClient(
             credentialsStorage: credentialsStorage,
             session: session,
             config: config
@@ -47,15 +47,15 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
     }
 
     /// Convenience initializer for testing with custom API client
-    public init(apiClient: IronSessionAPIClient) {
+    public init(apiClient: BFFAPIClient) {
         self.apiClient = apiClient
     }
 
     // MARK: - Checkin Methods
 
-    /// Create a checkin using the backend API with Iron Session authentication
+    /// Create a checkin using the backend API with BFF authentication
     ///
-    /// Automatically handles authentication using stored Iron Session credentials.
+    /// Automatically handles authentication using stored session credentials.
     /// Includes proactive token refresh and reactive 401 handling.
     /// Supports optional image attachments via multipart/form-data.
     ///
@@ -93,7 +93,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
                 // Create request body for JSON request
                 let requestBody = await CheckinRequest(place: place, message: message)
 
-                // Use Iron Session API client for authenticated JSON request
+                // Use BFF API client for authenticated JSON request
                 responseData = try await apiClient.authenticatedJSONRequest(
                     path: "/api/checkins",
                     method: "POST",
@@ -185,9 +185,9 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
             )
         ]
 
-        debugPrint("🏁 CheckinsService: Sending multipart request via IronSessionAPIClient")
+        debugPrint("🏁 CheckinsService: Sending multipart request via BFFAPIClient")
 
-        // Use IronSessionAPIClient for multipart request
+        // Use BFFAPIClient for multipart request
         // This ensures we get proper auth handling (proactive refresh, 401 retry, exponential backoff)
         let data = try await apiClient.authenticatedMultipartRequest(
             path: "/api/checkins",
@@ -211,7 +211,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
 
 // MARK: - Request/Response Models
 
-/// Request model for creating a checkin via the Iron Session backend API
+/// Request model for creating a checkin via the BFF backend API
 private struct CheckinRequest: Codable {
     let place: BackendPlace
     let message: String?
@@ -244,7 +244,7 @@ private struct CheckinRequest: Codable {
     }
 }
 
-/// Response model from the Iron Session backend API for checkin operations
+/// Response model from the BFF backend API for checkin operations
 private struct CheckinResponse: Codable {
     let success: Bool
     let checkinUri: String?

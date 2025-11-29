@@ -35,7 +35,7 @@ public final class AuthStore: AuthStoreProtocol {
 
     private let authService: AnchorAuthServiceProtocol
     private let storage: CredentialsStorageProtocol
-    private let ironSessionCoordinator: IronSessionMobileOAuthCoordinator
+    private let oauthCoordinator: MobileOAuthCoordinator
     private let sessionValidator: SessionValidator
     private let logger: Logger
 
@@ -64,7 +64,7 @@ public final class AuthStore: AuthStoreProtocol {
         let storage = KeychainCredentialsStorage()
         let logger = DebugLogger()
         let authService = AnchorAuthService(storage: storage)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+        let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             logger: logger
         )
@@ -72,7 +72,7 @@ public final class AuthStore: AuthStoreProtocol {
         self.init(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: ironSessionCoordinator,
+            oauthCoordinator: oauthCoordinator,
             sessionValidator: sessionValidator,
             logger: logger
         )
@@ -82,7 +82,7 @@ public final class AuthStore: AuthStoreProtocol {
     public convenience init(storage: CredentialsStorageProtocol) {
         let logger = DebugLogger()
         let authService = AnchorAuthService(storage: storage)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+        let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             logger: logger
         )
@@ -90,7 +90,7 @@ public final class AuthStore: AuthStoreProtocol {
         self.init(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: ironSessionCoordinator,
+            oauthCoordinator: oauthCoordinator,
             sessionValidator: sessionValidator,
             logger: logger
         )
@@ -100,13 +100,13 @@ public final class AuthStore: AuthStoreProtocol {
     public init(
         storage: CredentialsStorageProtocol,
         authService: AnchorAuthServiceProtocol,
-        ironSessionCoordinator: IronSessionMobileOAuthCoordinator,
+        oauthCoordinator: MobileOAuthCoordinator,
         sessionValidator: SessionValidator,
         logger: Logger = DebugLogger()
     ) {
         self.storage = storage
         self.authService = authService
-        self.ironSessionCoordinator = ironSessionCoordinator
+        self.oauthCoordinator = oauthCoordinator
         self.sessionValidator = sessionValidator
         self.logger = logger
     }
@@ -134,7 +134,7 @@ public final class AuthStore: AuthStoreProtocol {
     /// Start direct OAuth flow without handle input
     ///
     /// Opens OAuth flow directly on Bluesky where user enters their handle and password.
-    /// Uses Iron Session backend for simplified mobile authentication.
+    /// Uses BFF backend for simplified mobile authentication.
     ///
     /// - Returns: OAuth URL for WebView navigation
     /// - Throws: OAuth errors if flow initialization fails
@@ -149,7 +149,7 @@ public final class AuthStore: AuthStoreProtocol {
 
         do {
             // Start OAuth without requiring handle upfront - backend will handle OAuth discovery
-            let oauthURL = try await ironSessionCoordinator.startDirectOAuthFlow()
+            let oauthURL = try await oauthCoordinator.startOAuthFlow()
             logger.log("✅ Direct OAuth flow started successfully", level: .info, category: .oauth)
             return oauthURL
 
@@ -159,18 +159,18 @@ public final class AuthStore: AuthStoreProtocol {
         }
     }
 
-    /// Handle secure OAuth callback with Iron Session
-    /// 
+    /// Handle secure OAuth callback with BFF backend
+    ///
     /// - Parameter callbackURL: OAuth callback URL from WebView
     /// - Returns: True if authentication successful
     /// - Throws: OAuth errors if token exchange fails
     public func handleSecureOAuthCallback(_ callbackURL: URL) async throws -> Bool {
-        logger.log("🔐 Handling Iron Session OAuth callback", level: .info, category: .oauth)
+        logger.log("🔐 Handling BFF OAuth callback", level: .info, category: .oauth)
         setAuthenticating()
 
         do {
-            let credentials = try await ironSessionCoordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
-            logger.log("🔐 Iron Session OAuth flow completed successfully", level: .info, category: .oauth)
+            let credentials = try await oauthCoordinator.completeOAuthFlow(callbackURL: callbackURL)
+            logger.log("🔐 BFF OAuth flow completed successfully", level: .info, category: .oauth)
 
             // Cast to AuthCredentials for storage
             guard let authCredentials = credentials as? AuthCredentials else {
@@ -182,13 +182,13 @@ public final class AuthStore: AuthStoreProtocol {
 
             updateAuthenticationState(with: authCredentials)
 
-            logger.log("✅ Iron Session authentication completed successfully", level: .info, category: .oauth)
+            logger.log("✅ BFF authentication completed successfully", level: .info, category: .oauth)
             logger.log("✅ Authentication state updated - isAuthenticated: \(isAuthenticated)", level: .debug, category: .oauth)
 
             return true
 
         } catch {
-            logger.log("❌ Iron Session OAuth callback failed: \(error)", level: .error, category: .oauth)
+            logger.log("❌ BFF OAuth callback failed: \(error)", level: .error, category: .oauth)
             setError(.networkError(error.localizedDescription))
             throw error
         }

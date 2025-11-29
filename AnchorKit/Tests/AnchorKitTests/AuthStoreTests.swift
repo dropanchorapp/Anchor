@@ -34,7 +34,7 @@ struct AuthStoreTests {
         let storage = InMemoryCredentialsStorage()
         let logger = MockLogger()
         let authService = AnchorAuthService(storage: storage, session: MockURLSession())
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: MockURLSession(),
             logger: logger
@@ -44,7 +44,7 @@ struct AuthStoreTests {
         let authStore = AuthStore(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: coordinator,
+            oauthCoordinator: coordinator,
             sessionValidator: validator,
             logger: logger
         )
@@ -160,7 +160,7 @@ struct AuthStoreTests {
 
         let session = MockURLSession(data: sessionData, response: sessionResponse)
         let authService = AnchorAuthService(storage: storage, session: session)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             logger: logger
@@ -170,7 +170,7 @@ struct AuthStoreTests {
         let authStore = AuthStore(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: coordinator,
+            oauthCoordinator: coordinator,
             sessionValidator: validator,
             logger: logger
         )
@@ -184,7 +184,7 @@ struct AuthStoreTests {
 
         // Verify logging
         let logs = logger.entries(for: .oauth)
-        #expect(logs.contains { $0.message.contains("Handling Iron Session OAuth callback") })
+        #expect(logs.contains { $0.message.contains("Handling BFF OAuth callback") })
         #expect(logs.contains { $0.message.contains("authentication completed successfully") })
     }
 
@@ -349,7 +349,7 @@ struct AuthStoreTests {
 
         let session = MockURLSession(data: refreshData, response: refreshResponse)
         let authService = AnchorAuthService(storage: storage, session: session)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             logger: logger
@@ -359,7 +359,7 @@ struct AuthStoreTests {
         let authStore = AuthStore(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: coordinator,
+            oauthCoordinator: coordinator,
             sessionValidator: validator,
             logger: logger
         )
@@ -403,7 +403,7 @@ struct AuthStoreTests {
         let session = MockURLSession(data: Data(), response: refreshResponse)
         let logger = MockLogger()
         let authService = AnchorAuthService(storage: storage, session: session)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+        let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             logger: logger
@@ -412,7 +412,7 @@ struct AuthStoreTests {
         let authStore = AuthStore(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: ironSessionCoordinator,
+            oauthCoordinator: oauthCoordinator,
             sessionValidator: sessionValidator,
             logger: logger
         )
@@ -455,7 +455,7 @@ struct AuthStoreTests {
         let session = MockURLSession(data: sessionData, response: sessionResponse)
 
         let authService = AnchorAuthService(storage: storage, session: session)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             logger: logger
@@ -465,7 +465,7 @@ struct AuthStoreTests {
         let authStore = AuthStore(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: coordinator,
+            oauthCoordinator: coordinator,
             sessionValidator: validator,
             logger: logger
         )
@@ -485,7 +485,7 @@ struct AuthStoreTests {
         let storage = InMemoryCredentialsStorage()
         let logger = MockLogger()
         let authService = AnchorAuthService(storage: storage)
-        let ironSessionCoordinator = IronSessionMobileOAuthCoordinator(
+        let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             logger: logger
         )
@@ -493,7 +493,7 @@ struct AuthStoreTests {
         let authStore = AuthStore(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: ironSessionCoordinator,
+            oauthCoordinator: oauthCoordinator,
             sessionValidator: sessionValidator,
             logger: logger
         )
@@ -535,7 +535,7 @@ struct AuthStoreTests {
         let session = MockURLSession(data: sessionData, response: sessionResponse)
 
         let authService = AnchorAuthService(storage: storage, session: session)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             logger: logger
@@ -545,7 +545,7 @@ struct AuthStoreTests {
         let authStore = AuthStore(
             storage: storage,
             authService: authService,
-            ironSessionCoordinator: coordinator,
+            oauthCoordinator: coordinator,
             sessionValidator: validator,
             logger: logger
         )

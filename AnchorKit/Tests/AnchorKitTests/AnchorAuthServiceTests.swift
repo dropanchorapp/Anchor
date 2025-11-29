@@ -10,15 +10,15 @@ import Testing
 @testable import AnchorKit
 import ATProtoFoundation
 
-// MARK: - Mock Iron Session Coordinator
+// MARK: - Mock OAuth Coordinator
 
 /// Mock coordinator for testing auth service without network calls
-final class MockIronSessionCoordinator {
+final class MockOAuthCoordinator {
     var shouldFailRefresh = false
     var refreshCallCount = 0
     var refreshedCredentials: AuthCredentials?
 
-    func refreshIronSession() async throws -> AuthCredentialsProtocol {
+    func refreshSession() async throws -> AuthCredentialsProtocol {
         refreshCallCount += 1
         if shouldFailRefresh {
             throw AuthenticationError.sessionExpiredUnrecoverable
@@ -53,8 +53,8 @@ struct AnchorAuthServiceTests {
 
         let credentials = AuthCredentials(
             handle: "test.bsky.social",
-            accessToken: "iron-session-backend-managed",
-            refreshToken: "iron-session-backend-managed",
+            accessToken: "backend-managed",
+            refreshToken: "backend-managed",
             did: "did:plc:test123",
             pdsURL: "https://bsky.social",
             expiresAt: Date().addingTimeInterval(3600),
@@ -75,8 +75,8 @@ struct AnchorAuthServiceTests {
 
         let credentials = AuthCredentials(
             handle: "test.bsky.social",
-            accessToken: "iron-session-backend-managed",
-            refreshToken: "iron-session-backend-managed",
+            accessToken: "backend-managed",
+            refreshToken: "backend-managed",
             did: "did:plc:test123",
             pdsURL: "https://bsky.social",
             expiresAt: Date().addingTimeInterval(3600),
@@ -96,8 +96,8 @@ struct AnchorAuthServiceTests {
         // Create credentials with empty string session ID (should be caught)
         let credentials = AuthCredentials(
             handle: "test.bsky.social",
-            accessToken: "iron-session-backend-managed",
-            refreshToken: "iron-session-backend-managed",
+            accessToken: "backend-managed",
+            refreshToken: "backend-managed",
             did: "did:plc:test123",
             pdsURL: "https://bsky.social",
             expiresAt: Date().addingTimeInterval(3600),
@@ -152,7 +152,7 @@ struct AnchorAuthServiceTests {
 
         #expect(refreshed.handle == "test.bsky.social")
         #expect(refreshed.sessionId == "new-session-token")
-        #expect(refreshed.accessToken == "iron-session-backend-managed")
+        #expect(refreshed.accessToken == "backend-managed")
         #expect(refreshed.expiresAt > Date()) // New expiration is in future
     }
 
@@ -368,10 +368,10 @@ struct AnchorAuthServiceTests {
         #expect(authService.shouldRefreshTokens(testCreds) == false)
     }
 
-    // MARK: - Integration with IronSessionCoordinator Tests
+    // MARK: - Integration with OAuth Coordinator Tests
 
-    @Test("Refresh tokens delegates to IronSessionCoordinator")
-    func refreshTokensDelegatesToIronSessionCoordinator() async throws {
+    @Test("Refresh tokens delegates to OAuth Coordinator")
+    func refreshTokensDelegatesToOAuthCoordinator() async throws {
         let storage = InMemoryCredentialsStorage()
 
         // Store initial credentials

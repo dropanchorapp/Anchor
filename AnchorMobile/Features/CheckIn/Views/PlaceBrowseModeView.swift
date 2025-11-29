@@ -18,30 +18,30 @@ struct PlaceBrowseModeView: View {
     @State private var isLoading = false
     @State private var error: Error?
     @State private var selectedCategory: PlaceCategorization.CategoryGroup?
+    @State private var selectedCategoryTags: [String] = []
     @State private var searchText = ""
-    
+
     var filteredPlaces: [AnchorPlaceWithDistance] {
         var filtered = places
-        
-        // Filter by category
-        if let selectedCategory = selectedCategory {
-            let categoryTags = CategoryCacheService.shared.getCategoriesForGroup(selectedCategory)
+
+        // Filter by category (using pre-fetched tags)
+        if selectedCategory != nil && !selectedCategoryTags.isEmpty {
             filtered = filtered.filter { place in
-                categoryTags.contains { tag in
+                selectedCategoryTags.contains { tag in
                     place.place.tags.contains { (key, value) in
                         "\(key)=\(value)" == tag
                     }
                 }
             }
         }
-        
+
         // Filter by search text
         if !searchText.isEmpty {
             filtered = filtered.filter { place in
                 place.place.name.localizedCaseInsensitiveContains(searchText)
             }
         }
-        
+
         return filtered
     }
     
@@ -108,6 +108,15 @@ struct PlaceBrowseModeView: View {
         .searchable(text: $searchText, prompt: "Filter places by name...")
         .task {
             await loadNearbyPlaces()
+        }
+        .onChange(of: selectedCategory) { _, newCategory in
+            Task {
+                if let category = newCategory {
+                    selectedCategoryTags = await CategoryCacheService.shared.getCategoriesForGroup(category)
+                } else {
+                    selectedCategoryTags = []
+                }
+            }
         }
     }
     

@@ -34,7 +34,7 @@ extension IronSessionAPIClient {
 
         // Build multipart request
         let boundary = "Boundary-\(UUID().uuidString)"
-        let url = baseURL.appendingPathComponent(path)
+        let url = config.baseURL.appendingPathComponent(path)
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")

@@ -112,7 +112,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         let sessionURL = config.baseURL.appendingPathComponent("/api/auth/session")
         var sessionRequest = URLRequest(url: sessionURL)
         sessionRequest.httpMethod = "GET"
-        sessionRequest.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        sessionRequest.setValue(config.userAgent, forHTTPHeaderField: "User-Agent")
         // Cookie is automatically included by URLSession from HTTPCookieStorage.shared
 
         do {
@@ -180,7 +180,7 @@ public final class IronSessionMobileOAuthCoordinator: @unchecked Sendable {
         let url = config.baseURL.appendingPathComponent("/mobile/refresh-token")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue(config.userAgent, forHTTPHeaderField: "User-Agent")
 
         // Cookie is automatically included by URLSession from HTTPCookieStorage.shared
 

@@ -38,7 +38,7 @@ public final class IronSessionAPIClient: @unchecked Sendable {
 
     internal let credentialsStorage: CredentialsStorageProtocol
     internal let session: URLSessionProtocol
-    internal let baseURL: URL
+    internal let config: OAuthConfiguration
     internal let logger: Logger
 
     // MARK: - Initialization
@@ -46,12 +46,12 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     public init(
         credentialsStorage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
-        baseURL: String = "https://dropanchor.app",
+        config: OAuthConfiguration = .default,
         logger: Logger = DebugLogger()
     ) {
         self.credentialsStorage = credentialsStorage
         self.session = session
-        self.baseURL = URL(string: baseURL)!
+        self.config = config
         self.logger = logger
 
         // Configure URLSession for cookie-based authentication
@@ -165,12 +165,12 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     ) -> URLRequest {
         logger.log("🌐 Making authenticated request to \(path)", level: .debug, category: .network)
 
-        let url = baseURL.appendingPathComponent(path)
+        let url = config.baseURL.appendingPathComponent(path)
         var request = URLRequest(url: url)
         request.httpMethod = method
 
         // Add standard headers (cookies added automatically by URLSession)
-        request.setValue("AnchorApp/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue(config.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         // Add body if provided
@@ -229,7 +229,8 @@ public final class IronSessionAPIClient: @unchecked Sendable {
     internal func refreshSession() async throws {
         let coordinator = IronSessionMobileOAuthCoordinator(
             credentialsStorage: credentialsStorage,
-            session: session
+            session: session,
+            config: config
         )
 
         let refreshedCredentials = try await coordinator.refreshIronSession()
@@ -315,7 +316,8 @@ public final class IronSessionAPIClient: @unchecked Sendable {
         do {
             let coordinator = IronSessionMobileOAuthCoordinator(
                 credentialsStorage: credentialsStorage,
-                session: session
+                session: session,
+                config: config
             )
             let refreshedCredentials = try await coordinator.refreshIronSession()
 

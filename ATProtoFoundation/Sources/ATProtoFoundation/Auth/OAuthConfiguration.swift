@@ -9,6 +9,9 @@ public struct OAuthConfiguration: Sendable {
     /// Base URL for the OAuth backend (BFF pattern)
     public let baseURL: URL
 
+    /// User-Agent header value for API requests
+    public let userAgent: String
+
     /// Cookie name for session ID
     public let sessionCookieName: String
 
@@ -30,9 +33,10 @@ public struct OAuthConfiguration: Sendable {
     /// Maximum delay between retries (8 seconds)
     public let maxRetryDelay: TimeInterval
 
-    /// Default production configuration
+    /// Default production configuration for Anchor app
     public static let `default` = OAuthConfiguration(
         baseURL: URL(string: "https://dropanchor.app")!,
+        userAgent: "AnchorApp/1.0 (iOS)",
         sessionCookieName: "sid",
         cookieDomain: "dropanchor.app",
         callbackURLScheme: "anchor-app",
@@ -45,6 +49,7 @@ public struct OAuthConfiguration: Sendable {
     /// Initialize with custom configuration
     public init(
         baseURL: URL,
+        userAgent: String,
         sessionCookieName: String,
         cookieDomain: String,
         callbackURLScheme: String,
@@ -54,6 +59,7 @@ public struct OAuthConfiguration: Sendable {
         maxRetryDelay: TimeInterval
     ) {
         self.baseURL = baseURL
+        self.userAgent = userAgent
         self.sessionCookieName = sessionCookieName
         self.cookieDomain = cookieDomain
         self.callbackURLScheme = callbackURLScheme

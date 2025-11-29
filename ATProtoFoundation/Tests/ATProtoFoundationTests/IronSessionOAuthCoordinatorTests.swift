@@ -44,6 +44,7 @@ struct IronSessionOAuthCoordinatorTests {
         let session = MockURLSession()
         let customConfig = OAuthConfiguration(
             baseURL: URL(string: "https://test.example.com")!,
+            userAgent: "TestApp/1.0",
             sessionCookieName: "test-sid",
             cookieDomain: "test.example.com",
             callbackURLScheme: "test-app",

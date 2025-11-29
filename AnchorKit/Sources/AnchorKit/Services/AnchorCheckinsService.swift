@@ -37,12 +37,12 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
     public init(
         credentialsStorage: CredentialsStorageProtocol = KeychainCredentialsStorage(),
         session: URLSessionProtocol = URLSession.shared,
-        baseURL: String = "https://dropanchor.app"
+        config: OAuthConfiguration = .default
     ) {
         self.apiClient = IronSessionAPIClient(
             credentialsStorage: credentialsStorage,
             session: session,
-            baseURL: baseURL
+            config: config
         )
     }
 

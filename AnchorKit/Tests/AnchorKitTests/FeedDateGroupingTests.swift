@@ -104,7 +104,7 @@ struct FeedDateGroupingTests {
                 displayName: "Test User",
                 avatar: nil
             ),
-            record: ATProtoRecord(
+            record: BlueskyPostRecord(
                 text: text,
                 createdAt: createdAt
             )

@@ -1,20 +1,20 @@
 import Foundation
 
-/// Represents an AT Protocol record with rich text support
+/// Represents a Bluesky post record (app.bsky.feed.post) with rich text support
 ///
-/// `ATProtoRecord` handles parsing and formatting of AT Protocol posts with facets (rich text annotations).
+/// `BlueskyPostRecord` handles parsing and formatting of Bluesky posts with facets (rich text annotations).
 /// Facets enable links, mentions, and hashtags within text content.
 ///
 /// Example usage:
 /// ```swift
-/// let record = ATProtoRecord(
+/// let record = BlueskyPostRecord(
 ///     text: "Check out @alice.bsky.social's post!",
 ///     facets: [ATProtoFacet(index: 10...27, feature: .mention("did:plc:alice"))],
 ///     createdAt: Date()
 /// )
 /// print(record.formattedText) // Markdown formatted with links
 /// ```
-public struct ATProtoRecord: Sendable, Hashable {
+public struct BlueskyPostRecord: Sendable, Hashable {
     public let text: String
     public let formattedText: String // Markdown formatted version
     public let facets: [ATProtoFacet]

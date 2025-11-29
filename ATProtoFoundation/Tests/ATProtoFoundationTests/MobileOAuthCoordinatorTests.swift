@@ -1,28 +1,28 @@
 //
-//  IronSessionOAuthCoordinatorTests.swift
-//  AnchorKit
+//  MobileOAuthCoordinatorTests.swift
+//  ATProtoFoundation
 //
-//  Comprehensive tests for Iron Session OAuth authentication flow
+//  Comprehensive tests for BFF OAuth authentication flow
 //
 
 import Foundation
 import Testing
 @testable import ATProtoFoundation
 
-// MARK: - Iron Session OAuth Coordinator Tests
+// MARK: - Mobile OAuth Coordinator Tests
 
-@Suite("IronSessionMobileOAuthCoordinator", .tags(.unit, .oauth, .auth))
+@Suite("MobileOAuthCoordinator", .tags(.unit, .oauth, .auth))
 @MainActor
-struct IronSessionOAuthCoordinatorTests {
+struct MobileOAuthCoordinatorTests {
 
     // MARK: - Start OAuth Flow Tests
 
-    @Test("Start direct OAuth flow generates correct URL")
-    func startDirectOAuthFlowGeneratesCorrectURL() async throws {
+    @Test("Start OAuth flow generates correct URL")
+    func startOAuthFlowGeneratesCorrectURL() async throws {
         let storage = InMemoryCredentialsStorage()
         let session = MockURLSession()
         let config = OAuthConfiguration.default
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: config,
@@ -30,7 +30,7 @@ struct IronSessionOAuthCoordinatorTests {
             logger: MockLogger()
         )
 
-        let oauthURL = try await coordinator.startDirectOAuthFlow()
+        let oauthURL = try await coordinator.startOAuthFlow()
 
         #expect(oauthURL.absoluteString == "https://dropanchor.app/mobile-auth")
         #expect(oauthURL.scheme == "https")
@@ -53,7 +53,7 @@ struct IronSessionOAuthCoordinatorTests {
             maxRetryAttempts: 2,
             maxRetryDelay: 4.0
         )
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: customConfig,
@@ -61,7 +61,7 @@ struct IronSessionOAuthCoordinatorTests {
             logger: MockLogger()
         )
 
-        let oauthURL = try await coordinator.startDirectOAuthFlow()
+        let oauthURL = try await coordinator.startOAuthFlow()
 
         #expect(oauthURL.absoluteString == "https://test.example.com/mobile-auth")
     }
@@ -88,7 +88,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: sessionData, response: sessionResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -99,14 +99,14 @@ struct IronSessionOAuthCoordinatorTests {
         // Valid callback URL with required parameters
         let callbackURL = URL(string: "anchor-app://auth-callback?did=did:plc:test123&session_token=test-session-token-12345")!
 
-        let credentials = try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+        let credentials = try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
 
         // Verify credentials
         #expect(credentials.handle == "test.bsky.social")
         #expect(credentials.did == "did:plc:test123")
         #expect(credentials.sessionId == "test-session-token-12345")
-        #expect(credentials.accessToken == "iron-session-backend-managed")
-        #expect(credentials.refreshToken == "iron-session-backend-managed")
+        #expect(credentials.accessToken == "backend-managed")
+        #expect(credentials.refreshToken == "backend-managed")
 
         // Verify cookie was saved
         #expect(cookieManager.savedCookies.count == 1)
@@ -115,7 +115,7 @@ struct IronSessionOAuthCoordinatorTests {
 
         // Verify logging
         let logs = logger.entries(for: .oauth)
-        #expect(logs.contains { $0.message.contains("Completing Iron Session OAuth flow") })
+        #expect(logs.contains { $0.message.contains("Completing BFF OAuth flow") })
         #expect(logs.contains { $0.message.contains("Successfully parsed callback parameters") })
         #expect(logs.contains { $0.message.contains("Retrieved handle: @test.bsky.social") })
     }
@@ -124,7 +124,7 @@ struct IronSessionOAuthCoordinatorTests {
     func completeOAuthFlowWithMissingDIDFails() async throws {
         let storage = InMemoryCredentialsStorage()
         let session = MockURLSession()
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -136,7 +136,7 @@ struct IronSessionOAuthCoordinatorTests {
         let callbackURL = URL(string: "anchor-app://auth-callback?session_token=test-session-token")!
 
         await #expect(throws: AuthenticationError.self) {
-            try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+            try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
         }
     }
 
@@ -145,7 +145,7 @@ struct IronSessionOAuthCoordinatorTests {
         let storage = InMemoryCredentialsStorage()
         let session = MockURLSession()
         let logger = MockLogger()
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -157,7 +157,7 @@ struct IronSessionOAuthCoordinatorTests {
         let callbackURL = URL(string: "anchor-app://auth-callback?did=did:plc:test123")!
 
         await #expect(throws: AuthenticationError.self) {
-            try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+            try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
         }
 
         // Verify error logging
@@ -169,7 +169,7 @@ struct IronSessionOAuthCoordinatorTests {
     func completeOAuthFlowWithInvalidCallbackURLFails() async throws {
         let storage = InMemoryCredentialsStorage()
         let session = MockURLSession()
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -181,7 +181,7 @@ struct IronSessionOAuthCoordinatorTests {
         let callbackURL = URL(string: "anchor-app://auth-callback")!
 
         await #expect(throws: AuthenticationError.self) {
-            try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+            try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
         }
     }
 
@@ -199,7 +199,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: Data(), response: sessionResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -210,7 +210,7 @@ struct IronSessionOAuthCoordinatorTests {
         let callbackURL = URL(string: "anchor-app://auth-callback?did=did:plc:test123&session_token=test-session-token")!
 
         await #expect(throws: AuthenticationError.self) {
-            try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+            try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
         }
 
         // Verify error logging
@@ -232,7 +232,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: malformedData, response: sessionResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -243,7 +243,7 @@ struct IronSessionOAuthCoordinatorTests {
         let callbackURL = URL(string: "anchor-app://auth-callback?did=did:plc:test123&session_token=test-session-token")!
 
         await #expect(throws: AuthenticationError.self) {
-            try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+            try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
         }
     }
 
@@ -265,7 +265,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: sessionData, response: sessionResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -276,7 +276,7 @@ struct IronSessionOAuthCoordinatorTests {
         let callbackURL = URL(string: "anchor-app://auth-callback?did=did:plc:test123&session_token=test-session-token")!
 
         await #expect(throws: AuthenticationError.self) {
-            try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+            try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
         }
 
         // Verify error logging
@@ -321,7 +321,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: refreshData, response: refreshResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -329,13 +329,13 @@ struct IronSessionOAuthCoordinatorTests {
             logger: logger
         )
 
-        let refreshedCredentials = try await coordinator.refreshIronSession()
+        let refreshedCredentials = try await coordinator.refreshSession()
 
         // Verify refreshed credentials
         #expect(refreshedCredentials.handle == "test.bsky.social")
         #expect(refreshedCredentials.did == "did:plc:test123")
         #expect(refreshedCredentials.sessionId == "new-session-token-67890")
-        #expect(refreshedCredentials.accessToken == "iron-session-backend-managed")
+        #expect(refreshedCredentials.accessToken == "backend-managed")
 
         // Verify new expiration is in the future
         #expect(refreshedCredentials.expiresAt > Date())
@@ -346,7 +346,7 @@ struct IronSessionOAuthCoordinatorTests {
 
         // Verify logging
         let logs = logger.entries(for: .session)
-        #expect(logs.contains { $0.message.contains("Refreshing Iron Session") })
+        #expect(logs.contains { $0.message.contains("Refreshing session") })
         #expect(logs.contains { $0.message.contains("Session refreshed successfully") })
     }
 
@@ -355,7 +355,7 @@ struct IronSessionOAuthCoordinatorTests {
         let storage = InMemoryCredentialsStorage()
         let session = MockURLSession()
         let logger = MockLogger()
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -364,7 +364,7 @@ struct IronSessionOAuthCoordinatorTests {
         )
 
         await #expect(throws: AuthenticationError.sessionExpiredUnrecoverable) {
-            try await coordinator.refreshIronSession()
+            try await coordinator.refreshSession()
         }
 
         // Verify error logging
@@ -398,7 +398,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: Data(), response: refreshResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -407,7 +407,7 @@ struct IronSessionOAuthCoordinatorTests {
         )
 
         await #expect(throws: AuthenticationError.sessionExpiredUnrecoverable) {
-            try await coordinator.refreshIronSession()
+            try await coordinator.refreshSession()
         }
 
         // Verify error logging
@@ -441,7 +441,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: malformedData, response: refreshResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -450,7 +450,7 @@ struct IronSessionOAuthCoordinatorTests {
         )
 
         do {
-            try await coordinator.refreshIronSession()
+            try await coordinator.refreshSession()
             Issue.record("Expected error to be thrown")
         } catch let error as AuthenticationError {
             if case .networkError = error {
@@ -497,7 +497,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: refreshData, response: refreshResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -506,7 +506,7 @@ struct IronSessionOAuthCoordinatorTests {
         )
 
         await #expect(throws: AuthenticationError.sessionExpiredUnrecoverable) {
-            try await coordinator.refreshIronSession()
+            try await coordinator.refreshSession()
         }
 
         // Verify error logging
@@ -534,7 +534,7 @@ struct IronSessionOAuthCoordinatorTests {
         // Mock network error
         let networkError = NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)
         let session = MockURLSession(data: nil, response: nil, error: networkError)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -543,7 +543,7 @@ struct IronSessionOAuthCoordinatorTests {
         )
 
         await #expect(throws: AuthenticationError.self) {
-            try await coordinator.refreshIronSession()
+            try await coordinator.refreshSession()
         }
 
         // Verify error logging
@@ -572,7 +572,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: sessionData, response: sessionResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -581,7 +581,7 @@ struct IronSessionOAuthCoordinatorTests {
         )
 
         let callbackURL = URL(string: "anchor-app://auth-callback?did=did:plc:test123&session_token=my-secure-token-abc123")!
-        _ = try await coordinator.completeIronSessionOAuthFlow(callbackURL: callbackURL)
+        _ = try await coordinator.completeOAuthFlow(callbackURL: callbackURL)
 
         // Verify cookie was saved with correct parameters
         #expect(cookieManager.savedCookies.count == 1)
@@ -625,7 +625,7 @@ struct IronSessionOAuthCoordinatorTests {
         )!
 
         let session = MockURLSession(data: refreshData, response: refreshResponse)
-        let coordinator = IronSessionMobileOAuthCoordinator(
+        let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
             config: .default,
@@ -633,7 +633,7 @@ struct IronSessionOAuthCoordinatorTests {
             logger: MockLogger()
         )
 
-        _ = try await coordinator.refreshIronSession()
+        _ = try await coordinator.refreshSession()
 
         // Verify new cookie was saved
         #expect(cookieManager.savedCookies.count == 1)

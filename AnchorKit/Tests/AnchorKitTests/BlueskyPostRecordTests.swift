@@ -3,14 +3,14 @@ import ATProtoFoundation
 import Foundation
 import Testing
 
-@Suite("AT Protocol Record", .tags(.unit, .models, .markdown, .facets))
-struct ATProtoRecordTests {
+@Suite("Bluesky Post Record", .tags(.unit, .models, .markdown, .facets))
+struct BlueskyPostRecordTests {
     // MARK: - Markdown Formatting Tests
 
     @Test("Text with no facets returns unchanged")
     func formatTextWithFacets_noFacets() {
         let text = "This is a simple post with no links or mentions"
-        let record = ATProtoRecord(text: text, facets: [])
+        let record = BlueskyPostRecord(text: text, facets: [])
 
         #expect(record.formattedText == text)
         #expect(record.text == text)
@@ -24,7 +24,7 @@ struct ATProtoRecordTests {
             index: 10 ... 28, // "https://example.com"
             feature: .link("https://example.com")
         )
-        let record = ATProtoRecord(text: text, facets: [linkFacet])
+        let record = BlueskyPostRecord(text: text, facets: [linkFacet])
 
         let expectedMarkdown = "Check out [https://example.com](https://example.com) for more info"
         #expect(record.formattedText == expectedMarkdown)
@@ -39,7 +39,7 @@ struct ATProtoRecordTests {
             ATProtoFacet(index: 6 ... 24, feature: .link("https://example.com")), // "https://example.com"
             ATProtoFacet(index: 30 ... 45, feature: .link("https://test.org")) // "https://test.org"
         ]
-        let record = ATProtoRecord(text: text, facets: facets)
+        let record = BlueskyPostRecord(text: text, facets: facets)
 
         let expectedMarkdown = "Visit [https://example.com](https://example.com) and [https://test.org](https://test.org) today"
         #expect(record.formattedText == expectedMarkdown)
@@ -54,7 +54,7 @@ struct ATProtoRecordTests {
             index: 10 ... 18, // "#climbing"
             feature: .hashtag("climbing")
         )
-        let record = ATProtoRecord(text: text, facets: [hashtagFacet])
+        let record = BlueskyPostRecord(text: text, facets: [hashtagFacet])
 
         let expectedMarkdown = "Love this [#climbing](https://bsky.app/search?q=%23climbing) session today!"
         #expect(record.formattedText == expectedMarkdown)
@@ -71,7 +71,7 @@ struct ATProtoRecordTests {
             index: 5 ... 50, // Beyond text length
             feature: .link("https://example.com")
         )
-        let record = ATProtoRecord(text: text, facets: [linkFacet])
+        let record = BlueskyPostRecord(text: text, facets: [linkFacet])
 
         #expect(!record.formattedText.isEmpty)
         #expect(record.text == text)
@@ -84,7 +84,7 @@ struct ATProtoRecordTests {
             ATProtoFacet(index: 29 ... 46, feature: .link("https://second.org")), // Second link first
             ATProtoFacet(index: 6 ... 22, feature: .link("https://first.com")) // First link second
         ]
-        let record = ATProtoRecord(text: text, facets: facets)
+        let record = BlueskyPostRecord(text: text, facets: facets)
 
         let expectedMarkdown = "Visit [https://first.com](https://first.com) then [https://second.org](https://second.org) today"
         #expect(record.formattedText == expectedMarkdown)
@@ -126,7 +126,7 @@ struct ATProtoRecordTests {
             ]
         )
 
-        let record = ATProtoRecord(from: timelineRecord)
+        let record = BlueskyPostRecord(from: timelineRecord)
 
         #expect(record.text == "Check out https://example.com #test")
         #expect(record.type == "app.bsky.feed.post")
@@ -159,7 +159,7 @@ struct ATProtoRecordTests {
             facets: nil
         )
 
-        let record = ATProtoRecord(from: timelineRecord)
+        let record = BlueskyPostRecord(from: timelineRecord)
 
         #expect(record.text == "Simple text post")
         #expect(record.formattedText == "Simple text post")
@@ -175,7 +175,7 @@ struct ATProtoRecordTests {
             facets: nil
         )
 
-        let record = ATProtoRecord(from: timelineRecord)
+        let record = BlueskyPostRecord(from: timelineRecord)
 
         #expect(record.text == "Test post")
         // Should use current date as fallback for invalid date

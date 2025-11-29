@@ -4,7 +4,7 @@ import Foundation
 
 /// Represents a record from an AT Protocol timeline API response
 ///
-/// Used to parse raw API responses before converting to `ATProtoRecord`.
+/// Used to parse raw API responses before converting to `BlueskyPostRecord`.
 public struct TimelineRecord: Codable, Sendable {
     public let text: String
     public let createdAt: String
@@ -70,10 +70,10 @@ public struct FacetFeature: Codable, Sendable {
 
 // MARK: - Conversion Extensions
 
-extension ATProtoRecord {
+extension BlueskyPostRecord {
     /// Create from timeline record data
     ///
-    /// Converts raw API response data into a properly formatted `ATProtoRecord`.
+    /// Converts raw API response data into a properly formatted `BlueskyPostRecord`.
     ///
     /// - Parameter timelineRecord: Raw timeline record from API
     public init(from timelineRecord: TimelineRecord) {

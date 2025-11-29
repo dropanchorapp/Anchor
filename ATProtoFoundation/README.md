@@ -1,6 +1,22 @@
 # ATProtoFoundation
 
-A Swift package providing foundational types and utilities for building AT Protocol (atproto) iOS applications.
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Ftijs%2FATProtoFoundation%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/tijs/ATProtoFoundation)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Ftijs%2FATProtoFoundation%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/tijs/ATProtoFoundation)
+
+Building blocks for AT Protocol iOS apps. Parse rich text with facets, handle OAuth authentication via a backend, and work with timeline data from Bluesky and other AT Protocol services.
+
+## When to use this package
+
+**Good fit if you:**
+- Are building an iOS/macOS app that connects to Bluesky or AT Protocol services
+- Need to parse and display rich text posts with links, mentions, and hashtags
+- Want BFF (Backend-For-Frontend) OAuth pattern with HttpOnly cookies
+- Prefer a lightweight foundation over a full-featured SDK
+
+**Less ideal if you:**
+- Need a complete AT Protocol client with all XRPC methods
+- Want to run your own PDS or build server-side tooling
+- Need cross-platform support beyond Apple platforms
 
 ## Requirements
 
@@ -15,7 +31,7 @@ Add ATProtoFoundation to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tijs/ATProtoFoundation.git", from: "1.0.0")
+    .package(url: "https://github.com/tijs/ATProtoFoundation.git", from: "1.1.0")
 ]
 ```
 
@@ -25,9 +41,9 @@ Or add it via Xcode: File → Add Package Dependencies → Enter the repository 
 
 ### Models
 
-#### ATProtoRecord & Facets
+#### BlueskyPostRecord & Facets
 
-Types for working with AT Protocol records and rich text facets:
+Types for working with Bluesky post records and rich text facets:
 
 ```swift
 import ATProtoFoundation
@@ -37,7 +53,7 @@ let facet = ATProtoFacet(
     index: 10...28,
     feature: .link("https://example.com")
 )
-let record = ATProtoRecord(
+let record = BlueskyPostRecord(
     text: "Check out https://example.com for more",
     facets: [facet]
 )
@@ -59,8 +75,8 @@ Types for parsing timeline API responses:
 // Decode timeline data from API
 let record = try JSONDecoder().decode(TimelineRecord.self, from: jsonData)
 
-// Convert to rich ATProtoRecord with facets
-let atRecord = ATProtoRecord(from: record)
+// Convert to rich BlueskyPostRecord with facets
+let postRecord = BlueskyPostRecord(from: record)
 ```
 
 #### Lexicon Constants
@@ -81,12 +97,14 @@ CommunityLexicon.locationAddress // "community.lexicon.location.address"
 
 ### Authentication
 
-#### Iron Session OAuth
+#### BFF OAuth
 
-Backend-For-Frontend (BFF) pattern OAuth implementation using HttpOnly cookies:
+[Backend-For-Frontend (BFF) pattern](https://atproto.com/specs/oauth) OAuth implementation using HttpOnly cookies. Mobile apps can't safely store private keys, so the [recommended approach](https://github.com/bluesky-social/atproto/blob/main/packages/oauth/oauth-client-node/README.md) is to have a backend server manage OAuth sessions and use session cookies to authenticate the mobile client.
+
+For the server-side implementation, see [@tijs/atproto-oauth](https://github.com/tijs/atproto-oauth) and its [mobile authentication guide](https://github.com/tijs/atproto-oauth/blob/main/docs/mobile-authentication.md):
 
 ```swift
-let coordinator = IronSessionMobileOAuthCoordinator(
+let coordinator = MobileOAuthCoordinator(
     storage: KeychainCredentialsStorage(),
     config: .default
 )
@@ -98,7 +116,7 @@ let authURL = try await coordinator.startOAuthFlow()
 try await coordinator.completeOAuthFlow(callbackURL: url)
 
 // Refresh session
-let credentials = try await coordinator.refreshIronSession()
+let credentials = try await coordinator.refreshSession()
 ```
 
 #### Credentials Storage
@@ -135,12 +153,12 @@ let config = OAuthConfiguration(
 
 ### Networking
 
-#### IronSessionAPIClient
+#### BFFAPIClient
 
 HTTP client with automatic session management:
 
 ```swift
-let client = IronSessionAPIClient(
+let client = BFFAPIClient(
     credentialsStorage: storage,
     config: .default
 )

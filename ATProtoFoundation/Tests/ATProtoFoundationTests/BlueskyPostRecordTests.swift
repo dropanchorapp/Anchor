@@ -1,22 +1,22 @@
 //
-//  ATProtoRecordTests.swift
+//  BlueskyPostRecordTests.swift
 //  ATProtoFoundation
 //
-//  Tests for ATProtoRecord, ATProtoFacet, and ATProtoFeature types
+//  Tests for BlueskyPostRecord, ATProtoFacet, and ATProtoFeature types
 //
 
 import Foundation
 import Testing
 @testable import ATProtoFoundation
 
-@Suite("ATProtoRecord", .tags(.unit, .models))
-struct ATProtoRecordTests {
+@Suite("BlueskyPostRecord", .tags(.unit, .models))
+struct BlueskyPostRecordTests {
 
-    // MARK: - ATProtoRecord Creation Tests
+    // MARK: - BlueskyPostRecord Creation Tests
 
     @Test("Record with text only")
     func recordWithTextOnly() {
-        let record = ATProtoRecord(text: "Hello, world!")
+        let record = BlueskyPostRecord(text: "Hello, world!")
 
         #expect(record.text == "Hello, world!")
         #expect(record.formattedText == "Hello, world!")
@@ -26,7 +26,7 @@ struct ATProtoRecordTests {
 
     @Test("Record with custom type")
     func recordWithCustomType() {
-        let record = ATProtoRecord(
+        let record = BlueskyPostRecord(
             text: "Test",
             createdAt: Date(),
             type: "custom.type"
@@ -41,7 +41,7 @@ struct ATProtoRecordTests {
             index: 0...4,
             feature: .link("https://example.com")
         )
-        let record = ATProtoRecord(
+        let record = BlueskyPostRecord(
             text: "Visit https://example.com",
             facets: [facet]
         )
@@ -94,7 +94,7 @@ struct ATProtoRecordTests {
 
     @Test("Text with no facets returns unchanged")
     func textWithNoFacetsReturnsUnchanged() {
-        let record = ATProtoRecord(text: "Simple text with no links")
+        let record = BlueskyPostRecord(text: "Simple text with no links")
         #expect(record.formattedText == "Simple text with no links")
     }
 
@@ -105,7 +105,7 @@ struct ATProtoRecordTests {
             index: 10...28,
             feature: .link("https://example.com")
         )
-        let record = ATProtoRecord(text: text, facets: [facet])
+        let record = BlueskyPostRecord(text: text, facets: [facet])
 
         #expect(record.formattedText.contains("[https://example.com](https://example.com)"))
     }
@@ -117,7 +117,7 @@ struct ATProtoRecordTests {
             index: 10...18,
             feature: .hashtag("climbing")
         )
-        let record = ATProtoRecord(text: text, facets: [facet])
+        let record = BlueskyPostRecord(text: text, facets: [facet])
 
         #expect(record.formattedText.contains("[#climbing](https://bsky.app/search?q=%23climbing)"))
     }

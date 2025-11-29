@@ -6,7 +6,7 @@ import ATProtoFoundation
 public struct FeedPost: Identifiable, Sendable, Hashable {
     public let id: String
     public let author: FeedAuthor
-    public let record: ATProtoRecord
+    public let record: BlueskyPostRecord
     public let coordinates: FeedCoordinates?
     public let address: FeedAddress?
     public let distance: Double? // Only present in nearby feeds
@@ -17,7 +17,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
     public init(
         id: String,
         author: FeedAuthor,
-        record: ATProtoRecord,
+        record: BlueskyPostRecord,
         coordinates: FeedCoordinates? = nil,
         address: FeedAddress? = nil,
         distance: Double? = nil,
@@ -47,7 +47,7 @@ public struct FeedPost: Identifiable, Sendable, Hashable {
         // Parse the createdAt string to Date
         let createdAt = ISO8601DateFormatter.flexibleDate(from: checkin.createdAt) ?? Date()
 
-        record = ATProtoRecord(
+        record = BlueskyPostRecord(
             text: checkin.text,
             createdAt: createdAt
         )

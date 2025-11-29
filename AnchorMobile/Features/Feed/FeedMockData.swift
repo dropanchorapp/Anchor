@@ -25,7 +25,7 @@ private func makeMockPost(id: String, authorDid: String, authorHandle: String, t
             displayName: nil,
             avatar: nil
         ),
-        record: ATProtoRecord(
+        record: BlueskyPostRecord(
             text: text,
             createdAt: createdAt
         ),

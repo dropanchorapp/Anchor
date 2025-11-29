@@ -125,10 +125,10 @@ struct TimelineModelsTests {
         #expect(feature.did == nil)
     }
 
-    // MARK: - ATProtoRecord Conversion Tests
+    // MARK: - BlueskyPostRecord Conversion Tests
 
-    @Test("ATProtoRecord initializes from TimelineRecord")
-    func atProtoRecordFromTimelineRecord() {
+    @Test("BlueskyPostRecord initializes from TimelineRecord")
+    func blueskyPostRecordFromTimelineRecord() {
         let timelineRecord = TimelineRecord(
             text: "Test post",
             createdAt: "2025-01-15T12:00:00Z",
@@ -136,15 +136,15 @@ struct TimelineModelsTests {
             facets: nil
         )
 
-        let record = ATProtoRecord(from: timelineRecord)
+        let record = BlueskyPostRecord(from: timelineRecord)
 
         #expect(record.text == "Test post")
         #expect(record.type == "app.bsky.feed.post")
         #expect(record.facets.isEmpty)
     }
 
-    @Test("ATProtoRecord converts facets from TimelineRecord")
-    func atProtoRecordConvertsFacets() {
+    @Test("BlueskyPostRecord converts facets from TimelineRecord")
+    func blueskyPostRecordConvertsFacets() {
         let timelineFacet = TimelineFacet(
             index: FacetIndex(byteStart: 0, byteEnd: 19),
             features: [
@@ -163,7 +163,7 @@ struct TimelineModelsTests {
             facets: [timelineFacet]
         )
 
-        let record = ATProtoRecord(from: timelineRecord)
+        let record = BlueskyPostRecord(from: timelineRecord)
 
         #expect(record.facets.count == 1)
         if case .link(let url) = record.facets[0].feature {

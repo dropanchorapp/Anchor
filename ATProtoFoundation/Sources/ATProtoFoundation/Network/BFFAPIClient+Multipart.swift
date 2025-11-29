@@ -1,15 +1,15 @@
 //
-//  IronSessionAPIClient+Multipart.swift
-//  AnchorKit
+//  BFFAPIClient+Multipart.swift
+//  ATProtoFoundation
 //
-//  Multipart/form-data extension for IronSessionAPIClient
+//  Multipart/form-data extension for BFFAPIClient
 //
 
 import Foundation
 
 // MARK: - Multipart Form Data Extension
 
-extension IronSessionAPIClient {
+extension BFFAPIClient {
 
     /// Make authenticated multipart/form-data request
     ///
@@ -65,7 +65,7 @@ extension IronSessionAPIClient {
         request.httpBody = body
 
         logger.log(
-            "🌐 Making authenticated multipart request to \(path), body size: \(body.count) bytes",
+            "Making authenticated multipart request to \(path), body size: \(body.count) bytes",
             level: .debug,
             category: .network
         )
@@ -81,7 +81,7 @@ extension IronSessionAPIClient {
         // Handle 401 with retry logic
         if httpResponse.statusCode == 401 {
             logger.log(
-                "🔐 Received 401 on multipart request, attempting refresh and retry",
+                "Received 401 on multipart request, attempting refresh and retry",
                 level: .debug,
                 category: .network
             )

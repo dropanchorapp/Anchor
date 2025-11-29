@@ -1,4 +1,4 @@
-# 🧭 Anchor
+# Anchor
 
 <p align="center">
   <img src="Static/anchor-logo-transparent.png" alt="Anchor Logo" width="200"/>
@@ -24,20 +24,17 @@
   Drop anchor at your favorite places with structured data storage on your home PDS and optional social sharing via Bluesky.
 </p>
 
-## ✨ Features
+## Features
 
-- **📱 Native iOS App** - Full-featured mobile experience with native location services
-- **🔐 StrongRef Architecture** - Store address records and check-ins with content integrity on your home PDS
-- **📡 Optional Social Sharing** - Choose to share check-ins as posts on Bluesky to notify your followers
-- **🌍 Global Feed** - Discover check-ins from around the world via the Anchor AppView feed
-- **📍 Automatic Location** - CoreLocation integration with proper iOS permissions
-- **🗺️ Place Discovery** - Find nearby climbing gyms, cafes, and points of interest via OpenStreetMap
-- **💬 Custom Messages** - Add personal notes to your check-ins
-- **🏗️ Modular Architecture** - Shared AnchorKit framework for future platform expansion
-- **🎯 Privacy-First** - All data stored on your own PDS, no tracking or analytics
-- **🌐 AT Protocol Native** - Uses community lexicon standards for structured location data
+- **Native iOS App** - Full-featured mobile experience with native location services
+- **StrongRef Architecture** - Store address records and check-ins with content integrity on your home PDS
+- **Optional Social Sharing** - Choose to share check-ins as posts on Bluesky to notify your followers
+- **Global Feed** - Discover check-ins from around the world via the Anchor AppView feed
+- **Place Discovery** - Find nearby climbing gyms, cafes, and points of interest via OpenStreetMap
+- **Privacy-First** - All data stored on your own PDS, no tracking or analytics
+- **AT Protocol Native** - Uses community lexicon standards for structured location data
 
-## 📱 Screenshots
+## Screenshots
 
 <p align="center">
   <img src="Static/anchor-feed-screen.jpeg" alt="Anchor Global Feed" width="240"/>
@@ -50,82 +47,65 @@
   <em>Global feed, check-in interface, nearby places discovery, and message composition</em>
 </p>
 
-## 🚀 Quick Start
+## Quick Start
 
-### System Requirements
+### Requirements
 
-- **iOS**: iOS 17.0 or later  
+- iOS 18.6 or later
 - Location Services enabled
 
 ### Installation
 
-1. **Download from App Store** 
+**App Store**: Coming soon
 
-   Coming soon to the iOS App Store
+**Build from Source**:
 
-2. **Build from Source**
+```bash
+git clone https://github.com/dropanchorapp/Anchor.git
+cd Anchor
 
-   ```bash
-   # Clone the repository
-   git clone https://github.com/tijs/Anchor.git
-   cd Anchor
-   
-   # Open in Xcode and build
-   open Anchor/Anchor.xcodeproj
-   
-   # Or build from command line
-   xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile build -destination 'platform=iOS Simulator,name=iPhone 16'
-   ```
+# Open in Xcode
+open Anchor.xcodeproj
+
+# Or build from command line
+make build
+```
 
 ### First Launch
 
-1. **Launch Anchor** - Tap the Anchor app icon
-2. **Browse Global Feed** - See check-ins from around the world on the Feed tab
-3. **Enable Location Services** - Allow location access when prompted for check-ins
-4. **Sign in to Bluesky** - Enter your Bluesky credentials in Settings to create check-ins
-5. **Drop Your First Anchor** - Tap "Check In" to discover and check in at nearby places
+1. Browse the global feed (no sign-in required)
+2. Sign in to Bluesky via Settings to create check-ins
+3. Enable location services when prompted
+4. Tap "Check In" to discover nearby places and drop anchor
 
-## 🎯 How to Use
+## How It Works
 
-### Quick Check-in
+Anchor stores check-ins on your Personal Data Server (PDS) using a StrongRef architecture:
 
-The fastest way to check in:
+1. **Address Record** (`community.lexicon.location.address`) - Reusable venue data
+2. **Check-in Record** (`app.dropanchor.checkin`) - References address via StrongRef (URI + CID)
 
-1. Open the Anchor app
-2. Tap "Check In" tab
-3. Select a nearby place and drop anchor
-4. **Optional**: Toggle "Also post to Bluesky" to share with your followers
+This approach provides content integrity verification, data efficiency through reusable addresses, and full ownership of your data on your PDS.
 
-**Note**: All check-ins are stored on your home PDS using StrongRef architecture regardless of your Bluesky posting preference. The optional Bluesky post is separate from your structured check-in data.
+<details>
+<summary>Example Records</summary>
 
-### How Anchor Works: StrongRef Architecture
-
-Anchor uses a **StrongRef-based architecture** that stores structured address and check-in records on your Personal Data Server (PDS) with content integrity verification:
-
-#### 1. **Address Records** - Reusable Venue Data
-
-Venue information is stored separately as reusable address records using community lexicon standards:
-
+**Address Record:**
 ```json
 {
   "$type": "community.lexicon.location.address",
   "name": "Klimmuur Centraal",
   "street": "Stationsplein 45",
   "locality": "Utrecht",
-  "region": "UT",
-  "country": "NL",
-  "postalCode": "3511ED"
+  "country": "NL"
 }
 ```
 
-#### 2. **Check-in Records** - StrongRef to Address
-
-Check-ins reference address records via StrongRef with content integrity verification:
-
+**Check-in Record:**
 ```json
 {
   "$type": "app.dropanchor.checkin",
-  "text": "Great lunch session with the team!",
+  "text": "Great session!",
   "createdAt": "2025-01-30T14:30:00Z",
   "addressRef": {
     "uri": "at://did:plc:user123/community.lexicon.location.address/abc123",
@@ -135,157 +115,63 @@ Check-ins reference address records via StrongRef with content integrity verific
     "$type": "community.lexicon.location.geo",
     "latitude": "52.0705",
     "longitude": "4.3007"
-  },
-  "image": {
-    "thumb": {
-      "$type": "blob",
-      "ref": { "$link": "bafkreiabcdef..." },
-      "mimeType": "image/jpeg",
-      "size": 125000
-    },
-    "fullsize": {
-      "$type": "blob",
-      "ref": { "$link": "bafkreighijk..." },
-      "mimeType": "image/jpeg",
-      "size": 450000
-    },
-    "alt": "Photo of the team at lunch"
   }
 }
 ```
+</details>
 
-#### Why This Architecture?
+## Architecture
 
-This StrongRef-based approach provides powerful benefits:
-
-- **🔗 Content Integrity** - CID verification ensures address records haven't been tampered with
-- **♻️ Data Efficiency** - Reusable address records reduce storage duplication
-- **🏠 Self-Contained** - All data stored on your home PDS with no external dependencies
-- **📊 Rich Query Capability** - Structured data enables powerful future features
-- **🔐 Privacy Control** - Your data stays on your PDS, you own it completely
-- **🌍 AT Protocol Native** - Uses community lexicon standards for interoperability
-- **🛡️ Standards Compliant** - Follows AT Protocol best practices for record linking
-
-## 🏗️ Architecture
-
-Anchor is built with a modular architecture designed for cross-platform expansion:
-
-### Core Components
-
-- **AnchorMobile (iOS App)** - Native iOS app built with SwiftUI
-- **AnchorKit** - Shared business logic framework for future platform expansion
-- **Anchor AppView** - Global feed service aggregating check-ins from across the AT Protocol network
-
-### Technology Stack
-
-- **Swift 6** - Modern async/await concurrency with strict concurrency checking
-- **SwiftUI** - Native iOS user interface with NavigationStack and TabView
-- **AT Protocol** - StrongRef-based record architecture with content integrity verification
-- **Community Lexicon** - Uses `community.lexicon.location.*` standards for structured address data
-- **CoreLocation** - Native location services with proper iOS permission handling
-- **Overpass API** - Rich OpenStreetMap place data via `overpass.private.coffee`
-
-### Project Structure
-
-```text
+```
 Anchor/
-├── Anchor.xcodeproj          # Xcode project
-├── AnchorMobile/             # iOS App
-│   ├── Assets.xcassets/      # iOS assets and icons
-│   ├── Features/             # SwiftUI views organized by feature
-│   │   ├── CheckIn/Views/    # Mobile check-in interface
-│   │   ├── Feed/Views/       # Feed and timeline views
-│   │   └── Settings/Views/   # iOS settings views
-│   └── AnchorMobileApp.swift # iOS app entry point
-├── AnchorKit/                # Shared Business Logic Package
-│   ├── Sources/AnchorKit/
-│   │   ├── Models/          # Place, AuthCredentials, Settings
-│   │   ├── Services/        # Overpass, Location, Feed services
-│   │   ├── ATProtocol/      # AT Protocol client implementations
-│   │   ├── Stores/          # CheckIn, Auth, and data stores
-│   │   └── Utils/           # Shared utilities and configuration
-│   └── Tests/               # Unit tests (46+ tests)
-└── Static/                  # Assets and documentation
+├── ATProtoFoundation/   # Generic AT Protocol & OAuth library
+├── AnchorKit/           # App-specific business logic
+└── AnchorMobile/        # iOS app (SwiftUI)
 ```
 
-**Note**: Anchor AppView backend is a separate project available at <https://dropanchor.app>
+- **Swift 6** with strict concurrency
+- **SwiftUI** with NavigationStack and TabView
+- **AT Protocol** with community lexicon standards
+- **CoreLocation** for native location services
 
-## 🔧 Development
+The global feed is provided by [Anchor AppView](https://dropanchor.app), a separate backend project.
 
-### Building AnchorKit
-
-The shared framework can be built and tested independently:
-
-```bash
-cd AnchorKit
-swift build
-swift test  # Runs 46+ tests including StrongRef integration
-```
-
-### Building the App
+## Development
 
 ```bash
-# Using Xcode (recommended)
-open Anchor/Anchor.xcodeproj
+# Build and test
+make build           # Build iOS app
+make test            # Run all package tests
+make lint-fix        # Fix SwiftLint issues
 
-# Using xcodebuild
-xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile build -destination 'platform=iOS Simulator,name=iPhone 16'
-```
-
-### Running Tests
-
-```bash
-# Test AnchorKit (includes StrongRef and AT Protocol client tests)
+# Or directly
 cd AnchorKit && swift test
-
-# Test the iOS app
-xcodebuild -project Anchor/Anchor.xcodeproj -scheme AnchorMobile test -destination 'platform=iOS Simulator,name=iPhone 16'
+cd ATProtoFoundation && swift test
 ```
 
-### Anchor AppView
+See [CLAUDE.md](CLAUDE.md) for detailed development instructions.
 
-Anchor AppView is a separate project that provides the global feed service. You can explore it at: <https://dropanchor.app>
+## Privacy
 
-## 🔒 Privacy & Security
+- All check-in data stored on your home PDS
+- No tracking or analytics
+- Location access only when needed
+- Open source for full transparency
 
-- **Your Data, Your PDS** - All check-in data stored on your home Personal Data Server
-- **No Analytics** - Zero tracking, telemetry, or user behavior monitoring  
-- **Minimal Permissions** - Only requests location access when needed for check-ins
-- **Secure Authentication** - Bluesky credentials handled via AT Protocol best practices
-- **Privacy by Choice** - Decide for each check-in whether to share publicly or keep private
-- **Open Source** - Complete transparency with public source code
+## Contributing
 
+Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 🤝 Contributing
+## AI Disclosure
 
-We welcome contributions! The modular architecture makes it easy to contribute to specific areas:
+Developed with assistance from [Claude Code](https://claude.ai/code) under human oversight. All design choices and quality control guided by human developers.
 
-- **AnchorKit** - Business logic, models, and services
-- **iOS App** - Mobile interface and iOS-specific features
-- **Documentation** - Help improve guides and API docs
-
-Please check our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
-
-## 🤖 AI Disclosure
-
-This app was developed with assistance from [Claude Code](https://claude.ai/code), Anthropic's AI coding assistant, under human oversight and direction. While AI helped with code generation, architecture decisions, and implementation, all design choices, feature specifications, and quality control were guided by human developers.
-
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## 🔗 Connect
+## Links
 
-- **Bluesky**: [@anchor.app](https://bsky.app/profile/anchor.app) - Follow us for updates
-- **AT Protocol**: [atproto.com](https://atproto.com) - Learn about the decentralized web
-- **OpenStreetMap**: [openstreetmap.org](https://openstreetmap.org) - The collaborative mapping project powering our place data
-
-## ☕ Support Development
-
-If you find Anchor useful, consider [supporting its development on Ko-fi](https://ko-fi.com/tijsteulings). Your support helps maintain and improve Anchor for the community.
-
----
-
-**Made with ❤️ for the climbing and outdoor community**
-
-*Join the decentralized social web and start dropping anchors at your favorite places today.*
+- [Bluesky @dropanchor.app](https://bsky.app/profile/dropanchor.app)
+- [AT Protocol](https://atproto.com)
+- [Support on Ko-fi](https://ko-fi.com/tijsteulings)

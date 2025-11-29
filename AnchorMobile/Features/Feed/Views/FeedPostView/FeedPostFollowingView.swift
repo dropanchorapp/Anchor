@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AnchorKit
+import ATProtoFoundation
 
 struct FeedPostFollowingView: View {
     let post: FeedPost

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AnchorKit
+import ATProtoFoundation
 
 struct FeedPostTimelineView: View {
     let post: FeedPost

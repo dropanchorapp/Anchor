@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import ATProtoFoundation
 @testable import AnchorKit
 
 @Suite("Feed Date Grouping")

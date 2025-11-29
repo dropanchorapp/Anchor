@@ -1,4 +1,5 @@
 @testable import AnchorKit
+import ATProtoFoundation
 import Foundation
 import Testing
 

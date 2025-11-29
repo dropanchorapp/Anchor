@@ -1,6 +1,19 @@
 import Foundation
 
 /// Represents an AT Protocol record with rich text support
+///
+/// `ATProtoRecord` handles parsing and formatting of AT Protocol posts with facets (rich text annotations).
+/// Facets enable links, mentions, and hashtags within text content.
+///
+/// Example usage:
+/// ```swift
+/// let record = ATProtoRecord(
+///     text: "Check out @alice.bsky.social's post!",
+///     facets: [ATProtoFacet(index: 10...27, feature: .mention("did:plc:alice"))],
+///     createdAt: Date()
+/// )
+/// print(record.formattedText) // Markdown formatted with links
+/// ```
 public struct ATProtoRecord: Sendable, Hashable {
     public let text: String
     public let formattedText: String // Markdown formatted version
@@ -62,8 +75,14 @@ public struct ATProtoRecord: Sendable, Hashable {
 }
 
 /// Represents a facet (rich text annotation) in AT Protocol
+///
+/// Facets annotate ranges of text with features like links, mentions, or hashtags.
+/// The index uses a closed range representing character positions in the text.
 public struct ATProtoFacet: Sendable, Hashable {
+    /// Character index range in the text (inclusive on both ends)
     public let index: ClosedRange<Int>
+
+    /// The feature type (link, mention, or hashtag)
     public let feature: ATProtoFeature
 
     public init(index: ClosedRange<Int>, feature: ATProtoFeature) {
@@ -73,11 +92,17 @@ public struct ATProtoFacet: Sendable, Hashable {
 }
 
 /// Different types of rich text features supported by AT Protocol
+///
+/// Features describe what a facet represents:
+/// - `.link`: A URL hyperlink
+/// - `.mention`: A reference to an AT Protocol user (by DID)
+/// - `.hashtag`: A hashtag for categorization/search
 public enum ATProtoFeature: Sendable, Hashable {
     case link(String)
     case mention(String) // DID
     case hashtag(String)
 
+    /// URL for this feature (for rendering as links)
     public var url: String {
         switch self {
         case let .link(url):
@@ -90,99 +115,5 @@ public enum ATProtoFeature: Sendable, Hashable {
             let encodedTag = tag.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics) ?? tag
             return "https://bsky.app/search?q=%23\(encodedTag)"
         }
-    }
-}
-
-// MARK: - Creation from Timeline Data
-
-extension ATProtoRecord {
-    /// Create from timeline record data
-    init(from timelineRecord: TimelineRecord) {
-        text = timelineRecord.text
-        type = timelineRecord.type
-
-        // Parse created date
-        createdAt = ISO8601DateFormatter.flexibleDate(from: timelineRecord.createdAt) ?? Date()
-
-        // Convert timeline facets to AT Proto facets
-        facets = timelineRecord.facets?.compactMap { ATProtoFacet(from: $0) } ?? []
-        formattedText = Self.formatTextWithFacets(text: text, facets: facets)
-    }
-}
-
-extension ATProtoFacet {
-    /// Create from timeline facet data
-    init?(from timelineFacet: TimelineFacet) {
-        let startIndex = timelineFacet.index.byteStart
-        let endIndex = timelineFacet.index.byteEnd
-        guard startIndex < endIndex else { return nil }
-
-        // Convert from AT Protocol's exclusive end index to Swift's inclusive ClosedRange
-        index = startIndex ... (endIndex - 1)
-
-        // Find the first supported feature
-        for featureData in timelineFacet.features {
-            if let feature = ATProtoFeature(from: featureData) {
-                self.feature = feature
-                return
-            }
-        }
-
-        return nil
-    }
-}
-
-extension ATProtoFeature {
-    /// Create from timeline feature data
-    init?(from featureData: FacetFeature) {
-        switch featureData.type {
-        case "app.bsky.richtext.facet#link":
-            guard let uri = featureData.uri else { return nil }
-            self = .link(uri)
-        case "app.bsky.richtext.facet#mention":
-            guard let did = featureData.did else { return nil }
-            self = .mention(did)
-        case "app.bsky.richtext.facet#tag":
-            guard let tag = featureData.tag else { return nil }
-            self = .hashtag(tag)
-        default:
-            return nil
-        }
-    }
-}
-
-// MARK: - Updated Timeline Models
-
-struct TimelineRecord: Codable {
-    let text: String
-    let createdAt: String
-    let type: String
-    let facets: [TimelineFacet]?
-
-    private enum CodingKeys: String, CodingKey {
-        case text, createdAt, facets
-        case type = "$type"
-    }
-}
-
-struct TimelineFacet: Codable {
-    let index: FacetIndex
-    let features: [FacetFeature]
-}
-
-struct FacetIndex: Codable {
-    let byteStart: Int
-    let byteEnd: Int
-}
-
-struct FacetFeature: Codable {
-    let type: String
-    let uri: String?
-    let did: String?
-    let tag: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case uri, did, tag
-        case type = "$type"
     }
 }

@@ -7,6 +7,7 @@
 
 import Foundation
 import AnchorKit
+import ATProtoFoundation
 
 // MARK: - Shared Mock Data for Feed Posts
 

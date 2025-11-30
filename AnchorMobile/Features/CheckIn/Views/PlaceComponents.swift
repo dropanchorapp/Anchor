@@ -61,7 +61,6 @@ struct PlaceRowView: View {
     @State private var categoryGroup: PlaceCategorization.CategoryGroup?
     @State private var displayIcon: String = "📍"
     
-    
     private var displayCategory: String? {
         // Use backend category from search results if available, otherwise use category group
         if let backendCategory = placeWithDistance.backendCategory {

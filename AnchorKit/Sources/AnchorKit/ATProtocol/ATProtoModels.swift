@@ -61,10 +61,10 @@ public enum CheckinError: LocalizedError, Sendable {
 /// Resolved checkin with address data from strongref
 public struct ResolvedCheckin: Sendable {
     public let checkin: CheckinRecord
-    public let address: CommunityAddressRecord
+    public let address: CommunityAddress
     public let isVerified: Bool // CID verification result
 
-    public init(checkin: CheckinRecord, address: CommunityAddressRecord, isVerified: Bool = true) {
+    public init(checkin: CheckinRecord, address: CommunityAddress, isVerified: Bool = true) {
         self.checkin = checkin
         self.address = address
         self.isVerified = isVerified

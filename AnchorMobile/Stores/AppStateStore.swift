@@ -49,7 +49,7 @@ public final class AppStateStore {
 
     public init(
         cookieManager: CookieManagerProtocol = HTTPCookieManager(),
-        oauthConfig: OAuthConfiguration = .default
+        oauthConfig: OAuthConfiguration = .anchor
     ) {
         self.cookieManager = cookieManager
         self.oauthConfig = oauthConfig

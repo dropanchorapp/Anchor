@@ -66,6 +66,7 @@ public final class AuthStore: AuthStoreProtocol {
         let authService = AnchorAuthService(storage: storage)
         let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
+            config: .anchor,
             logger: logger
         )
         let sessionValidator = SessionValidator(authService: authService, logger: logger)
@@ -84,6 +85,7 @@ public final class AuthStore: AuthStoreProtocol {
         let authService = AnchorAuthService(storage: storage)
         let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
+            config: .anchor,
             logger: logger
         )
         let sessionValidator = SessionValidator(authService: authService, logger: logger)

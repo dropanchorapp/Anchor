@@ -37,6 +37,7 @@ struct AuthStoreTests {
         let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: MockURLSession(),
+            config: .test,
             logger: logger
         )
         let validator = SessionValidator(authService: authService, logger: logger)
@@ -163,6 +164,7 @@ struct AuthStoreTests {
         let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
+            config: .test,
             logger: logger
         )
         let validator = SessionValidator(authService: authService, logger: logger)
@@ -352,6 +354,7 @@ struct AuthStoreTests {
         let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
+            config: .test,
             logger: logger
         )
         let validator = SessionValidator(authService: authService, logger: logger)
@@ -406,6 +409,7 @@ struct AuthStoreTests {
         let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
+            config: .test,
             logger: logger
         )
         let sessionValidator = SessionValidator(authService: authService, logger: logger)
@@ -458,6 +462,7 @@ struct AuthStoreTests {
         let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
+            config: .test,
             logger: logger
         )
         let validator = SessionValidator(authService: authService, logger: logger)
@@ -487,6 +492,7 @@ struct AuthStoreTests {
         let authService = AnchorAuthService(storage: storage)
         let oauthCoordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
+            config: .test,
             logger: logger
         )
         let sessionValidator = SessionValidator(authService: authService, logger: logger)
@@ -538,6 +544,7 @@ struct AuthStoreTests {
         let coordinator = MobileOAuthCoordinator(
             credentialsStorage: storage,
             session: session,
+            config: .test,
             logger: logger
         )
         let validator = SessionValidator(authService: authService, logger: logger)

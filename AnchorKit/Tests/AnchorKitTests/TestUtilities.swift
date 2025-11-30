@@ -5,6 +5,23 @@ import ATProtoFoundation
 import Foundation
 import Testing
 
+// MARK: - Test OAuth Configuration
+
+extension OAuthConfiguration {
+    /// Test OAuth configuration for unit tests
+    static let test = OAuthConfiguration(
+        baseURL: URL(string: "https://test.dropanchor.app")!,
+        userAgent: "AnchorApp/Test",
+        sessionCookieName: "test-sid",
+        cookieDomain: "test.dropanchor.app",
+        callbackURLScheme: "anchor-test",
+        sessionDuration: 86400,
+        refreshThreshold: 3600,
+        maxRetryAttempts: 3,
+        maxRetryDelay: 8.0
+    )
+}
+
 // MARK: - Test Utilities
 
 /// Utilities for creating test instances and mock data

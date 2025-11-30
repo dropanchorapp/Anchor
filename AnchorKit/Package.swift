@@ -16,7 +16,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/tijs/ATProtoFoundation.git", from: "1.2.0")
+        .package(url: "https://github.com/tijs/ATProtoFoundation.git", from: "2.0.1")
     ],
     targets: [
         .target(

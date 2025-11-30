@@ -44,7 +44,7 @@ public final class AnchorAuthService: AnchorAuthServiceProtocol {
     public init(
         storage: CredentialsStorageProtocol,
         session: URLSessionProtocol = URLSession.shared,
-        config: OAuthConfiguration = .default
+        config: OAuthConfiguration = .anchor
     ) {
         self.storage = storage
         self.oauthCoordinator = MobileOAuthCoordinator(

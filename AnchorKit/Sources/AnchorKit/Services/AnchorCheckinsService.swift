@@ -37,7 +37,7 @@ public final class AnchorCheckinsService: AnchorCheckinsServiceProtocol {
     public init(
         credentialsStorage: CredentialsStorageProtocol = KeychainCredentialsStorage(),
         session: URLSessionProtocol = URLSession.shared,
-        config: OAuthConfiguration = .default
+        config: OAuthConfiguration = .anchor
     ) {
         self.apiClient = BFFAPIClient(
             credentialsStorage: credentialsStorage,

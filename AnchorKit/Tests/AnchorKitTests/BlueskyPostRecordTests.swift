@@ -112,13 +112,13 @@ struct BlueskyPostRecordTests {
             type: "app.bsky.feed.post",
             facets: [
                 TimelineFacet(
-                    index: FacetIndex(byteStart: 10, byteEnd: 29),
+                    index: ByteRange(byteStart: 10, byteEnd: 29),
                     features: [
                         FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
                     ]
                 ),
                 TimelineFacet(
-                    index: FacetIndex(byteStart: 30, byteEnd: 35),
+                    index: ByteRange(byteStart: 30, byteEnd: 35),
                     features: [
                         FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "test")
                     ]
@@ -189,7 +189,7 @@ struct BlueskyPostRecordTests {
     @Test("Timeline facet converts to mention ATProtoFacet")
     func atProtoFacet_fromTimelineFacet_mention() throws {
         let timelineFacet = TimelineFacet(
-            index: FacetIndex(byteStart: 0, byteEnd: 16),
+            index: ByteRange(byteStart: 0, byteEnd: 16),
             features: [
                 FacetFeature(type: "app.bsky.richtext.facet#mention", uri: nil, did: "did:plc:alice123", tag: nil)
             ]
@@ -207,7 +207,7 @@ struct BlueskyPostRecordTests {
     @Test("Timeline facet converts to hashtag ATProtoFacet")
     func atProtoFacet_fromTimelineFacet_hashtag() throws {
         let timelineFacet = TimelineFacet(
-            index: FacetIndex(byteStart: 0, byteEnd: 9),
+            index: ByteRange(byteStart: 0, byteEnd: 9),
             features: [
                 FacetFeature(type: "app.bsky.richtext.facet#tag", uri: nil, did: nil, tag: "climbing")
             ]
@@ -225,7 +225,7 @@ struct BlueskyPostRecordTests {
     @Test("Timeline facet with unsupported type returns nil")
     func atProtoFacet_fromTimelineFacet_unsupportedType() {
         let timelineFacet = TimelineFacet(
-            index: FacetIndex(byteStart: 0, byteEnd: 10),
+            index: ByteRange(byteStart: 0, byteEnd: 10),
             features: [
                 FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil)
             ]
@@ -239,7 +239,7 @@ struct BlueskyPostRecordTests {
     @Test("Timeline facet with invalid indices returns nil")
     func atProtoFacet_fromTimelineFacet_invalidIndices() {
         let timelineFacet = TimelineFacet(
-            index: FacetIndex(byteStart: 10, byteEnd: 5), // End before start
+            index: ByteRange(byteStart: 10, byteEnd: 5), // End before start
             features: [
                 FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil)
             ]
@@ -253,7 +253,7 @@ struct BlueskyPostRecordTests {
     @Test("Timeline facet with multiple features uses first supported one")
     func atProtoFacet_fromTimelineFacet_multipleFeatures() throws {
         let timelineFacet = TimelineFacet(
-            index: FacetIndex(byteStart: 0, byteEnd: 19),
+            index: ByteRange(byteStart: 0, byteEnd: 19),
             features: [
                 FacetFeature(type: "unsupported.type", uri: nil, did: nil, tag: nil),
                 FacetFeature(type: "app.bsky.richtext.facet#link", uri: "https://example.com", did: nil, tag: nil),

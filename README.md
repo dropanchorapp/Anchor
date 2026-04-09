@@ -1,5 +1,7 @@
 # Anchor
 
+> **Anchor is closing down.** Read the announcement on Bluesky: [dropanchor.app/post/3mj3beavwhs2c](https://bsky.app/profile/dropanchor.app/post/3mj3beavwhs2c)
+
 <p align="center">
   <img src="Static/anchor-logo-transparent.png" alt="Anchor Logo" width="200"/>
 </p>
